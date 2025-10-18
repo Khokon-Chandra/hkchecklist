@@ -6,9 +6,10 @@
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <form method="get" class="flex gap-2">
-                <x-form.input id="name" name="q" type="text" class="block w-full" :value="old('q', request('q'))" autofocus
-                    autocomplete="name" placeholder="Search by name" />
+                <x-form.input name="q" type="text" :value="old('q', request('q'))" autofocus autocomplete="name"
+                    placeholder="Search by name" />
                 <x-button variant="secondary">Filter</x-button>
+                <x-button variant="secondary" :href="route('properties.index')">Clear</x-button>
             </form>
 
             <x-button href="{{ route('properties.create') }}"
@@ -16,26 +17,25 @@
 
         </div>
 
-        <div
-            class="overflow-hidden rounded p-4 sm:p-8 bg-white shadow  text-gray-600 dark:text-gray-400 sm:rounded-lg dark:bg-gray-800">
+        <x-card class="!px-0">
             <table class="min-w-full text-sm">
                 <thead class="dark:bg-dark-eval-1">
                     <tr class="uppercase text-left">
-                        <th>Owner</th>
-                        <th>Name</th>
-                        <th>Beds</th>
-                        <th>Baths</th>
-                        <th>Rooms Count</th>
-                        <th>Lat/Lng</th>
-                        <th>Radius (m)</th>
+                        <th class="px-4">Name</th>
+                        <th class="px-4">Owner</th>
+                        <th class="px-4">Beds</th>
+                        <th class="px-4">Baths</th>
+                        <th class="px-4">Rooms Count</th>
+                        <th class="px-4">Lat/Lng</th>
+                        <th class="px-4">Radius (m)</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y dark:divide-gray-700">
                     @forelse($properties as $p)
                         <tr>
-                            <td class="py-2 font-medium">{{ $p->owner->name }}</td>
                             <td class="px-4 py-2 font-medium">{{ $p->name }}</td>
+                            <td class="py-2 font-medium">{{ $p->owner->name }}</td>
                             <td class="px-4 py-2">{{ $p->beds }}</td>
                             <td class="px-4 py-2">{{ $p->baths }}</td>
                             <td class="px-4 py-2">{{ $p->rooms_count }}</td>
@@ -56,7 +56,7 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
+        </x-card>
 
         {{ $properties->links() }}
     </div>

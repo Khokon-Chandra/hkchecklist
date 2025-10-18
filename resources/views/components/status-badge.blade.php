@@ -17,7 +17,7 @@
         ],
         'in_progress' => [
             'label' => 'In progress',
-            'icon' => 'heroicon-s-check',
+            'icon' => 'icons.progress',
             'subtle' =>
                 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60',
             'solid' => 'bg-sky-600 text-white dark:bg-sky-400 dark:text-gray-900',

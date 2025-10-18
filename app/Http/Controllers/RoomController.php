@@ -12,18 +12,17 @@ class RoomController extends Controller
     public function index(Property $property)
     {
 
-        $rooms = $property->rooms()->orderBy('name')->paginate(20);
+        $rooms = $property->rooms()->withCount('tasks')->orderBy('name')->paginate(20);
 
         return view('rooms.index', [
             'property'    => $property,
             'rooms'       => $rooms,
-            'navProperty' => $property, // secondary nav context
+            'navProperty' => $property,
         ]);
     }
 
     public function create(Property $property)
     {
-        $this->authorize('update', $property);
 
         return view('rooms.create', [
             'property'    => $property,
@@ -33,7 +32,6 @@ class RoomController extends Controller
 
     public function store(Request $request, Property $property)
     {
-        $this->authorize('update', $property);
 
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
@@ -61,7 +59,6 @@ class RoomController extends Controller
 
     public function update(Request $request, Property $property, Room $room)
     {
-        $this->authorize('update', $property);
         $this->assertBelongs($room, $property);
 
         $data = $request->validate([

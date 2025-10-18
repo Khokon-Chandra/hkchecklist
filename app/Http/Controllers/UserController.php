@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        // $this->assertOwnerOrAdmin();
+        $this->assertOwnerOrAdmin();
 
         $role = (string)$request->query('role', '');
         $q    = (string)$request->query('q', '');

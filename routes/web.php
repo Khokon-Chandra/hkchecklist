@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ManageSessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
@@ -17,7 +18,7 @@ use App\Http\Controllers\PropertyController;
 
 Route::get('/', function () {
     return view('dashboard');
-})->middleware('auth');
+})->name('welcome')->middleware('auth');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -61,6 +62,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/sessions/{session}/checklist/{item}/note', [\App\Http\Controllers\ChecklistController::class, 'note'])->name('checklist.note');
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
 });
+
+Route::middleware(['auth', 'role:owner|admin'])
+    ->prefix('manage')->name('manage.')
+    ->group(function () {
+        Route::get('sessions',        [ManageSessionController::class, 'index'])->name('sessions.index');
+        Route::get('sessions/create', [ManageSessionController::class, 'create'])->name('sessions.create');
+        Route::post('sessions',       [ManageSessionController::class, 'store'])->name('sessions.store');
+        Route::get('sessions/{session}/edit', [ManageSessionController::class, 'edit'])->name('sessions.edit');
+        Route::put('sessions/{session}',      [ManageSessionController::class, 'update'])->name('sessions.update');
+        Route::delete('sessions/{session}',   [ManageSessionController::class, 'destroy'])->name('sessions.destroy');
+    });
+
 
 // useless routes
 // Just to demo sidebar dropdown links active states.

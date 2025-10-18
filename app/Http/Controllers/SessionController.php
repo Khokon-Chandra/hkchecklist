@@ -15,7 +15,7 @@ class SessionController extends Controller
     public function index()
     {
         $sessions = CleaningSession::query()
-            // ->where('housekeeper_id', Auth::id())
+            ->where('housekeeper_id', Auth::id())
             ->whereDate('scheduled_date', '<=', now()->toDateString())
             ->orderBy('scheduled_date', 'desc')
             ->paginate(20);

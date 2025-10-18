@@ -35,6 +35,17 @@ class CleaningSession extends Model
     {
         return $this->belongsTo(\App\Models\Property::class);
     }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'owner_id');
+    }
+
+        public function housekeeper(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'housekeeper_id');
+    }
+
     public function checklistItems(): HasMany
     {
         return $this->hasMany(ChecklistItem::class, 'session_id');

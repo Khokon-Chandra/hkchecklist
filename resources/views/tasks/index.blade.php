@@ -10,7 +10,7 @@
             Task</x-button>
     </div>
 
-    <x-card class="mb-4">
+    <x-card class="mb-4 !px-0">
         <table class="min-w-full text-sm">
             <thead class="uppercase">
                 <tr>
