@@ -1,31 +1,32 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800">Properties</h2>
+        <h2 class="text-xl font-semibold leading-tight">Properties</h2>
     </x-slot>
 
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <form method="get" class="flex gap-2">
-                <input name="q" value="{{ request('q') }}" class="w-64 rounded border-gray-300"
-                    placeholder="Search name...">
-                <x-button variant="">Filter</x-button>
+                <x-form.input id="name" name="q" type="text" class="block w-full" :value="old('q', request('q'))" autofocus
+                    autocomplete="name" placeholder="Search by name" />
+                <x-button variant="secondary">Filter</x-button>
             </form>
-            @can('create', App\Domain\Properties\Models\Property::class)
-                <a href="{{ route('properties.create') }}"
-                    class="inline-flex items-center px-3 py-2 rounded bg-indigo-600 text-white">+ New</a>
-            @endcan
+
+            <x-button href="{{ route('properties.create') }}"
+                class="inline-flex items-center px-3 py-2 rounded bg-indigo-600 text-white">+ New</x-button>
+
         </div>
 
-        <div class="overflow-hidden rounded border bg-white">
+        <div
+            class="overflow-hidden rounded p-4 sm:p-8 bg-white shadow  text-gray-600 dark:text-gray-400 sm:rounded-lg dark:bg-gray-800">
             <table class="min-w-full text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-2 text-left">Name</th>
-                        <th class="px-4 py-2">Beds</th>
-                        <th class="px-4 py-2">Baths</th>
-                        <th class="px-4 py-2">Lat/Lng</th>
-                        <th class="px-4 py-2">Radius (m)</th>
-                        <th class="px-4 py-2 w-40"></th>
+                <thead class="dark:bg-dark-eval-1">
+                    <tr class="uppercase text-left">
+                        <th>Name</th>
+                        <th>Beds</th>
+                        <th>Baths</th>
+                        <th>Lat/Lng</th>
+                        <th>Radius (m)</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
