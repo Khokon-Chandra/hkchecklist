@@ -21,22 +21,26 @@
             <table class="min-w-full text-sm">
                 <thead class="dark:bg-dark-eval-1">
                     <tr class="uppercase text-left">
+                        <th>Owner</th>
                         <th>Name</th>
                         <th>Beds</th>
                         <th>Baths</th>
+                        <th>Rooms Count</th>
                         <th>Lat/Lng</th>
                         <th>Radius (m)</th>
-                        <th>Action</th>
+                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y">
+                <tbody class="divide-y dark:divide-gray-700">
                     @forelse($properties as $p)
                         <tr>
+                            <td class="py-2 font-medium">{{ $p->owner->name }}</td>
                             <td class="px-4 py-2 font-medium">{{ $p->name }}</td>
-                            <td class="px-4 py-2 text-center">{{ $p->beds }}</td>
-                            <td class="px-4 py-2 text-center">{{ $p->baths }}</td>
-                            <td class="px-4 py-2 text-center">{{ $p->latitude }}, {{ $p->longitude }}</td>
-                            <td class="px-4 py-2 text-center">{{ $p->geo_radius_m }}</td>
+                            <td class="px-4 py-2">{{ $p->beds }}</td>
+                            <td class="px-4 py-2">{{ $p->baths }}</td>
+                            <td class="px-4 py-2">{{ $p->rooms_count }}</td>
+                            <td class="px-4 py-2">{{ $p->latitude }}, {{ $p->longitude }}</td>
+                            <td class="px-4 py-2">{{ $p->geo_radius_m }}</td>
                             <td class="px-4 py-2 text-right">
                                 <a class="text-indigo-600 hover:underline"
                                     href="{{ route('properties.edit', $p) }}">Edit</a>

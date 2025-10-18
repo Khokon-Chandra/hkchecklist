@@ -4,34 +4,38 @@
     </x-slot>
 
     <div class="flex items-center justify-between mb-4">
-        <a href="{{ route('rooms.index', $property) }}" class="text-gray-600 hover:underline">← Back to Rooms</a>
-        <a href="{{ route('tasks.create', [$property, $room]) }}" class="px-3 py-2 rounded bg-indigo-600 text-white">+ Add
-            Task</a>
+        <x-button variant="secondary" href="{{ route('rooms.index', $property) }}">←
+            Back to Rooms</x-button>
+        <x-button href="{{ route('tasks.create', [$property, $room]) }}">+ Add
+            Task</x-button>
     </div>
 
-    <div class="overflow-hidden rounded border bg-white">
+    <x-card class="mb-4">
         <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
+            <thead class="uppercase">
                 <tr>
                     <th class="px-4 py-2 text-left">Task</th>
                     <th class="px-4 py-2">Type</th>
                     <th class="px-4 py-2">Default?</th>
-                    <th class="px-4 py-2 w-36"></th>
+                    <th class="px-4 py-2">Created at</th>
+                    <th class="px-4 py-2 w-36 text-right">Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody class="divide-y dark:divide-gray-700">
                 @forelse($tasks as $t)
                     <tr>
                         <td class="px-4 py-2">{{ $t->name }}</td>
                         <td class="px-4 py-2 text-center">
-                            <span class="px-2 py-0.5 rounded text-xs bg-gray-100">{{ ucfirst($t->type) }}</span>
+                            <span
+                                class="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-900">{{ ucfirst($t->type) }}</span>
                         </td>
                         <td class="px-4 py-2 text-center">
                             <span
-                                class="px-2 py-0.5 rounded text-xs {{ $t->is_default ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                class="px-2 py-0.5 rounded text-xs {{ $t->is_default ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800 dark:text-gray-400 dark:bg-gray-900' }}">
                                 {{ $t->is_default ? 'Yes' : 'No' }}
                             </span>
                         </td>
+                        <td class="px-4 py-2 text-center">{{ $t->created_at }}</td>
                         <td class="px-4 py-2 text-right">
                             <a class="text-indigo-600 hover:underline"
                                 href="{{ route('tasks.edit', [$property, $room, $t]) }}">Edit</a>
@@ -44,5 +48,5 @@
                 @endforelse
             </tbody>
         </table>
-    </div>
+    </x-card>
 </x-app-layout>

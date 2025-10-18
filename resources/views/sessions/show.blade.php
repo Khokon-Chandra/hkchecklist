@@ -14,7 +14,7 @@
                 @csrf
                 <input type="hidden" name="latitude" id="lat">
                 <input type="hidden" name="longitude" id="lng">
-                <x-primary-button>Start Session</x-primary-button>
+                <x-button>Start Session</x-button>
             </form>
             <p class="mt-2 text-xs text-gray-500">Enable location in your browser and try again if it fails.</p>
         </div>
@@ -48,7 +48,7 @@
                             <span class="text-xs text-gray-500">{{ $room->tasks->where('type', 'room')->count() }}
                                 tasks</span>
                         </div>
-                        <ul class="divide-y">
+                        <ul class="divide-y dark:divide-gray-700">
                             @foreach ($room->tasks->where('type', 'room') as $task)
                                 @php $item = $session->checklistItems->firstWhere('task_id',$task->id); @endphp
                                 <li class="px-4 py-3 flex items-center justify-between">
@@ -86,7 +86,7 @@
                 <div class="px-4 py-3 border-b">
                     <h3 class="font-semibold">Inventory</h3>
                 </div>
-                <ul class="divide-y">
+                <ul class="divide-y dark:divide-gray-700">
                     @foreach ($rooms as $room)
                         @foreach ($room->tasks->where('type', 'inventory') as $task)
                             @php $item = $session->checklistItems->firstWhere('task_id',$task->id); @endphp
@@ -124,7 +124,7 @@
                                 @csrf
                                 <input type="file" name="photos[]" multiple accept="image/*"
                                     class="rounded border-gray-300">
-                                <x-primary-button>Upload</x-primary-button>
+                                <x-button>Upload</x-button>
                             </form>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
                 <form class="bg-white p-4 rounded border" method="post"
                     action="{{ route('sessions.complete', $session) }}">
                     @csrf
-                    <x-primary-button>Submit Checklist</x-primary-button>
+                    <x-button>Submit Checklist</x-button>
                     <p class="mt-2 text-xs text-gray-500">Requires ≥8 photos per room. Timestamp overlay is automatic on
                         upload.</p>
                 </form>

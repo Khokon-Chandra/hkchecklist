@@ -18,7 +18,7 @@
         </form>
     </div>
 
-    <x-card>
+    <x-card class="mb-4">
         <table class="min-w-full text-sm">
             <thead class="uppercase">
                 <tr>
@@ -29,7 +29,7 @@
                     <th class="px-4 py-2 w-48">Action</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
+            <tbody class="divide-y dark:divide-gray-700">
                 @foreach ($users as $u)
                     <tr>
                         <td class="px-4 py-2 font-medium">{{ $u->name }}</td>
@@ -37,7 +37,8 @@
                         <td class="px-4 py-2">{{ $u->phone_number ?? '-' }}</td>
                         <td class="px-4 py-2">
                             @foreach ($u->roles as $r)
-                                <span class="px-2 py-0.5 mr-1 rounded text-xs bg-gray-100">{{ $r->name }}</span>
+                                <span
+                                    class="px-2 py-0.5 mr-1 rounded font-medium text-xs bg-gray-200 dark:bg-gray-700">{{ $r->name }}</span>
                             @endforeach
                         </td>
                         <td class="px-4 py-2 text-right">
@@ -57,5 +58,5 @@
         </table>
     </x-card>
 
-    {{ $users->links() }}
+    <div>{{ $users->links() }}</div>
 </x-app-layout>

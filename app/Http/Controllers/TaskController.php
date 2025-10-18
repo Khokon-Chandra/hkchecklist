@@ -10,14 +10,9 @@ use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
 
     public function index(Property $property, Room $room)
     {
-        $this->authorize('view', $property);
         $this->assertRoomBelongs($room, $property);
 
         $tasks = $room->tasks()->orderBy('name')->paginate(30);
@@ -33,7 +28,6 @@ class TaskController extends Controller
 
     public function create(Property $property, Room $room)
     {
-        $this->authorize('update', $property);
         $this->assertRoomBelongs($room, $property);
 
         return view('tasks.create', [
@@ -46,7 +40,6 @@ class TaskController extends Controller
 
     public function store(Request $request, Property $property, Room $room)
     {
-        $this->authorize('update', $property);
         $this->assertRoomBelongs($room, $property);
 
         $data = $request->validate([
@@ -73,7 +66,6 @@ class TaskController extends Controller
 
     public function edit(Property $property, Room $room, Task $task)
     {
-        $this->authorize('update', $property);
         $this->assertRoomBelongs($room, $property);
         $this->assertTaskBelongs($task, $room);
 
@@ -88,7 +80,6 @@ class TaskController extends Controller
 
     public function update(Request $request, Property $property, Room $room, Task $task)
     {
-        $this->authorize('update', $property);
         $this->assertRoomBelongs($room, $property);
         $this->assertTaskBelongs($task, $room);
 

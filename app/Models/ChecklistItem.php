@@ -25,4 +25,9 @@ class ChecklistItem extends Model
     {
         return $this->belongsTo(CleaningSession::class, 'session_id');
     }
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'task_id');
+    }
 }

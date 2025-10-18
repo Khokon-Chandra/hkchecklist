@@ -15,7 +15,10 @@ class PropertyController extends Controller
         $q = (string) $request->query('q', '');
         $properties = Property::query()
             ->when($q !== '', fn($qry) => $qry->where('name', 'like', "%{$q}%"))
+            ->with(['owner'])
+            ->withCount('rooms')
             ->orderBy('name')
+            ->latest()
             ->paginate(15)
             ->withQueryString();
 

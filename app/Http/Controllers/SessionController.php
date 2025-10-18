@@ -15,7 +15,7 @@ class SessionController extends Controller
     public function index()
     {
         $sessions = CleaningSession::query()
-            ->where('housekeeper_id', Auth::id())
+            // ->where('housekeeper_id', Auth::id())
             ->whereDate('scheduled_date', '<=', now()->toDateString())
             ->orderBy('scheduled_date', 'desc')
             ->paginate(20);
@@ -25,7 +25,6 @@ class SessionController extends Controller
 
     public function show(CleaningSession $session)
     {
-        $this->authorize('view', $session);
         $rooms = $session->property->rooms()->with(['tasks'])->get();
 
         // derive stage
@@ -46,8 +45,6 @@ class SessionController extends Controller
 
     public function start(StartSessionRequest $request, CleaningSession $session)
     {
-        $this->authorize('start', $session);
-
         $lat = (float)$request->validated('latitude');
         $lng = (float)$request->validated('longitude');
 
@@ -82,7 +79,6 @@ class SessionController extends Controller
 
     public function complete(Request $request, CleaningSession $session)
     {
-        $this->authorize('complete', $session);
 
         $rooms = $session->property->rooms()->with('tasks')->get();
         foreach ($rooms as $room) {
@@ -99,7 +95,7 @@ class SessionController extends Controller
 
     private function inventoryCompleted(CleaningSession $session): bool
     {
-        return \App\Models\ChecklistItem::where('session_id', $session->id)
+        return ChecklistItem::where('session_id', $session->id)
             ->whereHas('session', fn($q) => $q)
             ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
             ->where('checked', true)->exists();

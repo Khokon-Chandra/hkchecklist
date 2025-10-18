@@ -8,14 +8,9 @@ use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
 
     public function index(Property $property)
     {
-        $this->authorize('view', $property);
 
         $rooms = $property->rooms()->orderBy('name')->paginate(20);
 

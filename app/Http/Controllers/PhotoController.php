@@ -12,7 +12,6 @@ class PhotoController extends Controller
 {
     public function store(Request $request, CleaningSession $session, int $roomId)
     {
-        $this->authorize('update', $session);
         $request->validate(['photos.*' => 'required|image|max:5120']);
 
         foreach ((array)$request->file('photos') as $upload) {
