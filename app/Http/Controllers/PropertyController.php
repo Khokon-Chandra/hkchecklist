@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Domain\Properties\Models\Property;
 
 class PropertyController extends Controller
 {

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Property;
+use App\Models\Room;
+use App\Models\Task;
 use Illuminate\Http\Request;
-use App\Domain\Properties\Models\Property;
-use App\Domain\Rooms\Models\Room;
-use App\Domain\Tasks\Models\Task;
 use Illuminate\Validation\Rule;
 
 class TaskController extends Controller

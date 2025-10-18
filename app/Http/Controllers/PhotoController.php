@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Domain\Sessions\Models\CleaningSession;
-use App\Domain\Sessions\Models\RoomPhoto;
+use App\Models\CleaningSession;
+use App\Models\RoomPhoto;
 use App\Services\ImageTimestampService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class PhotoController extends Controller

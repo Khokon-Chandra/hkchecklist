@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Property;
+use App\Models\Room;
 use Illuminate\Http\Request;
-use App\Domain\Properties\Models\Property;
-use App\Domain\Rooms\Models\Room;
 
 class RoomController extends Controller
 {

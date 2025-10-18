@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Properties\Models;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +22,6 @@ class Property extends Model
 
     public function rooms(): HasMany
     {
-        return $this->hasMany(\App\Domain\Rooms\Models\Room::class);
+        return $this->hasMany(\App\Models\Room::class);
     }
 }

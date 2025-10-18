@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Sessions\Models\ChecklistItem;
-use App\Domain\Sessions\Models\CleaningSession;
+use App\Models\ChecklistItem;
+use App\Models\CleaningSession;
 use Illuminate\Http\Request;
 
 class ChecklistController extends Controller

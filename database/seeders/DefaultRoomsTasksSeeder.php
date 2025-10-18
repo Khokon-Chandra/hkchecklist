@@ -2,11 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Room;
+use App\Models\Task;
 use Illuminate\Database\Seeder;
-use App\Domain\Properties\Models\Property;
-use App\Domain\Rooms\Models\Room;
-use App\Domain\Tasks\Models\Task;
 
 class DefaultRoomsTasksSeeder extends Seeder
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Sessions\Models;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CleaningSession extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'property_id',
         'owner_id',
@@ -33,7 +33,7 @@ class CleaningSession extends Model
 
     public function property(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Properties\Models\Property::class);
+        return $this->belongsTo(\App\Models\Property::class);
     }
     public function checklistItems(): HasMany
     {

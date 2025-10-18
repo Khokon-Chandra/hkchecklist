@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Tasks\Models;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +11,6 @@ class Task extends Model
 
     public function room(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Rooms\Models\Room::class);
+        return $this->belongsTo(\App\Models\Room::class);
     }
 }

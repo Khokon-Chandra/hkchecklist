@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StartSessionRequest;
-use App\Domain\Sessions\Models\ChecklistItem;
-use App\Domain\Rooms\Models\Room;
-use App\Domain\Sessions\Models\CleaningSession;
+use App\Models\ChecklistItem;
+use App\Models\CleaningSession;
 use App\Services\GpsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -71,7 +70,7 @@ class SessionController extends Controller
         // bootstrap checklist items (room & inventory)
         $tasks = $p->rooms()->with('tasks')->get()->flatMap->tasks;
         foreach ($tasks as $task) {
-            \App\Domain\Sessions\Models\ChecklistItem::firstOrCreate([
+            \App\Models\ChecklistItem::firstOrCreate([
                 'session_id' => $session->id,
                 'room_id' => $task->room_id,
                 'task_id' => $task->id
@@ -100,7 +99,7 @@ class SessionController extends Controller
 
     private function inventoryCompleted(CleaningSession $session): bool
     {
-        return \App\Domain\Sessions\Models\ChecklistItem::where('session_id', $session->id)
+        return \App\Models\ChecklistItem::where('session_id', $session->id)
             ->whereHas('session', fn($q) => $q)
             ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
             ->where('checked', true)->exists();
