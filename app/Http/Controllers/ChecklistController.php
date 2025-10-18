@@ -10,7 +10,6 @@ class ChecklistController extends Controller
 {
     public function toggle(CleaningSession $session, ChecklistItem $item)
     {
-        $this->authorize('update', $session);
         abort_unless($item->session_id === $session->id, 404);
 
         $item->update([
@@ -24,7 +23,6 @@ class ChecklistController extends Controller
 
     public function note(CleaningSession $session, ChecklistItem $item, Request $request)
     {
-        $this->authorize('update', $session);
         $request->validate(['note' => 'nullable|string|max:2000']);
         abort_unless($item->session_id === $session->id, 404);
 
