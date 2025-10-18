@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Domain\Sessions\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class ChecklistItem extends Model
+{
+    protected $fillable = [
+        'session_id',
+        'room_id',
+        'task_id',
+        'user_id',
+        'checked',
+        'note',
+        'checked_at'
+    ];
+    protected $casts = ['checked' => 'bool', 'checked_at' => 'datetime'];
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(CleaningSession::class, 'session_id');
+    }
+}

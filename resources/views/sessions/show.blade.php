@@ -1,0 +1,143 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl">
+            Checklist — {{ $session->property->name }} ({{ $session->scheduled_date->toDateString() }})
+        </h2>
+    </x-slot>
+
+    {{-- Start gate --}}
+    @if ($session->status === 'pending')
+        <div class="bg-white p-6 rounded border">
+            <p class="mb-3 text-gray-700">GPS confirmation required to start.</p>
+            <form method="post" action="{{ route('sessions.start', $session) }}" id="gps-start"
+                class="flex items-center gap-2">
+                @csrf
+                <input type="hidden" name="latitude" id="lat">
+                <input type="hidden" name="longitude" id="lng">
+                <x-primary-button>Start Session</x-primary-button>
+            </form>
+            <p class="mt-2 text-xs text-gray-500">Enable location in your browser and try again if it fails.</p>
+        </div>
+        <script>
+            navigator.geolocation?.getCurrentPosition(p => {
+                document.getElementById('lat').value = p.coords.latitude;
+                document.getElementById('lng').value = p.coords.longitude;
+            }, () => alert('GPS permission required to start'));
+        </script>
+    @else
+        {{-- Progress header --}}
+        <div class="bg-white p-4 rounded border mb-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <x-status-badge :status="$session->status" />
+                <span class="text-sm text-gray-600">Started:
+                    {{ optional($session->started_at)->format('Y-m-d H:i') ?? '—' }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600">Stage:</span>
+                <span class="px-2 py-0.5 rounded text-xs bg-gray-100">{{ strtoupper($stage) }}</span>
+            </div>
+        </div>
+
+        {{-- Rooms checklist --}}
+        @if ($stage === 'rooms')
+            <div class="space-y-6">
+                @foreach ($rooms as $room)
+                    <div class="bg-white rounded border">
+                        <div class="px-4 py-3 border-b flex items-center justify-between">
+                            <h3 class="font-semibold">{{ $room->name }}</h3>
+                            <span class="text-xs text-gray-500">{{ $room->tasks->where('type', 'room')->count() }}
+                                tasks</span>
+                        </div>
+                        <ul class="divide-y">
+                            @foreach ($room->tasks->where('type', 'room') as $task)
+                                @php $item = $session->checklistItems->firstWhere('task_id',$task->id); @endphp
+                                <li class="px-4 py-3 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <form method="post" action="{{ route('checklist.toggle', [$session, $item]) }}">
+                                            @csrf
+                                            <button
+                                                class="h-5 w-5 rounded border flex items-center justify-center {{ $item?->checked ? 'bg-green-600 border-green-600 text-white' : 'bg-white' }}">
+                                                @if ($item?->checked)
+                                                    ✓
+                                                @endif
+                                            </button>
+                                        </form>
+                                        <span
+                                            class="{{ $item?->checked ? 'line-through text-gray-500' : '' }}">{{ $task->name }}</span>
+                                    </div>
+                                    <form method="post" action="{{ route('checklist.note', [$session, $item]) }}"
+                                        class="flex items-center gap-2">
+                                        @csrf
+                                        <input name="note" value="{{ $item?->note }}" placeholder="Note"
+                                            class="rounded border-gray-300 text-sm">
+                                        <button class="px-2 py-1 rounded border text-sm">Save</button>
+                                    </form>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- Inventory checklist --}}
+        @if ($stage === 'inventory')
+            <div class="bg-white rounded border">
+                <div class="px-4 py-3 border-b">
+                    <h3 class="font-semibold">Inventory</h3>
+                </div>
+                <ul class="divide-y">
+                    @foreach ($rooms as $room)
+                        @foreach ($room->tasks->where('type', 'inventory') as $task)
+                            @php $item = $session->checklistItems->firstWhere('task_id',$task->id); @endphp
+                            <li class="px-4 py-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <form method="post" action="{{ route('checklist.toggle', [$session, $item]) }}">
+                                        @csrf
+                                        <button
+                                            class="px-2 py-1 rounded border text-sm {{ $item?->checked ? 'bg-green-600 text-white border-green-600' : '' }}">
+                                            {{ $item?->checked ? '✓' : 'Mark' }}
+                                        </button>
+                                    </form>
+                                    <span>{{ $task->name }}</span>
+                                </div>
+                            </li>
+                        @endforeach
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Photos upload --}}
+        @if ($stage === 'photos')
+            <div class="space-y-6">
+                @foreach ($rooms as $room)
+                    <div class="bg-white rounded border">
+                        <div class="px-4 py-3 border-b flex items-center justify-between">
+                            <h3 class="font-semibold">{{ $room->name }}</h3>
+                            <span class="text-xs text-gray-500">{{ $photoCounts[$room->id] ?? 0 }}/8 photos</span>
+                        </div>
+                        <div class="p-4">
+                            <form method="post" enctype="multipart/form-data"
+                                action="{{ route('photos.store', [$session, $room->id]) }}"
+                                class="flex items-center gap-2">
+                                @csrf
+                                <input type="file" name="photos[]" multiple accept="image/*"
+                                    class="rounded border-gray-300">
+                                <x-primary-button>Upload</x-primary-button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+
+                <form class="bg-white p-4 rounded border" method="post"
+                    action="{{ route('sessions.complete', $session) }}">
+                    @csrf
+                    <x-primary-button>Submit Checklist</x-primary-button>
+                    <p class="mt-2 text-xs text-gray-500">Requires ≥8 photos per room. Timestamp overlay is automatic on
+                        upload.</p>
+                </form>
+            </div>
+        @endif
+    @endif
+</x-app-layout>
