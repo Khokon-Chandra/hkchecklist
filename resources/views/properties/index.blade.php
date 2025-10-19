@@ -44,9 +44,11 @@
                             <td class="px-4 py-2">{{ $p->latitude }}, {{ $p->longitude }}</td>
                             <td class="px-4 py-2">{{ $p->geo_radius_m }}</td>
                             <td class="px-4 py-2 text-right">
-                                <a class="text-indigo-600 hover:underline"
-                                    href="{{ route('properties.edit', $p) }}">Edit</a>
-                                <span class="mx-2">·</span>
+                                @role('admin|owner')
+                                    <a class="text-indigo-600 hover:underline"
+                                        href="{{ route('properties.edit', $p) }}">Edit</a>
+                                    <span class="mx-2">·</span>
+                                @endrole
                                 <a class="text-blue-600 hover:underline"
                                     href="{{ route('rooms.index', ['property' => $p->id]) }}">Rooms</a>
                             </td>
