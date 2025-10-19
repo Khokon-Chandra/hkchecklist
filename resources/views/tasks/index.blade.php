@@ -18,7 +18,9 @@
                     <th class="px-4 py-2">Type</th>
                     <th class="px-4 py-2">Default?</th>
                     <th class="px-4 py-2">Created at</th>
-                    <th class="px-4 py-2 w-36 text-right">Action</th>
+                    @role('admin|owner')
+                        <th class="px-4 py-2 w-36 text-right">Action</th>
+                    @endrole
                 </tr>
             </thead>
             <tbody class="divide-y dark:divide-gray-700">
@@ -36,10 +38,12 @@
                             </span>
                         </td>
                         <td class="px-4 py-2 text-center">{{ $t->created_at }}</td>
-                        <td class="px-4 py-2 text-right">
-                            <a class="text-indigo-600 hover:underline"
-                                href="{{ route('tasks.edit', [$property, $room, $t]) }}">Edit</a>
-                        </td>
+                        @role('admin|owner')
+                            <td class="px-4 py-2 text-right">
+                                <a class="text-indigo-600 hover:underline"
+                                    href="{{ route('tasks.edit', [$property, $room, $t]) }}">Edit</a>
+                            </td>
+                        @endrole
                     </tr>
                 @empty
                     <tr>
