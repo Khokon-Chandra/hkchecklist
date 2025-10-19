@@ -34,9 +34,11 @@
                         <td class="px-4 py-2 text-center">{{ $r->tasks_count }}</td>
                         <td class="px-4 py-2 text-center">{{ $r->created_at }}</td>
                         <td class="px-4 py-2 text-right">
-                            <a class="text-indigo-600 hover:underline"
-                                href="{{ route('rooms.edit', [$property, $r]) }}">Edit</a>
-                            <span class="mx-2">·</span>
+                            @role('admin|owner')
+                                <a class="text-indigo-600 hover:underline"
+                                    href="{{ route('rooms.edit', [$property, $r]) }}">Edit</a>
+                                <span class="mx-2">·</span>
+                            @endrole
                             <a class="text-blue-600 hover:underline"
                                 href="{{ route('tasks.index', ['property' => $property->id, 'room' => $r->id]) }}">Tasks</a>
                         </td>
