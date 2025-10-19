@@ -12,13 +12,27 @@ class PropertyController extends Controller
 
     public function index(Request $request)
     {
-        $q = (string) $request->query('q', '');
-        $properties = Property::query()
+        $user = $request->user();
+        $q    = (string) $request->query('q', '');
+
+        $query = Property::query();
+
+        if ($user->hasRole('owner')) {
+            $query->where('owner_id', $user->id);
+        } elseif ($user->hasRole('housekeeper')) {
+            $query->whereIn('id', function ($sub) use ($user) {
+                $sub->select('property_id')
+                    ->from('cleaning_sessions')
+                    ->where('housekeeper_id', $user->id);
+            });
+        }
+
+        $properties = $query
             ->when($q !== '', fn($qry) => $qry->where('name', 'like', "%{$q}%"))
             ->with(['owner'])
             ->withCount('rooms')
             ->orderBy('name')
-            ->latest()
+            ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();
 

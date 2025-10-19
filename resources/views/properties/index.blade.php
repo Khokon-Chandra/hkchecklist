@@ -12,8 +12,10 @@
                 <x-button variant="secondary" :href="route('properties.index')">Clear</x-button>
             </form>
 
-            <x-button href="{{ route('properties.create') }}"
-                class="inline-flex items-center px-3 py-2 rounded bg-indigo-600 text-white">+ New</x-button>
+            @role('admin|owner')
+                <x-button href="{{ route('properties.create') }}"
+                    class="inline-flex items-center px-3 py-2 rounded bg-indigo-600 text-white">+ New</x-button>
+            @endrole
 
         </div>
 

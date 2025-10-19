@@ -41,18 +41,21 @@
                                     class="px-2 py-0.5 mr-1 rounded font-medium text-xs bg-gray-200 dark:bg-gray-700">{{ $r->name }}</span>
                             @endforeach
                         </td>
-                        <td class="px-4 py-2 text-right">
-                            <form method="post" action="{{ route('users.assignRole', $u) }}" class="inline-flex gap-2">
-                                @csrf
-                                <x-form.select name="role">
-                                    <option>--select role--</option>
-                                    <option value="owner">Owner</option>
-                                    <option value="housekeeper">Housekeeper</option>
-                                    <option value="admin">Admin</option>
-                                </x-form.select>
-                                <x-button>Assign</x-button>
-                            </form>
-                        </td>
+                        @if (auth()->id() !== $u->id)
+                            <td class="px-4 py-2 text-right">
+                                <form method="post" action="{{ route('users.assignRole', $u) }}"
+                                    class="inline-flex gap-2">
+                                    @csrf
+                                    <x-form.select name="role">
+                                        <option>--select role--</option>
+                                        <option value="owner">Owner</option>
+                                        <option value="housekeeper">Housekeeper</option>
+                                        <option value="admin">Admin</option>
+                                    </x-form.select>
+                                    <x-button>Assign</x-button>
+                                </form>
+                            </td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>

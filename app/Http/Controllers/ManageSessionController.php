@@ -11,24 +11,51 @@ use App\Models\User;
 
 class ManageSessionController extends Controller
 {
+    /**
+     * Resolve acting role for the current request.
+     * admin wins by default; admin+owner may opt into owner scope via ?as=owner.
+     */
+    private function actingRole(Request $request): string
+    {
+        $u = $request->user();
+        $isAdmin = $u?->hasRole('admin') ?? false;
+        $isOwner = $u?->hasRole('owner') ?? false;
+
+        if ($isAdmin) {
+            // Allow explicit owner view if they also have owner role
+            if ($isOwner && $request->query('as') === 'owner') {
+                return 'owner';
+            }
+            return 'admin';
+        }
+        if ($isOwner) return 'owner';
+
+        return 'forbidden';
+    }
 
     public function index(Request $request)
     {
         $u = Auth::user();
+        $acting = $this->actingRole($request);
+        abort_if($acting === 'forbidden', 403);
 
         $filters = [
             'property_id'    => $request->integer('property_id') ?: null,
             'housekeeper_id' => $request->integer('housekeeper_id') ?: null,
-            'status'         => $request->string('status')->toString() ?: null,
-            'date_from'      => $request->date('date_from') ?: null,
-            'date_to'        => $request->date('date_to') ?: null,
+            'status'         => ($request->filled('status') ? (string)$request->string('status') : null),
+            'date_from'      => $request->input('date_from') ?: null,
+            'date_to'        => $request->input('date_to') ?: null,
         ];
 
         $q = CleaningSession::query()
-            ->with(['property:id,name,owner_id', 'property.rooms:id,property_id', 'housekeeper:id,name'])
+            ->with([
+                'property:id,name,owner_id',
+                'housekeeper:id,name',
+            ])
+            // admin: full system, owner: only their properties
             ->when(
-                $u->hasRole('owner'),
-                fn($qry) => $qry->whereHas('property', fn($p) => $p->where('owner_id', $u->id))
+                $acting === 'owner',
+                fn($qry) => $qry->where('owner_id', $u->id)
             )
             ->when($filters['property_id'], fn($qry, $v) => $qry->where('property_id', $v))
             ->when($filters['housekeeper_id'], fn($qry, $v) => $qry->where('housekeeper_id', $v))
@@ -40,59 +67,81 @@ class ManageSessionController extends Controller
         $sessions = $q->paginate(20)->withQueryString();
 
         $properties = Property::query()
-            ->when($u->hasRole('owner'), fn($qry) => $qry->where('owner_id', $u->id))
-            ->orderBy('name')->get(['id', 'name']);
+            ->when($acting === 'owner', fn($qry) => $qry->where('owner_id', $u->id))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
+        // For owners: list all housekeepers (or scope to those who have sessions with this owner if you prefer)
         $housekeepers = User::role('housekeeper')->orderBy('name')->get(['id', 'name']);
 
-        return view('sessions.manage.index', compact('sessions', 'properties', 'housekeepers', 'filters'));
+        return view('sessions.manage.index', compact('sessions', 'properties', 'housekeepers', 'filters', 'acting'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $u = Auth::user();
+        $acting = $this->actingRole($request);
+        abort_if($acting === 'forbidden', 403);
 
         $properties = Property::query()
-            ->when($u->hasRole('owner'), fn($qry) => $qry->where('owner_id', $u->id))
-            ->orderBy('name')->get(['id', 'name']);
+            ->when($acting === 'owner', fn($qry) => $qry->where('owner_id', $u->id))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         $housekeepers = User::role('housekeeper')->orderBy('name')->get(['id', 'name']);
 
-        return view('sessions.manage.create', compact('properties', 'housekeepers'));
+        return view('sessions.manage.create', compact('properties', 'housekeepers', 'acting'));
     }
 
     public function store(Request $request)
     {
         $u = Auth::user();
+        $acting = $this->actingRole($request);
+        abort_if($acting === 'forbidden', 403);
 
         $data = $request->validate([
             'property_id'    => ['required', 'integer', 'exists:properties,id'],
             'housekeeper_id' => ['required', 'integer', 'exists:users,id'],
             'scheduled_date' => ['required', 'date'],
-            'status'         => [Rule::in(['pending', 'in_progress', 'completed'])],
+            'status'         => ['nullable', Rule::in(['pending', 'in_progress', 'completed'])],
         ]);
 
-        // owner can only schedule for own properties
-        if ($u->hasRole('owner')) {
-            abort_unless(Property::where('id', $data['property_id'])->where('owner_id', $u->id)->exists(), 403);
+        // owner may create only for own properties
+        if ($acting === 'owner') {
+            abort_unless(
+                Property::whereKey($data['property_id'])->where('owner_id', $u->id)->exists(),
+                403,
+                'You can schedule only for your properties.'
+            );
         }
-        // assignee must be housekeeper
-        abort_unless(User::where('id', $data['housekeeper_id'])->role('housekeeper')->exists(), 422);
 
-        // friendly duplicate check (migration also enforces unique)
-        $dup = CleaningSession::where('property_id', $data['property_id'])
+        // assignee must be a housekeeper
+        abort_unless(
+            User::role('housekeeper')->whereKey($data['housekeeper_id'])->exists(),
+            422,
+            'Assignee must have the housekeeper role.'
+        );
+
+        // prevent duplicates (also enforced by unique index)
+        $dup = CleaningSession::query()
+            ->where('property_id', $data['property_id'])
             ->where('housekeeper_id', $data['housekeeper_id'])
             ->whereDate('scheduled_date', $data['scheduled_date'])
             ->exists();
         if ($dup) {
-            return back()->withErrors(['scheduled_date' => 'Duplicate assignment for this housekeeper/property/date.'])->withInput();
+            return back()
+                ->withErrors(['scheduled_date' => 'Duplicate assignment for this housekeeper/property/date.'])
+                ->withInput();
         }
+
+        // owner_id: if admin is acting as admin -> use property's real owner_id; else use self (owner)
+        $ownerId = ($acting === 'admin')
+            ? Property::find($data['property_id'])->owner_id
+            : $u->id;
 
         CleaningSession::create([
             'property_id'    => $data['property_id'],
-            'owner_id'       => $u->hasRole('admin')
-                ? Property::find($data['property_id'])->owner_id
-                : $u->id,
+            'owner_id'       => $ownerId,
             'housekeeper_id' => $data['housekeeper_id'],
             'scheduled_date' => $data['scheduled_date'],
             'status'         => $data['status'] ?? 'pending',
@@ -101,26 +150,33 @@ class ManageSessionController extends Controller
         return redirect()->route('manage.sessions.index')->with('ok', 'Assignment created.');
     }
 
-    public function edit(CleaningSession $session)
+    public function edit(Request $request, CleaningSession $session)
     {
         $u = Auth::user();
-        if ($u->hasRole('owner')) {
+        $acting = $this->actingRole($request);
+        abort_if($acting === 'forbidden', 403);
+
+        if ($acting === 'owner') {
             abort_unless($session->property->owner_id === $u->id, 403);
         }
 
         $properties = Property::query()
-            ->when($u->hasRole('owner'), fn($qry) => $qry->where('owner_id', $u->id))
-            ->orderBy('name')->get(['id', 'name']);
+            ->when($acting === 'owner', fn($qry) => $qry->where('owner_id', $u->id))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         $housekeepers = User::role('housekeeper')->orderBy('name')->get(['id', 'name']);
 
-        return view('sessions.manage.edit', compact('session', 'properties', 'housekeepers'));
+        return view('sessions.manage.edit', compact('session', 'properties', 'housekeepers', 'acting'));
     }
 
     public function update(Request $request, CleaningSession $session)
     {
         $u = Auth::user();
-        if ($u->hasRole('owner')) {
+        $acting = $this->actingRole($request);
+        abort_if($acting === 'forbidden', 403);
+
+        if ($acting === 'owner') {
             abort_unless($session->property->owner_id === $u->id, 403);
         }
 
@@ -131,18 +187,26 @@ class ManageSessionController extends Controller
             'status'         => ['required', Rule::in(['pending', 'in_progress', 'completed'])],
         ]);
 
-        if ($u->hasRole('owner')) {
-            abort_unless(Property::where('id', $data['property_id'])->where('owner_id', $u->id)->exists(), 403);
+        if ($acting === 'owner') {
+            abort_unless(Property::whereKey($data['property_id'])->where('owner_id', $u->id)->exists(), 403);
         }
-        abort_unless(User::where('id', $data['housekeeper_id'])->role('housekeeper')->exists(), 422);
+        abort_unless(User::role('housekeeper')->whereKey($data['housekeeper_id'])->exists(), 422);
 
-        $dup = CleaningSession::where('property_id', $data['property_id'])
+        $dup = CleaningSession::query()
+            ->where('property_id', $data['property_id'])
             ->where('housekeeper_id', $data['housekeeper_id'])
             ->whereDate('scheduled_date', $data['scheduled_date'])
             ->where('id', '<>', $session->id)
             ->exists();
         if ($dup) {
-            return back()->withErrors(['scheduled_date' => 'Duplicate assignment for this housekeeper/property/date.'])->withInput();
+            return back()
+                ->withErrors(['scheduled_date' => 'Duplicate assignment for this housekeeper/property/date.'])
+                ->withInput();
+        }
+
+        // When admin updates, keep owner_id consistent with selected property’s owner
+        if ($acting === 'admin') {
+            $data['owner_id'] = Property::find($data['property_id'])->owner_id;
         }
 
         $session->update($data);
@@ -150,10 +214,13 @@ class ManageSessionController extends Controller
         return redirect()->route('manage.sessions.index')->with('ok', 'Assignment updated.');
     }
 
-    public function destroy(CleaningSession $session)
+    public function destroy(Request $request, CleaningSession $session)
     {
         $u = Auth::user();
-        if ($u->hasRole('owner')) {
+        $acting = $this->actingRole($request);
+        abort_if($acting === 'forbidden', 403);
+
+        if ($acting === 'owner') {
             abort_unless($session->property->owner_id === $u->id, 403);
         }
 

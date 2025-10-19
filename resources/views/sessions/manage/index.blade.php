@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl">Manage Sessions</h2>
+        <h2 class="font-semibold text-xl">Manage Assignment</h2>
     </x-slot>
 
     <x-card class="mb-4">
@@ -64,7 +64,7 @@
                 @forelse($sessions as $s)
                     <tr>
                         <td class="px-4 py-2">{{ $s->scheduled_date->toDateString() }}</td>
-                        <td class="px-4 py-2">{{ $s->property->name }}</td>
+                        <td class="px-4 py-2 truncate">{{ $s->property->name }}</td>
                         <td class="px-4 py-2">{{ $s->housekeeper?->name ?? '—' }}</td>
                         <td class="px-4 py-2 text-center"><x-status-badge :status="$s->status" /></td>
                         <td class="px-4 py-2 flex justify-end">

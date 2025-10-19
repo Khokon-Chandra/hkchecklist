@@ -6,13 +6,22 @@
         </x-slot>
     </x-sidebar.link>
 
+    <x-sidebar.link title="Calendar" href="{{ route('calendar.index') }}" :isActive="request()->routeIs('calendar.index')">
+        <x-slot name="icon">
+            <x-heroicon-o-calendar class="flex-shrink-0 w-6 h-6" aria-hidden="true" />
+        </x-slot>
+    </x-sidebar.link>
+
     <x-sidebar.dropdown title="Properties" :active="Str::startsWith(request()->route()->uri('properties'), 'properties')">
         <x-slot name="icon">
             <x-heroicon-o-home class="flex-shrink-0 w-6 h-6" aria-hidden="true" />
         </x-slot>
 
         <x-sidebar.sublink title="All properties" href="{{ route('properties.index') }}" :active="request()->routeIs('properties.index')" />
-        <x-sidebar.sublink title="Add new" href="{{ route('properties.create') }}" :active="request()->routeIs('properties.create')" />
+
+        @role('admin|owner')
+            <x-sidebar.sublink title="Add new" href="{{ route('properties.create') }}" :active="request()->routeIs('properties.create')" />
+        @endrole
     </x-sidebar.dropdown>
 
 
@@ -26,7 +35,9 @@
             <x-sidebar.sublink title="All users" href="{{ route('users.index') }}" :active="request()->routeIs('users.index') && !request()->filled('role')" />
 
             {{-- Role filters: active when role matches --}}
-            <x-sidebar.sublink title="Admins" href="{{ route('users.index', ['role' => 'admin']) }}" :active="request()->routeIs('users.index') && request('role') === 'admin'" />
+            @role('admin')
+                <x-sidebar.sublink title="Admins" href="{{ route('users.index', ['role' => 'admin']) }}" :active="request()->routeIs('users.index') && request('role') === 'admin'" />
+            @endrole
 
             <x-sidebar.sublink title="Owners" href="{{ route('users.index', ['role' => 'owner']) }}" :active="request()->routeIs('users.index') && request('role') === 'owner'" />
 
@@ -38,17 +49,12 @@
 
     {{-- Owner/Admin: Sessions management --}}
     @role('owner|admin')
-        <x-sidebar.dropdown title="Session" :active="request()->routeIs('manage.sessions.*') || request()->routeIs('sessions.*')">
+        <x-sidebar.dropdown title="Manage Assignment" :active="request()->routeIs('manage.sessions.*') || request()->routeIs('sessions.*')">
             <x-slot name="icon"><x-icons.assignment class="w-6 h-6" /></x-slot>
 
             <x-sidebar.sublink title="Manage Sessions" href="{{ route('manage.sessions.index') }}" :active="request()->routeIs('manage.sessions.index')" />
 
             <x-sidebar.sublink title="New Assignment" href="{{ route('manage.sessions.create') }}" :active="request()->routeIs('manage.sessions.create')" />
-
-            {{-- Optional: calendar if route exists --}}
-            @if (Route::has('calendar.index'))
-                <x-sidebar.sublink title="Calendar" href="{{ route('calendar.index') }}" :active="request()->routeIs('calendar.*')" />
-            @endif
 
             {{-- Owner/Admin can also jump to the housekeeper view if desired --}}
             <x-sidebar.sublink title="My Assignments (HK view)" href="{{ route('sessions.index') }}" :active="request()->routeIs('sessions.*')" />

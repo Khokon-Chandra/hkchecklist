@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManageSessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
@@ -17,12 +19,10 @@ use App\Http\Controllers\PropertyController;
 */
 
 Route::get('/', function () {
-    return view('dashboard');
-})->name('welcome')->middleware('auth');
+    return view('welcome');
+})->name('welcome');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware('auth')->get('/dashboard', DashboardController::class)->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -34,7 +34,7 @@ Route::middleware('auth')->group(function () {
 
     // Rooms (nested under property)
     Route::get('properties/{property}/rooms', [\App\Http\Controllers\RoomController::class, 'index'])->name('rooms.index');
-    Route::get('properties/{property}/rooms/create', [\App\Http\Controllers\RoomController::class, 'create'])->name('rooms.create');
+    Route::get('properties/{property}/rooms/create', [\App\Http\Controllers\RoomController::class, 'create'])->middleware('role:admin|owner')->name('rooms.create');
     Route::post('properties/{property}/rooms', [\App\Http\Controllers\RoomController::class, 'store'])->name('rooms.store');
     Route::get('properties/{property}/rooms/{room}/edit', [\App\Http\Controllers\RoomController::class, 'edit'])->name('rooms.edit');
     Route::put('properties/{property}/rooms/{room}', [\App\Http\Controllers\RoomController::class, 'update'])->name('rooms.update');
@@ -61,6 +61,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/sessions/{session}/checklist/{item}/toggle', [\App\Http\Controllers\ChecklistController::class, 'toggle'])->name('checklist.toggle');
     Route::post('/sessions/{session}/checklist/{item}/note', [\App\Http\Controllers\ChecklistController::class, 'note'])->name('checklist.note');
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
+
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
 });
 
 Route::middleware(['auth', 'role:owner|admin'])
