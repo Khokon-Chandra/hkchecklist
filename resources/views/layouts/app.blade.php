@@ -51,6 +51,7 @@
                 <!-- Page Content -->
                 <main class="px-4 sm:px-6 flex-1">
                     <x-flash.ok :timeout="6000" />
+                    <x-flash.error :timeout="6000" />
                     {{ $slot }}
                 </main>
 

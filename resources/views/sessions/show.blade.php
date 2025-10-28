@@ -8,7 +8,7 @@
     {{-- Start gate --}}
     @if ($session->status === 'pending')
         <x-card class="p-6 rounded border">
-            <p class="mb-3 text-gray-700">GPS confirmation required to start.</p>
+            <p class="mb-3 text-gray-700 dark:text-gray-400">GPS confirmation required to start.</p>
             <form method="post" action="{{ route('sessions.start', $session) }}" id="gps-start"
                 class="flex items-center gap-2">
                 @csrf
