@@ -58,10 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/sessions/{session}/start', [\App\Http\Controllers\SessionController::class, 'start'])->name('sessions.start');
     Route::post('/sessions/{session}/complete', [\App\Http\Controllers\SessionController::class, 'complete'])->name('sessions.complete');
 
-    // Checklist toggles & notes & photos
-    Route::post('/sessions/{session}/checklist/{item}/toggle', [ChecklistController::class, 'toggle'])
+    Route::post('/sessions/{session}/checklist/{task}/toggle', [ChecklistController::class, 'toggle'])
         ->name('checklist.toggle');
-    Route::post('/sessions/{session}/checklist/{item}/note', [ChecklistController::class, 'note'])
+    Route::post('/sessions/{session}/checklist/{task}/note',   [ChecklistController::class, 'note'])
         ->name('checklist.note');
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
 

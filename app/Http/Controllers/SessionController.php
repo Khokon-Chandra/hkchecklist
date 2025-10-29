@@ -25,50 +25,126 @@ class SessionController extends Controller
 
     public function show(CleaningSession $session)
     {
-        // Load rooms with their tasks
+        // Load all rooms with their tasks
         $rooms = $session->property->rooms()->with(['tasks'])->get();
 
-        // Separate tasks by type for each room (arrays keyed by room ID)
-        $roomTasksByRoom      = $rooms->filter(function ($room) {
-            return $room->tasks->where('type', 'room')->isNotEmpty();
-        });
+        // Make sure every task has a ChecklistItem for this session, even if the task
+        // was created after the session started.  Missing items default to unchecked.
+        foreach ($rooms as $room) {
+            foreach ($room->tasks as $task) {
+                \App\Models\ChecklistItem::firstOrCreate(
+                    [
+                        'session_id' => $session->id,
+                        'room_id'    => $room->id,
+                        'task_id'    => $task->id,
+                    ],
+                    [
+                        'user_id' => auth()->id(),
+                        'checked' => false,
+                    ]
+                );
+            }
+        }
 
-        $inventoryTasksByRoom =  $rooms->filter(function ($room) {
-            return $room->tasks->where('type', 'inventory')->isNotEmpty();
-        });
+        // Separate tasks by type and find first incomplete room indices
+        $roomTasksByRoom      = [];
+        $inventoryTasksByRoom = [];
+        $firstIncompleteRoomIndex      = null;
+        $firstIncompleteInventoryIndex = null;
 
-        // Determine whether all tasks (room + inventory) have been checked
-        $hasAllRoomTasksDone = ChecklistItem::where('session_id', $session->id)
-            ->whereHas('session.property.rooms.tasks', fn($q) => $q)
-            ->where('checked', true)->count() >=
-            $rooms->flatMap->tasks->count();
+        foreach ($rooms as $index => $room) {
+            $roomTasks      = $room->tasks->where('type', 'room');
+            $inventoryTasks = $room->tasks->where('type', 'inventory');
+            $roomTasksByRoom[$room->id]      = $roomTasks;
+            $inventoryTasksByRoom[$room->id] = $inventoryTasks;
 
-        // Photo counts per room and minimum photo requirement
+            // Find the first room that still has room tasks unchecked
+            $checkedCount = ChecklistItem::where('session_id', $session->id)
+                ->where('room_id', $room->id)
+                ->whereIn('task_id', $roomTasks->pluck('id'))
+                ->where('checked', true)
+                ->count();
+            $totalCount = $roomTasks->count();
+            if ($firstIncompleteRoomIndex === null && $checkedCount < $totalCount) {
+                $firstIncompleteRoomIndex = $index;
+            }
+
+            // Find the first room that still has inventory tasks unchecked
+            $checkedInventoryCount = ChecklistItem::where('session_id', $session->id)
+                ->where('room_id', $room->id)
+                ->whereIn('task_id', $inventoryTasks->pluck('id'))
+                ->where('checked', true)
+                ->count();
+            $totalInventoryCount = $inventoryTasks->count();
+            if ($firstIncompleteInventoryIndex === null && $checkedInventoryCount < $totalInventoryCount) {
+                $firstIncompleteInventoryIndex = $index;
+            }
+        }
+
+        // Count all tasks by type for stage determination
+        $allRoomTasksCount      = $rooms->flatMap->tasks->where('type', 'room')->count();
+        $checkedRoomTasksCount  = ChecklistItem::where('session_id', $session->id)
+            ->whereHas('task', fn($q) => $q->where('type', 'room'))
+            ->where('checked', true)
+            ->count();
+        $allInventoryTasksCount = $rooms->flatMap->tasks->where('type', 'inventory')->count();
+        $checkedInventoryTasksCount = ChecklistItem::where('session_id', $session->id)
+            ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
+            ->where('checked', true)
+            ->count();
+
+        // Photo counts and minimum requirement check
         $photoCounts = $session->photos()
             ->selectRaw('room_id, count(*) as c')
             ->groupBy('room_id')
             ->pluck('c', 'room_id');
         $hasMinPhotos = $rooms->every(fn($room) => ($photoCounts[$room->id] ?? 0) >= 8);
 
-        $stage = 'rooms';
+        // Determine the current stage of the checklist
+        // If the session is already completed, show the summary.
+        if ($session->status === 'completed') {
+            $stage = 'summary';
+        } else {
+            // If there are no tasks at all (unlikely), default to photos stage.
+            if ($allRoomTasksCount === 0 && $allInventoryTasksCount === 0) {
+                $stage = 'photos';
+            } else {
+                // If not all room tasks are complete → rooms stage.
+                if ($checkedRoomTasksCount < $allRoomTasksCount) {
+                    $stage = 'rooms';
+                } else {
+                    // All room tasks are complete
+                    // If no inventory tasks exist → skip inventory stage
+                    if ($allInventoryTasksCount === 0) {
+                        $stage = 'photos';
+                    } elseif ($checkedInventoryTasksCount < $allInventoryTasksCount) {
+                        // Inventory tasks exist but not all done
+                        $stage = 'inventory';
+                    } else {
+                        // All inventory tasks are done
+                        $stage = 'photos';
+                    }
+                }
+            }
+        }
 
-        if ($hasAllRoomTasksDone) {
-            $stage = 'inventory';
-        }
-        if ($hasAllRoomTasksDone && $this->inventoryCompleted($session)) {
-            $stage = 'photos';
-        }
+        // Group photos by room for gallery display
+        $photosByRoom = $session->photos()->latest()->get()->groupBy('room_id');
 
         return view('sessions.show', compact(
             'session',
             'rooms',
-            'roomTasksByRoom',
-            'inventoryTasksByRoom',
             'stage',
             'photoCounts',
-            'hasMinPhotos'
+            'hasMinPhotos',
+            'roomTasksByRoom',
+            'inventoryTasksByRoom',
+            'firstIncompleteRoomIndex',
+            'firstIncompleteInventoryIndex',
+            'photosByRoom'
         ));
     }
+
 
 
 
@@ -119,24 +195,6 @@ class SessionController extends Controller
 
         $session->update(['status' => 'completed', 'ended_at' => now()]);
         activity()->performedOn($session)->event('completed')->log('Session completed');
-        return redirect()->route('sessions.index')->with('ok', 'Checklist submitted.');
-    }
-
-
-
-    private function roomTaskCompleted(CleaningSession $session): bool
-    {
-        return ChecklistItem::where('session_id', $session->id)
-            ->whereHas('session', fn($q) => $q)
-            ->whereHas('task', fn($q) => $q->where('type', 'room'))
-            ->where('checked', true)->exists();
-    }
-
-    private function inventoryCompleted(CleaningSession $session): bool
-    {
-        return ChecklistItem::where('session_id', $session->id)
-            ->whereHas('session', fn($q) => $q)
-            ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
-            ->where('checked', true)->exists();
+        return redirect()->route('sessions.show', $session->id)->with('ok', 'Checklist submitted.');
     }
 }

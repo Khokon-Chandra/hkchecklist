@@ -10,24 +10,38 @@ use Illuminate\Support\Facades\Storage;
 
 class PhotoController extends Controller
 {
-    public function store(Request $request, CleaningSession $session, int $roomId)
+    public function store(Request $request, CleaningSession $session, $roomId)
     {
-        $request->validate(['photos.*' => 'required|image|max:5120']);
+        $request->validate([
+            'photos.*' => ['required', 'image', 'max:5120'], // 5MB per image
+        ]);
 
-        foreach ((array)$request->file('photos') as $upload) {
-            $path = $upload->store("sessions/{$session->id}/rooms/{$roomId}", 'public');
-            $abs = Storage::disk('public')->path($path);
-
-            ImageTimestampService::overlay($abs, now());
-
-            RoomPhoto::create([
-                'session_id' => $session->id,
-                'room_id' => $roomId,
-                'path' => $path,
+        $room   = $session->property->rooms()->findOrFail($roomId);
+        $saved  = [];
+        foreach ($request->file('photos', []) as $file) {
+            $filename = $file->store('room_photos', 'public');
+            $photo    = $session->photos()->create([
+                'room_id'     => $room->id,
+                'path'        => $filename,
                 'captured_at' => now(),
-                'has_timestamp_overlay' => true
+                // optionally set has_timestamp_overlay = true if your service overlays it
+            ]);
+            $saved[] = [
+                'id'          => $photo->id,
+                'url'         => asset('storage/' . $filename),
+                'captured_at' => $photo->captured_at->format('H:i'),
+            ];
+        }
+
+        // For AJAX calls, return JSON. The front end can add these to the gallery without reloading.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => count($saved) . ' photos uploaded.',
+                'photos'  => $saved,
             ]);
         }
-        return back()->with('ok', 'Photos uploaded.');
+
+        // Fallback to standard redirect if not an AJAX request
+        return back()->with('ok', count($saved) . ' photos uploaded.');
     }
 }

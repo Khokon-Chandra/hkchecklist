@@ -17,6 +17,6 @@ class DatabaseSeeder extends Seeder
         }
 
         // Bulk graph data (100+ props, sessions, etc.)
-        // $this->call(BulkDemoDataSeeder::class);
+        $this->call(BulkDemoDataSeeder::class);
     }
 }
