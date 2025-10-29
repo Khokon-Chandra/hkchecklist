@@ -102,14 +102,6 @@
                         <x-form.input name="longitude" class="w-full" x-model="longitude" :value="old('longitude', $property->longitude)" />
                         <x-form.error :messages="$errors->get('longitude')" />
                     </div>
-
-                    {{-- Geo Radius --}}
-                    <div>
-                        <x-form.label value="Geo Radius (meters)" />
-                        <x-form.input type="number" min="50" step="10" name="geo_radius_m" :value="old('geo_radius_m', $property->geo_radius_m ?? 150)"
-                            class="w-full" />
-                        <x-form.error :messages="$errors->get('geo_radius_m')" />
-                    </div>
                 </div>
             </div>
 

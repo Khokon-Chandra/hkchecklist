@@ -68,9 +68,14 @@
                         <td class="px-4 py-2">{{ $s->housekeeper?->name ?? '—' }}</td>
                         <td class="px-4 py-2 text-center"><x-status-badge :status="$s->status" /></td>
                         <td class="px-4 py-2 flex justify-end">
+                            <a href="{{ route('sessions.show', $s) }}"
+                                class="text-green-600 hover:underline">Open</a>
+                            <span class="mx-2">·</span>
+
                             <a href="{{ route('manage.sessions.edit', $s) }}"
                                 class="text-indigo-600 hover:underline">Edit</a>
                             <span class="mx-2">·</span>
+
                             <form method="post" action="{{ route('manage.sessions.destroy', $s) }}" class="inline"
                                 onsubmit="return confirm('Delete assignment?')">
                                 @csrf @method('delete')

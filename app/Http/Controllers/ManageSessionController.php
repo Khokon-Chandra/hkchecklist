@@ -106,6 +106,16 @@ class ManageSessionController extends Controller
             'status'         => ['nullable', Rule::in(['pending', 'in_progress', 'completed'])],
         ]);
 
+
+        $property = Property::with(['rooms.tasks'])->find($data['property_id']);
+        $taskCount = $property?->rooms->flatMap->tasks->count() ?? 0;
+        if ($taskCount < 1) {
+            return back()
+                ->withErrors(['property_id' => 'The selected property has no rooms with tasks. Please define rooms and tasks before scheduling a session.'])
+                ->withInput();
+        }
+
+
         // owner may create only for own properties
         if ($acting === 'owner') {
             abort_unless(

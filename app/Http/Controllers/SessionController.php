@@ -25,23 +25,52 @@ class SessionController extends Controller
 
     public function show(CleaningSession $session)
     {
+        // Load rooms with their tasks
         $rooms = $session->property->rooms()->with(['tasks'])->get();
 
-        // derive stage
+        // Separate tasks by type for each room (arrays keyed by room ID)
+        $roomTasksByRoom      = $rooms->filter(function ($room) {
+            return $room->tasks->where('type', 'room')->isNotEmpty();
+        });
+
+        $inventoryTasksByRoom =  $rooms->filter(function ($room) {
+            return $room->tasks->where('type', 'inventory')->isNotEmpty();
+        });
+
+        // Determine whether all tasks (room + inventory) have been checked
         $hasAllRoomTasksDone = ChecklistItem::where('session_id', $session->id)
             ->whereHas('session.property.rooms.tasks', fn($q) => $q)
             ->where('checked', true)->count() >=
             $rooms->flatMap->tasks->count();
 
-        $photoCounts = $session->photos()->selectRaw('room_id, count(*) as c')->groupBy('room_id')->pluck('c', 'room_id');
+        // Photo counts per room and minimum photo requirement
+        $photoCounts = $session->photos()
+            ->selectRaw('room_id, count(*) as c')
+            ->groupBy('room_id')
+            ->pluck('c', 'room_id');
         $hasMinPhotos = $rooms->every(fn($room) => ($photoCounts[$room->id] ?? 0) >= 8);
 
         $stage = 'rooms';
-        if ($hasAllRoomTasksDone) $stage = 'inventory';
-        if ($hasAllRoomTasksDone && $this->inventoryCompleted($session)) $stage = 'photos';
 
-        return view('sessions.show', compact('session', 'rooms', 'stage', 'photoCounts', 'hasMinPhotos'));
+        if ($hasAllRoomTasksDone) {
+            $stage = 'inventory';
+        }
+        if ($hasAllRoomTasksDone && $this->inventoryCompleted($session)) {
+            $stage = 'photos';
+        }
+
+        return view('sessions.show', compact(
+            'session',
+            'rooms',
+            'roomTasksByRoom',
+            'inventoryTasksByRoom',
+            'stage',
+            'photoCounts',
+            'hasMinPhotos'
+        ));
     }
+
+
 
     public function start(StartSessionRequest $request, CleaningSession $session)
     {
@@ -51,7 +80,7 @@ class SessionController extends Controller
         $p = $session->property;
         $distance = GpsService::distanceMeters($lat, $lng, (float)$p->latitude, (float)$p->longitude);
         if ($distance > (float)$p->geo_radius_m) {
-            return back()->withErrors(['gps' => 'You are too far from the property to start.']);
+            // return back()->withErrors(['gps' => 'You are too far from the property to start.']);
         }
 
         $session->update([
@@ -91,6 +120,16 @@ class SessionController extends Controller
         $session->update(['status' => 'completed', 'ended_at' => now()]);
         activity()->performedOn($session)->event('completed')->log('Session completed');
         return redirect()->route('sessions.index')->with('ok', 'Checklist submitted.');
+    }
+
+
+
+    private function roomTaskCompleted(CleaningSession $session): bool
+    {
+        return ChecklistItem::where('session_id', $session->id)
+            ->whereHas('session', fn($q) => $q)
+            ->whereHas('task', fn($q) => $q->where('type', 'room'))
+            ->where('checked', true)->exists();
     }
 
     private function inventoryCompleted(CleaningSession $session): bool

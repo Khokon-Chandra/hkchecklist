@@ -39,9 +39,9 @@
         </x-card>
 
         {{-- Rooms checklist --}}
-        @if ($stage === 'rooms')
+        @if ($roomTasksByRoom)
             <div class="space-y-6">
-                @foreach ($rooms as $room)
+                @foreach ($roomTasksByRoom as $room)
                     <x-card>
                         <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
                             <h3 class="font-semibold">{{ $room->name }}</h3>
@@ -83,13 +83,13 @@
         @endif
 
         {{-- Inventory checklist --}}
-        @if ($stage === 'inventory')
+        @if ($inventoryTasksByRoom->count())
             <x-card>
                 <div class="px-4 py-3 border-b">
                     <h3 class="font-semibold">Inventory</h3>
                 </div>
                 <ul class="divide-y dark:divide-gray-700">
-                    @foreach ($rooms as $room)
+                    @foreach ($inventoryTasksByRoom as $room)
                         @foreach ($room->tasks->where('type', 'inventory') as $task)
                             @php $item = $session->checklistItems->firstWhere('task_id',$task->id); @endphp
                             <li class="px-4 py-3 flex items-center justify-between">
