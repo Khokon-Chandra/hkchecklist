@@ -16,19 +16,19 @@ class DemoUsersSeeder extends Seeder
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
-            ['name' => 'Admin', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
+            ['name' => 'Mr. Admin', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
         );
         $admin->syncRoles(['admin']);
 
         $owner = User::firstOrCreate(
             ['email' => 'owner@example.com'],
-            ['name' => 'Owner', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
+            ['name' => 'Mr. Owner', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
         );
         $owner->syncRoles(['owner']);
 
         $hk = User::firstOrCreate(
             ['email' => 'housekeeper@example.com'],
-            ['name' => 'Housekeeper', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
+            ['name' => 'Mr. Housekeeper', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
         );
         $hk->syncRoles(['housekeeper']);
     }

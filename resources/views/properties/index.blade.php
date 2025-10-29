@@ -16,34 +16,48 @@
                 <x-button href="{{ route('properties.create') }}"
                     class="inline-flex items-center px-3 py-2 rounded bg-indigo-600 text-white">+ New</x-button>
             @endrole
-
         </div>
 
-        <x-card class="!px-0">
+        <x-card class="!px-0 overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead class="dark:bg-dark-eval-1">
                     <tr class="uppercase text-left">
+                        <th class="px-4">Photo</th>
                         <th class="px-4">Name</th>
                         <th class="px-4">Owner</th>
-                        <th class="px-4">Beds</th>
-                        <th class="px-4">Baths</th>
                         <th class="px-4">Rooms Count</th>
+                        <th class="px-4">Address</th>
                         <th class="px-4">Lat/Lng</th>
-                        <th class="px-4">Radius (m)</th>
-                        <th class="text-center">Action</th>
+                        <th class="text-center px-4">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y dark:divide-gray-700">
                     @forelse($properties as $p)
                         <tr>
+                            <td class="px-4 py-2">
+                                @php
+                                    $photoUrl = method_exists($p, 'getPhotoUrlAttribute')
+                                        ? $p->photo_url
+                                        : ($p->photo_path
+                                            ? (Str::startsWith($p->photo_path, ['http://', 'https://'])
+                                                ? $p->photo_path
+                                                : asset('storage/' . $p->photo_path))
+                                            : asset('images/placeholders/property.png'));
+                                @endphp
+                                <img src="{{ $photoUrl }}" class="h-12 w-12 rounded-xl object-cover" alt="Photo">
+                            </td>
                             <td class="px-4 py-2 font-medium">{{ $p->name }}</td>
                             <td class="py-2 font-medium">{{ $p->owner->name }}</td>
-                            <td class="px-4 py-2">{{ $p->beds }}</td>
-                            <td class="px-4 py-2">{{ $p->baths }}</td>
                             <td class="px-4 py-2">{{ $p->rooms_count }}</td>
-                            <td class="px-4 py-2">{{ $p->latitude }}, {{ $p->longitude }}</td>
-                            <td class="px-4 py-2">{{ $p->geo_radius_m }}</td>
-                            <td class="px-4 py-2 text-right">
+                            <td class="px-4 py-2">{{ $p->address ?? '—' }}</td>
+                            <td class="px-4 py-2">
+                                @if ($p->latitude && $p->longitude)
+                                    {{ number_format($p->latitude, 5) }}, {{ number_format($p->longitude, 5) }}
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="px-4 py-2 text-right whitespace-nowrap">
                                 @role('admin|owner')
                                     <a class="text-indigo-600 hover:underline"
                                         href="{{ route('properties.edit', $p) }}">Edit</a>
@@ -55,7 +69,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="px-4 py-6 text-center text-gray-500" colspan="6">No properties yet</td>
+                            <td class="px-4 py-6 text-center text-gray-500" colspan="10">No properties yet</td>
                         </tr>
                     @endforelse
                 </tbody>

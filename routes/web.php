@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManageSessionController;
 use Illuminate\Support\Facades\Route;
@@ -58,8 +59,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/sessions/{session}/complete', [\App\Http\Controllers\SessionController::class, 'complete'])->name('sessions.complete');
 
     // Checklist toggles & notes & photos
-    Route::post('/sessions/{session}/checklist/{item}/toggle', [\App\Http\Controllers\ChecklistController::class, 'toggle'])->name('checklist.toggle');
-    Route::post('/sessions/{session}/checklist/{item}/note', [\App\Http\Controllers\ChecklistController::class, 'note'])->name('checklist.note');
+    Route::post('/sessions/{session}/checklist/{task}/toggle', [ChecklistController::class, 'toggle'])
+        ->name('checklist.toggle');
+    Route::post('/sessions/{session}/checklist/{task}/note', [ChecklistController::class, 'note'])
+        ->name('checklist.note');
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
 
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');

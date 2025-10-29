@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class RoomPhoto extends Model
 {
@@ -17,4 +18,11 @@ class RoomPhoto extends Model
         'has_timestamp_overlay'
     ];
     protected $casts = ['captured_at' => 'datetime', 'has_timestamp_overlay' => 'bool'];
+
+    public function getUrlAttribute()
+    {
+        return Str::startsWith($this->path, ['http://', 'https://'])
+            ? $this->path
+            : asset('storage/' . $this->path);
+    }
 }
