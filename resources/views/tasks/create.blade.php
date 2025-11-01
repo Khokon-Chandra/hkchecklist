@@ -36,6 +36,15 @@
                            class="rounded border-gray-300 dark:border-gray-700">
                     <label for="is_default">Mark as default template</label>
                 </div>
+
+                {{-- Instructions --}}
+                <div class="md:col-span-2">
+                    <x-form.label for="instructions" value="Instructions (optional)" />
+                    <textarea id="instructions" name="instructions" rows="6"
+                              class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                              placeholder="Write step-by-step guidance for performing this task...">{{ old('instructions') }}</textarea>
+                    <x-form.error :messages="$errors->get('instructions')" />
+                </div>
             </div>
 
             <div class="flex gap-2">

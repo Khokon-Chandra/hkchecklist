@@ -1,3 +1,4 @@
+{{-- resources/views/tasks/edit.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl flex items-center gap-2">
@@ -32,9 +33,19 @@
 
                 {{-- Default template --}}
                 <div class="flex items-center gap-2 pt-6">
-                    <input id="is_default" type="checkbox" name="is_default" value="1" @checked(old('is_default', $task->is_default))
+                    <input id="is_default" type="checkbox" name="is_default" value="1"
+                        @checked(old('is_default', $task->is_default))
                         class="rounded border-gray-300 dark:border-gray-700">
                     <label for="is_default">Mark as default template</label>
+                </div>
+
+                {{-- Instructions --}}
+                <div class="md:col-span-2">
+                    <x-form.label for="instructions" value="Instructions (optional)" />
+                    <textarea id="instructions" name="instructions" rows="6"
+                        class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                        placeholder="Write step-by-step guidance for performing this task...">{{ old('instructions', $task->instructions) }}</textarea>
+                    <x-form.error :messages="$errors->get('instructions')" />
                 </div>
 
                 {{-- Meta (optional) --}}

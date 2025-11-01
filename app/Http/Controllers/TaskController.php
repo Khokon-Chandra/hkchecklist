@@ -22,7 +22,7 @@ class TaskController extends Controller
         $tasks = Task::query()
             ->when($q !== '', fn($qq) => $qq->where('name', 'like', "%{$q}%"))
             ->when(in_array($type, ['room', 'inventory'], true), fn($qq) => $qq->where('type', $type))
-            ->orderBy('name')
+            ->latest()
             ->paginate(30)
             ->withQueryString();
 
@@ -47,12 +47,15 @@ class TaskController extends Controller
             'name'       => ['required', 'string', 'max:255', Rule::unique('tasks', 'name')],
             'type'       => ['required', Rule::in(['room', 'inventory'])],
             'is_default' => ['nullable', 'boolean'],
+            'instructions' => ['nullable', 'string', 'max:20000'],
+
         ]);
 
         Task::create([
             'name'       => $data['name'],
             'type'       => $data['type'],
             'is_default' => (bool) ($data['is_default'] ?? false),
+            'instructions' => $data['instructions'] ?? null,
         ]);
 
         return redirect()->route('tasks.index')->with('ok', 'Task created.');
@@ -97,12 +100,14 @@ class TaskController extends Controller
             ],
             'type'       => ['required', Rule::in(['room', 'inventory'])],
             'is_default' => ['nullable', 'boolean'],
+            'instructions' => ['nullable', 'string', 'max:20000'],
         ]);
 
         $task->update([
             'name'       => $data['name'],
             'type'       => $data['type'],
             'is_default' => (bool) ($data['is_default'] ?? false),
+            'instructions' => $data['instructions'] ?? null,
         ]);
 
         return redirect()->route('tasks.index')->with('ok', 'Task updated.');
