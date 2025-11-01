@@ -2,95 +2,98 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Property;
 use App\Models\Room;
 use App\Models\Task;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
-
-    public function index(Property $property, Room $room)
+    /**
+     * GET /tasks
+     * List all tasks (global), optional search & type filter.
+     */
+    public function index(Request $request)
     {
-        $this->assertRoomBelongs($room, $property);
+        $q    = trim((string) $request->query('q', ''));
+        $type = $request->query('type');
 
-        $tasks = $room->tasks()->orderBy('name')->paginate(30);
+        $tasks = Task::query()
+            ->when($q !== '', fn($qq) => $qq->where('name', 'like', "%{$q}%"))
+            ->when(in_array($type, ['room', 'inventory'], true), fn($qq) => $qq->where('type', $type))
+            ->orderBy('name')
+            ->paginate(30)
+            ->withQueryString();
 
-        return view('tasks.index', [
-            'property'    => $property,
-            'room'        => $room,
-            'tasks'       => $tasks,
-            'navProperty' => $property,
-            'navRoom'     => $room,
-        ]);
+        return view('tasks.index', compact('tasks', 'q', 'type'));
     }
 
-    public function create(Property $property, Room $room)
+    /**
+     * GET /tasks/create
+     */
+    public function create()
     {
-        $this->assertRoomBelongs($room, $property);
-
-        return view('tasks.create', [
-            'property'    => $property,
-            'room'        => $room,
-            'navProperty' => $property,
-            'navRoom'     => $room,
-        ]);
+        return view('tasks.create');
     }
 
-    public function store(Request $request, Property $property, Room $room)
+    /**
+     * POST /tasks
+     * Create a global task template.
+     */
+    public function store(Request $request)
     {
-        $this->assertRoomBelongs($room, $property);
-
         $data = $request->validate([
-            'name'       => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('tasks', 'name')->where(fn($q) => $q->where('room_id', $room->id))
-            ],
+            'name'       => ['required', 'string', 'max:255', Rule::unique('tasks', 'name')],
             'type'       => ['required', Rule::in(['room', 'inventory'])],
             'is_default' => ['nullable', 'boolean'],
         ]);
 
         Task::create([
-            'property_id' => $property->id,
-            'room_id'     => $room->id,
-            'name'        => $data['name'],
-            'type'        => $data['type'],
-            'is_default'  => (bool)($data['is_default'] ?? false),
+            'name'       => $data['name'],
+            'type'       => $data['type'],
+            'is_default' => (bool) ($data['is_default'] ?? false),
         ]);
 
-        return redirect()->route('tasks.index', [$property, $room])->with('ok', 'Task added.');
+        return redirect()->route('tasks.index')->with('ok', 'Task created.');
     }
 
-    public function edit(Property $property, Room $room, Task $task)
+    /**
+     * GET /tasks/{task}
+     * Show a task and where it's used (rooms count/list).
+     */
+    public function show(Task $task)
     {
-        $this->assertRoomBelongs($room, $property);
-        $this->assertTaskBelongs($task, $room);
+        $task->loadCount('rooms');
+        $rooms = $task->rooms()
+            ->withPivot(['sort_order', 'instructions', 'visible_to_owner', 'visible_to_housekeeper'])
+            ->with('properties:id,name') // if you want to show which properties include those rooms
+            ->orderBy('room_task.sort_order')
+            ->orderBy('rooms.name')
+            ->paginate(20);
 
-        return view('tasks.edit', [
-            'property'    => $property,
-            'room'        => $room,
-            'task'        => $task,
-            'navProperty' => $property,
-            'navRoom'     => $room,
-        ]);
+        return view('tasks.show', compact('task', 'rooms'));
     }
 
-    public function update(Request $request, Property $property, Room $room, Task $task)
+    /**
+     * GET /tasks/{task}/edit
+     */
+    public function edit(Task $task)
     {
-        $this->assertRoomBelongs($room, $property);
-        $this->assertTaskBelongs($task, $room);
+        return view('tasks.edit', compact('task'));
+    }
 
+    /**
+     * PUT/PATCH /tasks/{task}
+     */
+    public function update(Request $request, Task $task)
+    {
         $data = $request->validate([
             'name'       => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('tasks', 'name')
-                    ->where(fn($q) => $q->where('room_id', $room->id))
-                    ->ignore($task->id)
+                Rule::unique('tasks', 'name')->ignore($task->id),
             ],
             'type'       => ['required', Rule::in(['room', 'inventory'])],
             'is_default' => ['nullable', 'boolean'],
@@ -99,19 +102,116 @@ class TaskController extends Controller
         $task->update([
             'name'       => $data['name'],
             'type'       => $data['type'],
-            'is_default' => (bool)($data['is_default'] ?? false),
+            'is_default' => (bool) ($data['is_default'] ?? false),
         ]);
 
-        return redirect()->route('tasks.index', [$property, $room])->with('ok', 'Task updated.');
+        return redirect()->route('tasks.index')->with('ok', 'Task updated.');
     }
 
-    private function assertRoomBelongs(Room $room, Property $property): void
+    /**
+     * DELETE /tasks/{task}
+     */
+    public function destroy(Task $task)
     {
-        abort_unless($room->property_id === $property->id, 404);
+        // If you want to prevent deletion when attached to rooms, guard here:
+        // if ($task->rooms()->exists()) { return back()->with('error', 'Task is in use. Detach first.'); }
+
+        $task->delete();
+        return redirect()->route('tasks.index')->with('ok', 'Task deleted.');
     }
 
-    private function assertTaskBelongs(Task $task, Room $room): void
+    /**
+     * GET /tasks/suggest?q=...&type=room|inventory
+     * Lightweight autocomplete endpoint (used by your forms).
+     */
+    public function suggest(Request $request)
     {
-        abort_unless($task->room_id === $room->id, 404);
+        $q    = trim((string) $request->query('q', ''));
+        $type = $request->query('type');
+
+        $tasks = Task::query()
+            ->when($q !== '', fn($qq) => $qq->where('name', 'like', "%{$q}%"))
+            ->when(in_array($type, ['room', 'inventory'], true), fn($qq) => $qq->where('type', $type))
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'type']);
+
+        return response()->json($tasks);
+    }
+
+    // ------------------------------------------------------------------
+    // OPTIONAL: room <-> task management (not part of core task CRUD)
+    // Keep these if you still need to attach/detach/reorder on room pages.
+    // ------------------------------------------------------------------
+
+    /**
+     * POST /rooms/{room}/tasks/attach
+     * Body: task_id OR name+type to create+attach, plus optional pivot fields.
+     */
+    public function attachToRoom(Request $request, Room $room)
+    {
+        $data = $request->validate([
+            'task_id'                => ['nullable', 'integer', 'exists:tasks,id'],
+            'name'                   => ['required_without:task_id', 'string', 'max:255'],
+            'type'                   => ['required_without:task_id', Rule::in(['room', 'inventory'])],
+            'instructions'           => ['nullable', 'string', 'max:2000'],
+            'visible_to_owner'       => ['nullable', 'boolean'],
+            'visible_to_housekeeper' => ['nullable', 'boolean'],
+        ]);
+
+        $task = isset($data['task_id'])
+            ? Task::findOrFail($data['task_id'])
+            : Task::firstOrCreate(
+                ['name' => $data['name'], 'type' => $data['type']],
+                ['is_default' => false]
+            );
+
+        $nextOrder = (int) $room->tasks()->max('room_task.sort_order');
+        $nextOrder = $nextOrder > 0 ? $nextOrder + 1 : 1;
+
+        $room->tasks()->syncWithoutDetaching([
+            $task->id => [
+                'sort_order'            => $nextOrder,
+                'instructions'          => $data['instructions'] ?? null,
+                'visible_to_owner'      => (bool) ($data['visible_to_owner'] ?? true),
+                'visible_to_housekeeper' => (bool) ($data['visible_to_housekeeper'] ?? true),
+            ],
+        ]);
+
+        return back()->with('ok', 'Task attached to room.');
+    }
+
+    /**
+     * DELETE /rooms/{room}/tasks/{task}
+     * Detach task from a room.
+     */
+    public function detachFromRoom(Room $room, Task $task)
+    {
+        abort_unless($room->tasks()->where('tasks.id', $task->id)->exists(), 404);
+        $room->tasks()->detach($task->id);
+        return back()->with('ok', 'Task detached from room.');
+    }
+
+    /**
+     * POST /rooms/{room}/tasks/reorder
+     * Body: { order: [taskId1, taskId2, ...] }
+     */
+    public function reorderForRoom(Request $request, Room $room)
+    {
+        $data = $request->validate([
+            'order'   => ['required', 'array'],
+            'order.*' => ['integer', 'exists:tasks,id'],
+        ]);
+
+        DB::transaction(function () use ($room, $data) {
+            $ord = 1;
+            foreach ($data['order'] as $taskId) {
+                if ($room->tasks()->where('tasks.id', $taskId)->exists()) {
+                    $room->tasks()->updateExistingPivot($taskId, ['sort_order' => $ord++]);
+                }
+            }
+        });
+
+        return response()->json(['ok' => true]);
     }
 }

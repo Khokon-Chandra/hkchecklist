@@ -12,6 +12,21 @@
         </x-slot>
     </x-sidebar.link>
 
+
+    @role('admin|owner')
+        <x-sidebar.link title="All Rooms" href="{{ route('rooms.index') }}" :isActive="request()->routeIs('rooms.*')">
+            <x-slot name="icon">
+                <x-icons.rooms class="flex-shrink-0 w-6 h-6" aria-hidden="true" />
+            </x-slot>
+        </x-sidebar.link>
+
+        <x-sidebar.link title="All Tasks" href="{{ route('tasks.index') }}" :isActive="request()->routeIs('tasks.*')">
+            <x-slot name="icon">
+                <x-icons.tasks class="flex-shrink-0 w-6 h-6" aria-hidden="true" />
+            </x-slot>
+        </x-sidebar.link>
+    @endrole
+
     <x-sidebar.dropdown title="Properties" :active="Str::startsWith(request()->route()->uri('properties'), 'properties')">
         <x-slot name="icon">
             <x-heroicon-o-home class="flex-shrink-0 w-6 h-6" aria-hidden="true" />

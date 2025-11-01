@@ -97,8 +97,22 @@
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-8">
-                <x-button>Save</x-button>
+            <div class="mt-8 flex flex-wrap justify-end gap-2">
+                {{-- Plain save --}}
+                <x-button type="submit" name="attach" value="none">Save</x-button>
+
+                {{-- Save + default rooms --}}
+                <x-button type="submit" name="attach" value="rooms"
+                    class="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500">
+                    Save + Assign Default Rooms
+                </x-button>
+
+                {{-- Save + default rooms & tasks --}}
+                <x-button type="submit" name="attach" value="rooms_tasks"
+                    class="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500">
+                    Save + Assign Default Rooms & Tasks
+                </x-button>
+
                 <x-button variant="secondary" href="{{ route('properties.index') }}">Cancel</x-button>
             </div>
         </form>

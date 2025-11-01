@@ -62,9 +62,18 @@
                                     <a class="text-indigo-600 hover:underline"
                                         href="{{ route('properties.edit', $p) }}">Edit</a>
                                     <span class="mx-2">·</span>
+                                    <form action="{{ route('properties.destroy', $p) }}" method="POST" class="inline-block"
+                                        onsubmit="return confirm('Are you sure you want to delete this property?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-indigo-600 hover:underline">
+                                            Delete
+                                        </button>
+                                    </form>
+                                    <span class="mx-2">·</span>
                                 @endrole
                                 <a class="text-blue-600 hover:underline"
-                                    href="{{ route('rooms.index', ['property' => $p->id]) }}">Rooms</a>
+                                    href="{{ route('properties.rooms.index', ['property' => $p->id]) }}">Rooms</a>
                             </td>
                         </tr>
                     @empty

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Property extends Model
@@ -23,9 +24,12 @@ class Property extends Model
         'geo_radius_m'
     ];
 
-    public function rooms(): HasMany
+    public function rooms(): BelongsToMany
     {
-        return $this->hasMany(\App\Models\Room::class);
+        return $this->belongsToMany(Room::class, 'property_room')
+            ->withTimestamps()
+            ->withPivot(['sort_order'])
+            ->orderBy('property_room.sort_order');
     }
 
     public function owner(): BelongsTo

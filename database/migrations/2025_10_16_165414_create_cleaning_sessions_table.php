@@ -24,7 +24,6 @@ return new class extends Migration
             $table->decimal('start_latitude', 10, 7)->nullable();
             $table->decimal('start_longitude', 10, 7)->nullable();
             $table->timestamps();
-            $table->unique(['housekeeper_id', 'property_id', 'scheduled_date'], 'cs_hkp_prop_sched_uq');
         });
     }
 

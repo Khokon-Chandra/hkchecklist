@@ -13,11 +13,10 @@ return new class extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('property_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('room_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->boolean('is_default')->default(false);
             $table->enum('type', ['room', 'inventory'])->default('room');
+            $table->text('instructions')->nullable();
             $table->timestamps();
         });
     }

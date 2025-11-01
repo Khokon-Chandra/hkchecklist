@@ -12,14 +12,14 @@ class PropertyFactory extends Factory
 
     public function definition(): array
     {
-        // Random point near a city (keeps distances realistic for GPS)
         $baseLat = 40.741;
-        $baseLng = -73.989; // Manhattan-ish
+        $baseLng = -73.989;
         return [
             'owner_id'     => 1, // will be overridden in seeder
             'name'         => fake()->unique()->streetName() . ' Suites',
             'beds'         => fake()->numberBetween(1, 6),
             'baths'        => fake()->numberBetween(1, 4),
+            'address'      => fake()->streetAddress(),  
             'latitude'     => $baseLat + fake()->randomFloat(6, -0.08, 0.08),
             'longitude'    => $baseLng + fake()->randomFloat(6, -0.08, 0.08),
             'geo_radius_m' => fake()->numberBetween(100, 250),

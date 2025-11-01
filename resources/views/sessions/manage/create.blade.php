@@ -49,7 +49,7 @@
 
             <div class="md:col-span-2 flex items-center gap-2">
                 <x-button>Create</x-button>
-                <a href="{{ route('manage.sessions.index') }}" class="px-3 py-2 rounded border">Cancel</a>
+                <a href="{{ route('manage.sessions.index') }}" class="px-3 py-1  rounded border dark:border-gray-700">Cancel</a>
             </div>
         </form>
     </x-card>

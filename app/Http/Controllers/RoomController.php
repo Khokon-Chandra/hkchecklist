@@ -2,35 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Property;
 use App\Models\Room;
 use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
 
-    public function index(Property $property)
+    public function index()
     {
 
-        $rooms = $property->rooms()->withCount('tasks')->orderBy('name')->paginate(20);
+        $rooms = Room::withCount('tasks')->latest()->paginate(20);
 
         return view('rooms.index', [
-            'property'    => $property,
             'rooms'       => $rooms,
-            'navProperty' => $property,
         ]);
     }
 
-    public function create(Property $property)
+    public function create()
     {
 
-        return view('rooms.create', [
-            'property'    => $property,
-            'navProperty' => $property,
-        ]);
+        return view('rooms.create');
     }
 
-    public function store(Request $request, Property $property)
+    public function store(Request $request)
     {
 
         $data = $request->validate([
@@ -38,29 +32,24 @@ class RoomController extends Controller
             'is_default' => ['nullable', 'boolean'],
         ]);
 
-        $property->rooms()->create([
+        $room = Room::create([
             'name'       => $data['name'],
             'is_default' => (bool)($data['is_default'] ?? false),
         ]);
 
-        return redirect()->route('rooms.index', $property)->with('ok', 'Room added.');
+        return redirect()->route('rooms.index')->with('ok', 'Room added.');
     }
 
-    public function edit(Property $property, Room $room)
+    public function edit(Room $room)
     {
-        $this->assertBelongs($room, $property);
 
         return view('rooms.edit', [
-            'property'    => $property,
-            'room'        => $room,
-            'navProperty' => $property,
+            'room'        => $room
         ]);
     }
 
-    public function update(Request $request, Property $property, Room $room)
+    public function update(Request $request, Room $room)
     {
-        $this->assertBelongs($room, $property);
-
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
@@ -71,20 +60,13 @@ class RoomController extends Controller
             'is_default' => (bool)($data['is_default'] ?? false),
         ]);
 
-        return redirect()->route('rooms.index', $property)->with('ok', 'Room updated.');
+        return redirect()->route('rooms.index')->with('ok', 'Room updated.');
     }
 
-    public function destroy(Property $property, Room $room)
+    public function destroy(Room $room)
     {
-        $this->assertBelongs($room, $property);
-
         $room->delete();
 
-        return redirect()->route('rooms.index', $property)->with('ok', 'Room deleted.');
-    }
-
-    private function assertBelongs(Room $room, Property $property): void
-    {
-        abort_unless($room->property_id === $property->id, 404);
+        return redirect()->route('rooms.index')->with('ok', 'Room deleted.');
     }
 }

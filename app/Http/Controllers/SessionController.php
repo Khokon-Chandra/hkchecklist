@@ -23,13 +23,18 @@ class SessionController extends Controller
         return view('sessions.index', compact('sessions'));
     }
 
+
     public function show(CleaningSession $session)
     {
-        // Load all rooms with their tasks
-        $rooms = $session->property->rooms()->with(['tasks'])->get();
+        // Order rooms & tasks by their pivot sort_order (no visual design change, just consistency)
+        $rooms = $session->property->rooms()
+            ->with(['tasks' => function ($q) {
+                $q->orderBy('room_task.sort_order')->orderBy('tasks.name');
+            }])
+            ->orderBy('property_room.sort_order')
+            ->get();
 
-        // Make sure every task has a ChecklistItem for this session, even if the task
-        // was created after the session started.  Missing items default to unchecked.
+        // Ensure existing checklist items (same as before, but already correct with room context)
         foreach ($rooms as $room) {
             foreach ($room->tasks as $task) {
                 \App\Models\ChecklistItem::firstOrCreate(
@@ -46,7 +51,10 @@ class SessionController extends Controller
             }
         }
 
-        // Separate tasks by type and find first incomplete room indices
+        // Eager-load checklist items to avoid N+1 when the view scans them
+        $session->load('checklistItems');
+
+        // Separate tasks by type and find first incomplete room indices (unchanged)
         $roomTasksByRoom      = [];
         $inventoryTasksByRoom = [];
         $firstIncompleteRoomIndex      = null;
@@ -58,7 +66,6 @@ class SessionController extends Controller
             $roomTasksByRoom[$room->id]      = $roomTasks;
             $inventoryTasksByRoom[$room->id] = $inventoryTasks;
 
-            // Find the first room that still has room tasks unchecked
             $checkedCount = ChecklistItem::where('session_id', $session->id)
                 ->where('room_id', $room->id)
                 ->whereIn('task_id', $roomTasks->pluck('id'))
@@ -69,7 +76,6 @@ class SessionController extends Controller
                 $firstIncompleteRoomIndex = $index;
             }
 
-            // Find the first room that still has inventory tasks unchecked
             $checkedInventoryCount = ChecklistItem::where('session_id', $session->id)
                 ->where('room_id', $room->id)
                 ->whereIn('task_id', $inventoryTasks->pluck('id'))
@@ -81,54 +87,44 @@ class SessionController extends Controller
             }
         }
 
-        // Count all tasks by type for stage determination
-        $allRoomTasksCount      = $rooms->flatMap->tasks->where('type', 'room')->count();
-        $checkedRoomTasksCount  = ChecklistItem::where('session_id', $session->id)
+        // Counts & stages (unchanged)
+        $allRoomTasksCount          = $rooms->flatMap->tasks->where('type', 'room')->count();
+        $checkedRoomTasksCount      = ChecklistItem::where('session_id', $session->id)
             ->whereHas('task', fn($q) => $q->where('type', 'room'))
             ->where('checked', true)
             ->count();
-        $allInventoryTasksCount = $rooms->flatMap->tasks->where('type', 'inventory')->count();
+        $allInventoryTasksCount     = $rooms->flatMap->tasks->where('type', 'inventory')->count();
         $checkedInventoryTasksCount = ChecklistItem::where('session_id', $session->id)
             ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
             ->where('checked', true)
             ->count();
 
-        // Photo counts and minimum requirement check
         $photoCounts = $session->photos()
             ->selectRaw('room_id, count(*) as c')
             ->groupBy('room_id')
             ->pluck('c', 'room_id');
         $hasMinPhotos = $rooms->every(fn($room) => ($photoCounts[$room->id] ?? 0) >= 8);
 
-        // Determine the current stage of the checklist
-        // If the session is already completed, show the summary.
         if ($session->status === 'completed') {
             $stage = 'summary';
         } else {
-            // If there are no tasks at all (unlikely), default to photos stage.
             if ($allRoomTasksCount === 0 && $allInventoryTasksCount === 0) {
                 $stage = 'photos';
             } else {
-                // If not all room tasks are complete → rooms stage.
                 if ($checkedRoomTasksCount < $allRoomTasksCount) {
                     $stage = 'rooms';
                 } else {
-                    // All room tasks are complete
-                    // If no inventory tasks exist → skip inventory stage
                     if ($allInventoryTasksCount === 0) {
                         $stage = 'photos';
                     } elseif ($checkedInventoryTasksCount < $allInventoryTasksCount) {
-                        // Inventory tasks exist but not all done
                         $stage = 'inventory';
                     } else {
-                        // All inventory tasks are done
                         $stage = 'photos';
                     }
                 }
             }
         }
 
-        // Group photos by room for gallery display
         $photosByRoom = $session->photos()->latest()->get()->groupBy('room_id');
 
         return view('sessions.show', compact(
@@ -148,35 +144,72 @@ class SessionController extends Controller
 
 
 
+
     public function start(StartSessionRequest $request, CleaningSession $session)
     {
-        $lat = (float)$request->validated('latitude');
-        $lng = (float)$request->validated('longitude');
+        $lat = (float) $request->validated('latitude');
+        $lng = (float) $request->validated('longitude');
 
-        $p = $session->property;
-        $distance = GpsService::distanceMeters($lat, $lng, (float)$p->latitude, (float)$p->longitude);
-        if ($distance > (float)$p->geo_radius_m) {
-            // return back()->withErrors(['gps' => 'You are too far from the property to start.']);
+        $property = $session->property;
+
+        // Geofence (only if property has coordinates)
+        if ($property->latitude !== null && $property->longitude !== null) {
+            $distance = GpsService::distanceMeters(
+                $lat,
+                $lng,
+                (float) $property->latitude,
+                (float) $property->longitude
+            );
+
+            if ($distance > (float) $property->geo_radius_m) {
+                // If you want to hard-block, uncomment:
+                // return back()->withErrors(['gps' => 'You are too far from the property to start.']);
+            }
         }
 
         $session->update([
-            'status' => 'in_progress',
-            'started_at' => now(),
+            'status'           => 'in_progress',
+            'started_at'       => now(),
             'gps_confirmed_at' => now(),
-            'start_latitude' => $lat,
-            'start_longitude' => $lng,
+            'start_latitude'   => $lat,
+            'start_longitude'  => $lng,
         ]);
 
-        activity()->performedOn($session)->event('started')->log("Session started within {$distance}m");
+        activity()->performedOn($session)->event('started')->log('Session started');
 
-        // bootstrap checklist items (room & inventory)
-        $tasks = $p->rooms()->with('tasks')->get()->flatMap->tasks;
-        foreach ($tasks as $task) {
-            \App\Models\ChecklistItem::firstOrCreate([
-                'session_id' => $session->id,
-                'room_id' => $task->room_id,
-                'task_id' => $task->id
-            ], ['user_id' => auth()->id(), 'checked' => false]);
+        // ---- Bootstrap checklist items from Property -> Rooms (pivot) -> Tasks (pivot)
+        // We must use the room from the property-room pivot, then each task attached to that room.
+        $rooms = $property->rooms()
+            ->with(['tasks' => function ($q) {
+                // Keep your preferred ordering
+                $q->orderBy('room_task.sort_order')->orderBy('tasks.name');
+            }])
+            ->orderBy('property_room.sort_order')
+            ->get();
+
+        // Build rows for bulk insert; avoid per-row queries
+        $rows = [];
+        $now  = now();
+        $uid  = auth()->id();
+
+        foreach ($rooms as $room) {
+            foreach ($room->tasks as $task) {
+                $rows[] = [
+                    'session_id' => $session->id,
+                    'room_id'    => $room->id,   // << from the property-room context
+                    'task_id'    => $task->id,
+                    'user_id'    => $uid,
+                    'checked'    => false,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (!empty($rows)) {
+            // Insert only those that don't already exist (unique by session_id+room_id+task_id)
+            // If you have a DB unique index on these three, insertOrIgnore is perfect.
+            ChecklistItem::insertOrIgnore($rows);
         }
 
         return redirect()->route('sessions.show', $session);
