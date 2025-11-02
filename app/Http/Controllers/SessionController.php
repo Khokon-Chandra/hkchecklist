@@ -28,11 +28,13 @@ class SessionController extends Controller
     {
         // Order rooms & tasks by their pivot sort_order (no visual design change, just consistency)
         $rooms = $session->property->rooms()
-            ->with(['tasks' => function ($q) {
-                $q->orderBy('room_task.sort_order')->orderBy('tasks.name');
-            }])
+            ->with([
+                'tasks' => fn($q) => $q->orderBy('room_task.sort_order')->orderBy('tasks.name'),
+                'tasks.media',
+            ])
             ->orderBy('property_room.sort_order')
             ->get();
+
 
         // Ensure existing checklist items (same as before, but already correct with room context)
         foreach ($rooms as $room) {
