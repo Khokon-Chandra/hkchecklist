@@ -33,8 +33,7 @@
 
                 {{-- Default template --}}
                 <div class="flex items-center gap-2 pt-6">
-                    <input id="is_default" type="checkbox" name="is_default" value="1"
-                        @checked(old('is_default', $task->is_default))
+                    <input id="is_default" type="checkbox" name="is_default" value="1" @checked(old('is_default', $task->is_default))
                         class="rounded border-gray-300 dark:border-gray-700">
                     <label for="is_default">Mark as default template</label>
                 </div>
@@ -64,15 +63,4 @@
         </form>
     </x-card>
 
-    {{-- DELETE FORM (separate; no nesting) --}}
-    <div class="mt-4">
-        <form method="post" action="{{ route('tasks.destroy', $task) }}">
-            @csrf
-            @method('DELETE')
-            <x-button class="bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
-                onclick="return confirm('Delete this task? This cannot be undone.')">
-                Delete Task
-            </x-button>
-        </form>
-    </div>
 </x-app-layout>

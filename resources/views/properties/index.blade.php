@@ -58,18 +58,43 @@
                                 @endif
                             </td>
                             <td class="px-4 py-2 text-right whitespace-nowrap">
+
+                                <x-modal name="confirm-delete-property-{{ $p->id }}" :show="false"
+                                    maxWidth="md">
+                                    <div class="p-6 text-left">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete
+                                            Property
+                                        </h3>
+                                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                            < class="mt-2 text-sm text-gray-600 dark:text-gray-300 text-wrap">
+                                                You are about to permanently delete the property
+                                                <strong>{{ $p->name }}</strong>.
+                                                This will remove the property and its
+                                                {{ $p->rooms_count ?? 'associated' }}
+                                                rooms and related data and cannot be undone.
+                                                Please confirm you want to proceed.
+                                        </p>
+
+                                        <div class="mt-6 flex items-center justify-end gap-2">
+                                            <x-button variant="secondary"
+                                                x-on:click="$dispatch('close')">Cancel</x-button>
+                                            <form method="post" action="{{ route('properties.destroy', $p) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <x-button
+                                                    class="bg-rose-600 hover:bg-rose-700 focus:ring-rose-500">Delete</x-button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </x-modal>
                                 @role('admin|owner')
                                     <a class="text-indigo-600 hover:underline"
                                         href="{{ route('properties.edit', $p) }}">Edit</a>
                                     <span class="mx-2">·</span>
-                                    <form action="{{ route('properties.destroy', $p) }}" method="POST" class="inline-block"
-                                        onsubmit="return confirm('Are you sure you want to delete this property?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-indigo-600 hover:underline">
-                                            Delete
-                                        </button>
-                                    </form>
+                                    <button type="button" class="text-red-600 hover:underline"
+                                        @click="$dispatch('open-modal', 'confirm-delete-property-{{ $p->id }}')">
+                                        Delete
+                                    </button>
                                     <span class="mx-2">·</span>
                                 @endrole
                                 <a class="text-blue-600 hover:underline"
@@ -84,6 +109,7 @@
                 </tbody>
             </table>
         </x-card>
+
 
         {{ $properties->links() }}
     </div>
