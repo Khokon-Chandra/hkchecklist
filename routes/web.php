@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\DashboardController;
@@ -43,6 +44,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('rooms', RoomController::class)->except('show');
     Route::resource('tasks', TaskController::class)->except('show');
+
+    Route::get('/activity', [ActivityController::class, 'index'])
+        ->name('activity.index');
 
 
     Route::resource('properties', PropertyController::class)->except('show');

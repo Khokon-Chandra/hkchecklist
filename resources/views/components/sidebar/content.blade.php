@@ -88,4 +88,13 @@
     @endrole
 
 
+    @role('admin')
+        <x-sidebar.link title="Activity Log" href="{{ route('activity.index') }}" :isActive="request()->routeIs('activity.*')">
+            <x-slot name="icon">
+                <x-icons.activity class="flex-shrink-0 w-6 h-6" aria-hidden="true" />
+            </x-slot>
+        </x-sidebar.link>
+    @endrole
+
+
 </x-perfect-scrollbar>
