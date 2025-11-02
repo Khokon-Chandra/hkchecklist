@@ -388,18 +388,18 @@ class PropertyController extends Controller
             ]);
         }
 
-        // handle media (optional)
         if ($request->hasFile('media')) {
             foreach ($request->file('media') as $i => $file) {
                 if (!$file) continue;
-                $path = $file->store('task-media', 'public');
+
+                $path = $file->store('task-media', 'public'); // e.g. "task-media/abc123.jpg"
                 $mime = $file->getMimeType();
                 $type = str_starts_with($mime, 'video') ? 'video' : 'image';
 
                 $task->media()->create([
                     'type'       => $type,
-                    'url'        => Storage::disk('public')->url($path),
-                    'thumbnail'  => $type === 'image' ? Storage::disk('public')->url($path) : null,
+                    'url'        => $path,                         // <-- store path only
+                    'thumbnail'  => $type === 'image' ? $path : null, // <-- path only
                     'caption'    => $request->input("captions.$i"),
                     'sort_order' => $i + 1,
                 ]);
