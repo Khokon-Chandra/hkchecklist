@@ -65,15 +65,14 @@
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete
                                             Property
                                         </h3>
-                                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                            < class="mt-2 text-sm text-gray-600 dark:text-gray-300 text-wrap">
-                                                You are about to permanently delete the property
-                                                <strong>{{ $p->name }}</strong>.
-                                                This will remove the property and its
-                                                {{ $p->rooms_count ?? 'associated' }}
-                                                rooms and related data and cannot be undone.
-                                                Please confirm you want to proceed.
-                                        </p>
+                                        <div class="mt-2 text-sm text-gray-600 dark:text-gray-300 text-wrap">
+                                            You are about to permanently delete the property
+                                            <strong>{{ $p->name }}</strong>.
+                                            This will remove the property and its
+                                            {{ $p->rooms_count ?? 'associated' }}
+                                            rooms and related data and cannot be undone.
+                                            Please confirm you want to proceed.
+                                        </div>
 
                                         <div class="mt-6 flex items-center justify-end gap-2">
                                             <x-button variant="secondary"

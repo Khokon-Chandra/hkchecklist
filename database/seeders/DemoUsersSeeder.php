@@ -18,7 +18,7 @@ class DemoUsersSeeder extends Seeder
             ['email' => 'admin@example.com'],
             ['name' => 'Mr. Admin', 'password' => Hash::make($defaultPass), 'email_verified_at' => now()]
         );
-        $admin->syncRoles(['admin']);
+        $admin->syncRoles(['admin', 'owner', 'housekeeper']);
 
         $owner = User::firstOrCreate(
             ['email' => 'owner@example.com'],

@@ -46,7 +46,7 @@
                                 <form method="post" action="{{ route('users.assignRole', $u) }}"
                                     class="inline-flex gap-2">
                                     @csrf
-                                    <x-form.select name="role">
+                                    <x-form.select name="role" class="!border-0 !py-1">
                                         <option>--select role--</option>
                                         <option value="owner">Owner</option>
                                         <option value="housekeeper">Housekeeper</option>
