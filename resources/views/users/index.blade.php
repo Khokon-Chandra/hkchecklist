@@ -5,7 +5,7 @@
 
     <div class="flex items-center justify-between mb-4">
         <form method="get" class="flex gap-2">
-            <x-form.select name="role">
+            <x-form.select class="!py-1" name="role">
                 <option value="">All roles</option>
                 <option value="admin" @selected(request('role') === 'admin')>Admin</option>
                 <option value="owner" @selected(request('role') === 'owner')>Owner</option>
