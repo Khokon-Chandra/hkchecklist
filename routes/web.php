@@ -14,6 +14,7 @@ use App\Http\Controllers\RoomTaskOrderController;
 use App\Http\Controllers\PropertyRoomOrderController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\RoomSuggestionController;
+use App\Http\Controllers\RoomTaskAttachController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskMediaController;
 use App\Http\Controllers\TaskSuggestionController;
@@ -44,6 +45,11 @@ Route::middleware('auth')->group(function () {
 
 
     Route::resource('rooms', RoomController::class)->except('show');
+
+    Route::post('/rooms/{room}/tasks/attach', [RoomTaskAttachController::class, 'store'])
+    ->name('rooms.tasks.attach');
+
+
     Route::resource('tasks', TaskController::class)->except('show');
 
     Route::get('/activity', [ActivityController::class, 'index'])

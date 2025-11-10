@@ -47,35 +47,55 @@
                             <td class="px-4 py-3 text-center">
                                 {{ $r->created_at?->format('Y-m-d') }}
                             </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap space-x-2">
-                                @role('admin|owner')
-                                    <form action="{{ route('rooms.update', $r) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('PUT')
-                                        <input type="hidden" name="name" value="{{ $r->name }}">
-                                        <input type="hidden" name="assign_defaults" value="1" />
-                                        <button type="submit" title="assign default tasks into this room"
-                                            class="ml-4 text-orange-800 hover:underline dark:text-blue-400">
-                                            Assign Tasks
-                                        </button>
-                                    </form>
+                            <td class="px-4 py-3 text-right whitespace-nowrap">
 
+                                <x-action-dropdown align="right" width="w-56" label="Room actions">
+                                    <x-dropdown.item as="button"
+                                        x-on:click="
+                $dispatch('open-modal', 'assign-tasks-{{ $r->id }}');
+                $root.closest('[x-data]')?.__x?.$data?.close?.();
+            ">
+                                        {{-- plus icon --}}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
+                                            fill="currentColor">
+                                            <path
+                                                d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z" />
+                                        </svg>
+                                        <span>Assign Tasks</span>
+                                    </x-dropdown.item>
 
-                                    <a class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                        href="{{ route('rooms.edit', $r) }}">Edit</a>
+                                    
 
+                                    <x-dropdown.item href="{{ route('rooms.edit', $r) }}">
+                                        {{-- edit icon --}}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
+                                            fill="currentColor">
+                                            <path
+                                                d="M3 17.25V21h3.75l11-11-3.75-3.75-11 11zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.83z" />
+                                        </svg>
+                                        <span>Edit</span>
+                                    </x-dropdown.item>
 
-                                    <form action="{{ route('rooms.destroy', $r) }}" method="POST" class="inline">
-                                        @csrf
+                                    <x-dropdown.item as="form" method="POST"
+                                        href="{{ route('rooms.destroy', $r) }}">
                                         @method('DELETE')
-                                        <button type="submit" class="ml-4 text-red-600 hover:underline dark:text-red-400"
-                                            onclick="return confirm('Are you sure you want to delete this room?');">
-                                            Delete
+                                        <button type="submit" data-menu-item
+                                            class="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50/60 dark:hover:bg-rose-900/20 rounded">
+                                            {{-- trash icon --}}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
+                                                fill="currentColor">
+                                                <path
+                                                    d="M9 3a1 1 0 0 0-1 1v1H4a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm2 4a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7zm4 0a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7z" />
+                                            </svg>
+                                            <span>Delete</span>
                                         </button>
-                                    </form>
-                                @endrole
+                                    </x-dropdown.item>
+                                </x-action-dropdown>
 
+                                {{-- Modal instance per row --}}
+                                <x-assign-tasks :room="$r" />
                             </td>
+
                         </tr>
                     @empty
                         <tr>

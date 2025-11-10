@@ -13,6 +13,7 @@ import taskList from './task-list'
 import taskAutocomplete from './task-autocomplete'
 import mediaDropzone from './media-dropzone'
 import roomPicker from './room-picker'
+import taskPicker from './task-picker'
 import dropdown from './dropdown'
 
 Alpine.data('mediaDropzone', mediaDropzone)
@@ -22,6 +23,7 @@ Alpine.data('taskAutocomplete', taskAutocomplete)
 Alpine.data('roomsList', roomsList)
 Alpine.data('roomAutocomplete', roomAutocomplete)
 Alpine.data('roomPicker', roomPicker)
+Alpine.data('taskPicker', taskPicker)
 Alpine.data('dropdown', dropdown)
 
 window.PerfectScrollbar = PerfectScrollbar
