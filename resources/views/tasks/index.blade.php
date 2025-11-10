@@ -18,7 +18,7 @@
 
             <x-button type="submit" class="whitespace-nowrap">Filter</x-button>
 
-            @if (request()->hasAny(['q', 'type']))
+            @if (request()->hasAny(['q', 'type', 'room_id']))
                 <a href="{{ route('tasks.index') }}"
                     class="text-sm underline text-gray-600 dark:text-gray-300">Reset</a>
             @endif

@@ -22,8 +22,9 @@ class TaskController extends Controller
         $tasks = Task::query()
             ->when($q !== '', fn($qq) => $qq->where('name', 'like', "%{$q}%"))
             ->when(in_array($type, ['room', 'inventory'], true), fn($qq) => $qq->where('type', $type))
+            ->when($request->room_id ?? false, fn($query) => $query->whereHas('rooms', fn($query) => $query->where('rooms.id', $request->room_id)))
             ->latest()
-            ->paginate(30)
+            ->paginate(20)
             ->withQueryString();
 
         return view('tasks.index', compact('tasks', 'q', 'type'));
