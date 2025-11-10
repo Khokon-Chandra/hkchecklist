@@ -13,7 +13,7 @@ class TaskSuggestionController extends Controller
         if ($q === '') return response()->json([]);
 
         $tasks = Task::query()
-            ->where('name', 'like', $q . '%')
+            ->where('name', 'like', "%$q%")
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name', 'type', 'is_default']);

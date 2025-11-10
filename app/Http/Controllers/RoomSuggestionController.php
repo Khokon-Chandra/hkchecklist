@@ -15,7 +15,7 @@ class RoomSuggestionController extends Controller
         }
 
         $rooms = Room::query()
-            ->where('name', 'like', $q . '%')
+            ->where('name', 'like', "%$q%")
             ->orderBy('name')
             ->limit(8)
             ->get(['id', 'name', 'is_default']);

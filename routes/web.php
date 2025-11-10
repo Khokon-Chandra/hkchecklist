@@ -8,6 +8,7 @@ use App\Http\Controllers\ManageSessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyRoomAttachController;
 use App\Http\Controllers\PropertyRoomController;
 use App\Http\Controllers\RoomTaskOrderController;
 use App\Http\Controllers\PropertyRoomOrderController;
@@ -61,6 +62,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('{property}/rooms/{room}', [PropertyController::class, 'destroyRoom'])->name('rooms.destroy');
         Route::patch('{property}/rooms/order', [PropertyRoomOrderController::class, 'update'])
             ->name('rooms.order');
+
+        Route::post('{property}/rooms/attach', [PropertyRoomAttachController::class, 'store'])
+            ->name('rooms.attach');
 
         Route::get('{property}/rooms/{room}/tasks', [PropertyController::class, 'tasks'])->name('tasks.index');
         Route::patch('{property}/rooms/{room}/tasks', [RoomTaskOrderController::class, 'update'])->name('tasks.order');

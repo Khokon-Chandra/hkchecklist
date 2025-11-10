@@ -1,0 +1,60 @@
+@props([
+    'align' => 'right',   // 'left'|'right'
+    'width' => 'w-56',    // tailwind width
+    'icon'  => 'vertical',// 'vertical'|'horizontal'
+    'label' => 'Open menu',
+    'offset' => 8,        // px gap between trigger and panel
+])
+
+@php
+$iconSvg = $icon === 'horizontal'
+    ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+@endphp
+
+<div
+    x-data="dropdown({ align: '{{ $align }}', offset: {{ (int) $offset }} })"
+    x-init="init()"
+    x-on:keydown.escape.window="close()"
+    class="relative inline-block text-left"
+>
+    {{-- Trigger --}}
+    <button
+        type="button"
+        x-ref="button"
+        x-on:click.stop="toggle()"
+        :aria-expanded="open"
+        aria-haspopup="true"
+        aria-label="{{ $label }}"
+        class="inline-flex items-center justify-center rounded-md p-2
+               hover:bg-gray-100 dark:hover:bg-gray-700
+               focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    >
+        {!! $iconSvg !!}
+    </button>
+
+    {{-- Teleported panel to avoid overflow clipping --}}
+    <template x-teleport="body">
+        <div
+            x-show="open"
+            x-transition.opacity
+            x-cloak
+            x-ref="panel"
+            :style="panelStyle"
+            class="fixed z-50 rounded-md shadow-lg ring-1 ring-black/5
+                   bg-white !dark:bg-gray-800
+                   divide-y divide-gray-100 dark:divide-gray-700 {{ $width }}"
+            role="menu"
+            aria-orientation="vertical"
+            tabindex="-1"
+            @mousedown.stop
+            @click.outside="if(!justOpened) close()"
+            @keydown.arrow-down.prevent="focusNext($event)"
+            @keydown.arrow-up.prevent="focusPrev($event)"
+        >
+            <div class="py-1" role="none">
+                {{ $slot }}
+            </div>
+        </div>
+    </template>
+</div>

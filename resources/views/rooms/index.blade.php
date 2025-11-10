@@ -15,6 +15,7 @@
             <table class="min-w-full text-sm">
                 <thead class="uppercase text-xs tracking-wide">
                     <tr class="text-gray-600 dark:text-gray-300">
+                        <th class="px-4 py-2 text-left">#</th>
                         <th class="px-4 py-2 text-left">Name</th>
                         <th class="px-4 py-2 text-center">Default?</th>
                         <th class="px-4 py-2 text-center">Tasks</th>
@@ -26,6 +27,7 @@
                 <tbody class="divide-y dark:divide-gray-700">
                     @forelse($rooms as $r)
                         <tr>
+                            <td class="px-4 py-3 text-left">{{ ($rooms->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                                 {{ $r->name }}
                             </td>
@@ -45,16 +47,28 @@
                             <td class="px-4 py-3 text-center">
                                 {{ $r->created_at?->format('Y-m-d') }}
                             </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <td class="px-4 py-3 text-right whitespace-nowrap space-x-2">
                                 @role('admin|owner')
+                                    <form action="{{ route('rooms.update', $r) }}" method="POST" class="inline">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" name="name" value="{{ $r->name }}">
+                                        <input type="hidden" name="assign_defaults" value="1" />
+                                        <button type="submit" title="assign default tasks into this room"
+                                            class="ml-4 text-orange-800 hover:underline dark:text-blue-400">
+                                            Assign Tasks
+                                        </button>
+                                    </form>
+
+
                                     <a class="text-indigo-600 hover:underline dark:text-indigo-400"
                                         href="{{ route('rooms.edit', $r) }}">Edit</a>
+
 
                                     <form action="{{ route('rooms.destroy', $r) }}" method="POST" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                            class="ml-4 text-red-600 hover:underline dark:text-red-400"
+                                        <button type="submit" class="ml-4 text-red-600 hover:underline dark:text-red-400"
                                             onclick="return confirm('Are you sure you want to delete this room?');">
                                             Delete
                                         </button>
