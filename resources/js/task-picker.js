@@ -37,7 +37,7 @@ export default function taskPicker({ fetchUrl, postUrl, csrf }) {
         r => (item.id && r.id === item.id) || r.name.toLowerCase() === item.name.toLowerCase()
       );
       if (!exists) {
-        this.selected.push({ key: crypto.randomUUID(), id: item.id, name: item.name });
+        this.selected.push({ key: randomUID(), id: item.id, name: item.name });
       }
       this.resetList();
       this.query = '';
@@ -51,7 +51,7 @@ export default function taskPicker({ fetchUrl, postUrl, csrf }) {
         this.addItem(exact);
       } else {
         const exists = this.selected.some(r => r.name.toLowerCase() === q.toLowerCase());
-        if (!exists) this.selected.push({ key: crypto.randomUUID(), name: q });
+        if (!exists) this.selected.push({ key: randomUID(), name: q });
         this.resetList();
         this.query = '';
       }

@@ -12,16 +12,25 @@ export default function dropdown({ align = 'right', offset = 8 } = {}) {
     _onOtherOpen: null,
 
     init() {
-      // unique id for this instance
-      this.id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : ('dd-' + Math.random().toString(36).slice(2));
+
+      const cryptoObj =
+        (typeof globalThis !== 'undefined' && globalThis.crypto)
+          ? globalThis.crypto
+          : (typeof window !== 'undefined' && window.crypto)
+            ? window.crypto
+            : null
+
+      this.id = (cryptoObj && typeof cryptoObj.randomUUID === 'function')
+        ? cryptoObj.randomUUID()
+        : ('dd-' + Math.random().toString(36).slice(2))
 
       // listen for others opening -> close this one
       this._onOtherOpen = (e) => {
         if (e.detail && e.detail !== this.id) {
-          this.close();
+          this.close()
         }
-      };
-      window.addEventListener('dropdown:open', this._onOtherOpen);
+      }
+      window.addEventListener('dropdown:open', this._onOtherOpen)
     },
 
     toggle() {

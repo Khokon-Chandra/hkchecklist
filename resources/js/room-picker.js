@@ -33,7 +33,7 @@ export default function roomPicker({ fetchUrl, postUrl, csrf }) {
       // avoid duplicates (by id OR name)
       const exists = this.selected.some(r => (item.id && r.id === item.id) || r.name.toLowerCase() === item.name.toLowerCase());
       if (!exists) {
-        this.selected.push({ key: crypto.randomUUID(), id: item.id, name: item.name });
+        this.selected.push({ key: randomUID(), id: item.id, name: item.name });
       }
       this.query = '';
       this.suggestions = [];
@@ -50,7 +50,7 @@ export default function roomPicker({ fetchUrl, postUrl, csrf }) {
       } else {
         const exists = this.selected.some(r => r.name.toLowerCase() === q.toLowerCase());
         if (!exists) {
-          this.selected.push({ key: crypto.randomUUID(), name: q });
+          this.selected.push({ key: randomUUID(), name: q });
         }
       }
       this.query = '';

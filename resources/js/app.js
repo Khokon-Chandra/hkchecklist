@@ -7,6 +7,12 @@ import Sortable from 'sortablejs'
 
 window.Sortable = Sortable
 
+window.randomUID = function randomUID(prefix = 'id') {
+    const rand = Math.random().toString(36).substring(2, 10)
+    const time = Date.now().toString(36)
+    return `${prefix}-${time}-${rand}`
+}
+
 import roomsList from './room-list'
 import roomAutocomplete from './room-autocomplete'
 import taskList from './task-list'
