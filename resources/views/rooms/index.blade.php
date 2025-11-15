@@ -66,11 +66,7 @@
 
 
 
-                                    <x-dropdown.item
-                                        x-on:click="
-                                            $dispatch('open-modal', 'assign-tasks-{{ $r->id }}');
-                                            $root.closest('[x-data]')?.__x?.$data?.close?.();
-                                        ">
+                                    <x-dropdown.item>
                                         <form action="{{ route('rooms.update', $r->id) }}" method="POST"
                                             class="flex items-center gap-2">
                                             @csrf
