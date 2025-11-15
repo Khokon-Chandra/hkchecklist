@@ -1,4 +1,3 @@
-// resources/js/components/room-picker.js
 
 export default function roomPicker({ fetchUrl, postUrl, csrf }) {
   return {
