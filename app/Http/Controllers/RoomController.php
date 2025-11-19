@@ -53,43 +53,48 @@ class RoomController extends Controller
             'is_default' => (bool)($data['is_default'] ?? false),
         ]);
 
-        if ($request->boolean('assign_defaults')) {
-            $added = $this->assignDefaultTasks($room);
-            return redirect()->route('rooms.index')->with('ok', "Room added. Assigned $added default task(s).");
-        }
-
         return redirect()->route('rooms.index')->with('ok', 'Room added.');
     }
 
     public function edit(Room $room)
     {
 
+        // Load all tasks that can be assigned to a room
+        $tasks = Task::orderBy('type')->orderBy('name')->get(['id', 'name', 'type', 'is_default']);
+
+        // Load current tasks for this room
+        $room->load('tasks');
+
         return view('rooms.edit', [
-            'room'        => $room
+            'room'  => $room,
+            'tasks' => $tasks,
         ]);
     }
 
     public function update(Request $request, Room $room)
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
-            'assign_defaults'   => ['sometimes', 'boolean'],
+
+            // tasks from the multi-select
+            'task_ids'   => ['nullable', 'array'],
+            'task_ids.*' => ['integer', 'exists:tasks,id'],
         ]);
 
         $room->update([
-            'name'       => $data['name'],
-            'is_default' => (bool)($data['is_default'] ?? false),
-
+            'name'       => $validated['name'],
+            'is_default' => $validated['is_default'] ?? false,
         ]);
 
-        if ($request->boolean('assign_defaults')) {
-            $added = $this->assignDefaultTasks($room);
-            return redirect()->route('rooms.index')->with('ok', "Room updated. Assigned $added new default task(s).");
-        }
+        // Attach / detach tasks in the pivot table
+        $room->tasks()->sync($validated['task_ids'] ?? []);
 
-        return redirect()->route('rooms.index')->with('ok', 'Room updated.');
+        return redirect()
+            ->route('rooms.index')
+            ->with('ok', 'Room & tasks updated.');
     }
+
 
     public function destroy(Room $room)
     {
@@ -97,46 +102,6 @@ class RoomController extends Controller
 
         return redirect()->route('rooms.index')->with('ok', 'Room deleted.');
     }
-
-
-
-    private function assignDefaultTasks(Room $room): int
-    {
-        return DB::transaction(function () use ($room) {
-            $defaultTaskIds = Task::query()
-                ->where('is_default', true)
-                ->where('type', 'room')
-                ->pluck('id')
-                ->all();
-
-            if (empty($defaultTaskIds)) {
-                return 0;
-            }
-
-            $alreadyAttached = $room->tasks()->pluck('tasks.id')->all();
-
-            $toAttach = array_values(array_diff($defaultTaskIds, $alreadyAttached));
-            if (empty($toAttach)) {
-                return 0;
-            }
-
-            $nextSort = (int) $room->tasks()->max('room_task.sort_order');
-            $attachPayload = [];
-            foreach ($toAttach as $taskId) {
-                $attachPayload[$taskId] = [
-                    'sort_order'           => ++$nextSort,
-                    'instructions'         => null,
-                    'visible_to_owner'     => true,
-                    'visible_to_housekeeper' => true,
-                ];
-            }
-
-            $room->tasks()->syncWithoutDetaching($attachPayload);
-
-            return count($toAttach);
-        });
-    }
-
 
 
     public function bulkAttachTasks(Request $request)

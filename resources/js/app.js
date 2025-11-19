@@ -1,3 +1,5 @@
+// resources/js/app.js
+
 import './bootstrap'
 
 import Alpine from 'alpinejs'
@@ -6,13 +8,16 @@ import PerfectScrollbar from 'perfect-scrollbar'
 import Sortable from 'sortablejs'
 
 window.Sortable = Sortable
+window.PerfectScrollbar = PerfectScrollbar
 
+// Simple UID helper
 window.randomUID = function randomUID(prefix = 'id') {
     const rand = Math.random().toString(36).substring(2, 10)
     const time = Date.now().toString(36)
     return `${prefix}-${time}-${rand}`
 }
 
+// Existing local components
 import roomsList from './room-list'
 import roomAutocomplete from './room-autocomplete'
 import taskList from './task-list'
@@ -22,18 +27,11 @@ import roomPicker from './room-picker'
 import taskPicker from './task-picker'
 import dropdown from './dropdown'
 
-Alpine.data('mediaDropzone', mediaDropzone)
-Alpine.data('taskList', taskList)
-Alpine.data('taskAutocomplete', taskAutocomplete)
+// New components
+import roomsIndex from './rooms-index'
+import roomTasksEditor from './room-tasks-editor'
 
-Alpine.data('roomsList', roomsList)
-Alpine.data('roomAutocomplete', roomAutocomplete)
-Alpine.data('roomPicker', roomPicker)
-Alpine.data('taskPicker', taskPicker)
-Alpine.data('dropdown', dropdown)
-
-window.PerfectScrollbar = PerfectScrollbar
-
+// ⛔️ DO NOT MODIFY — main app interaction (kept exactly as you sent)
 document.addEventListener('alpine:init', () => {
     Alpine.data('mainState', () => {
         let lastScrollTop = 0
@@ -99,99 +97,25 @@ document.addEventListener('alpine:init', () => {
     })
 })
 
-
-
-
-
-
-
-
+// Second alpine:init for all other components
 document.addEventListener('alpine:init', () => {
-    // ... your existing mainState Alpine.data ...
+    // Existing components
+    Alpine.data('mediaDropzone', mediaDropzone)
+    Alpine.data('taskList', taskList)
+    Alpine.data('taskAutocomplete', taskAutocomplete)
 
-    Alpine.data('roomsIndex', () => ({
-        allRoomIds: [],
-        selectedRoomIds: [],
-        selectAll: false,
+    Alpine.data('roomsList', roomsList)
+    Alpine.data('roomAutocomplete', roomAutocomplete)
+    Alpine.data('roomPicker', roomPicker)
+    Alpine.data('taskPicker', taskPicker)
+    Alpine.data('dropdown', dropdown)
 
-        tasks: [],
-        taskSearch: '',
-        taskTypeFilter: '', // '', 'room', 'inventory', etc.
-        selectedTaskIds: [],
+    // New: rooms index (bulk assign tasks)
+    Alpine.data('roomsIndex', roomsIndex)
 
-        isSubmittingBulk: false,
-        bulkUrl: '',
-        csrfToken: '',
-
-        init() {
-            // Load data from data-* attributes on the root element
-            this.allRoomIds = JSON.parse(this.$el.dataset.rooms || '[]')
-            this.tasks = JSON.parse(this.$el.dataset.tasks || '[]')
-            this.bulkUrl = this.$el.dataset.bulkUrl || ''
-            this.csrfToken = this.$el.dataset.csrf || ''
-        },
-
-        toggleSelectAll() {
-            if (this.selectAll) {
-                this.selectedRoomIds = [...this.allRoomIds]
-            } else {
-                this.selectedRoomIds = []
-            }
-        },
-
-        filteredTasks() {
-            const q = this.taskSearch.toLowerCase().trim()
-            const type = this.taskTypeFilter
-
-            return this.tasks.filter((task) => {
-                const matchesSearch =
-                    !q || task.name.toLowerCase().includes(q)
-
-                const matchesType =
-                    !type || task.type === type
-
-                return matchesSearch && matchesType
-            })
-        },
-
-        async submitBulkAssign() {
-            if (!this.selectedRoomIds.length || !this.selectedTaskIds.length) {
-                return
-            }
-
-            this.isSubmittingBulk = true
-
-            try {
-                const res = await fetch(this.bulkUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        room_ids: this.selectedRoomIds,
-                        task_ids: this.selectedTaskIds,
-                    }),
-                })
-
-                if (!res.ok) {
-                    throw new Error('Request failed')
-                }
-
-                window.location.reload()
-            } catch (error) {
-                console.error('Bulk assign failed', error)
-                alert(
-                    'Something went wrong while assigning tasks. Please try again.'
-                )
-            } finally {
-                this.isSubmittingBulk = false
-            }
-        },
-    }))
+    // New: edit room + tasks on same page
+    Alpine.data('roomTasksEditor', roomTasksEditor)
 })
 
 Alpine.plugin(collapse)
-
 Alpine.start()
