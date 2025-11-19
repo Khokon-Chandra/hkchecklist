@@ -97,7 +97,11 @@ class TaskController extends Controller
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('tasks', 'name')->ignore($task->id),
+                Rule::unique('tasks', 'name')
+                ->ignore($task->id)
+                ->where(function ($query) use ($request) {
+                $query->where('type', $request->input('type'));
+            }),
             ],
             'type'       => ['required', Rule::in(['room', 'inventory'])],
             'is_default' => ['nullable', 'boolean'],
