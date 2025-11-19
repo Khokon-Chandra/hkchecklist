@@ -47,7 +47,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('rooms', RoomController::class)->except('show');
 
     Route::post('/rooms/{room}/tasks/attach', [RoomTaskAttachController::class, 'store'])
-    ->name('rooms.tasks.attach');
+        ->name('rooms.tasks.attach');
+
+    Route::post(
+        '/rooms/bulk-attach-tasks',
+        [RoomController::class, 'bulkAttachTasks']
+    )->name('rooms.bulk-attach-tasks');
 
 
     Route::resource('tasks', TaskController::class)->except('show');

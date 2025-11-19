@@ -20,8 +20,16 @@ class RoomController extends Controller
             ->latest()
             ->paginate(20);
 
+        $tasks = Task::orderBy('type')->orderBy('name')->get([
+            'id',
+            'name',
+            'type',
+            'is_default',
+        ]);
+
         return view('rooms.index', [
             'rooms'       => $rooms,
+            'tasks'       => $tasks
         ]);
     }
 
@@ -127,5 +135,32 @@ class RoomController extends Controller
 
             return count($toAttach);
         });
+    }
+
+
+
+    public function bulkAttachTasks(Request $request)
+    {
+        $validated = $request->validate([
+            'room_ids'   => ['required', 'array', 'min:1'],
+            'room_ids.*' => ['integer', 'exists:rooms,id'],
+            'task_ids'   => ['required', 'array', 'min:1'],
+            'task_ids.*' => ['integer', 'exists:tasks,id'],
+        ]);
+
+        $rooms = Room::whereIn('id', $validated['room_ids'])->get();
+
+        foreach ($rooms as $room) {
+            // assumes many-to-many relationship: Room::tasks()
+            $room->tasks()->syncWithoutDetaching($validated['task_ids']);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'ok']);
+        }
+
+        return redirect()
+            ->route('rooms.index')
+            ->with('ok', 'Tasks assigned to selected rooms.');
     }
 }
