@@ -8,6 +8,14 @@
             <form method="get" class="flex gap-2">
                 <x-form.input name="q" type="text" :value="old('q', request('q'))" autofocus autocomplete="name"
                     placeholder="Search by name" />
+
+                <x-form.select name="owner_id" :selected="request('owner_id')" class="w-40 !py-1">
+                    <option value="">All owners</option>
+                    @foreach ($owners as $owner)
+                        <option value="{{ $owner->id }}" @selected(request('owner_id') == $owner->id)>{{ $owner->name }}</option>
+                    @endforeach
+                </x-form.select>
+
                 <x-button variant="secondary">Filter</x-button>
                 <x-button variant="secondary" :href="route('properties.index')">Clear</x-button>
             </form>

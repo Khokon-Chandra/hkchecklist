@@ -34,6 +34,7 @@
             <table class="min-w-full text-sm">
                 <thead class="uppercase text-xs tracking-wide">
                     <tr class="text-gray-600 dark:text-gray-300">
+                        <th class="px-4 py-2 text-left">#</th>
                         <th class="px-4 py-2 text-left">Name</th>
                         <th class="px-4 py-2 text-center">Type</th>
                         <th class="px-4 py-2 text-center">Default?</th>
@@ -45,6 +46,7 @@
                 <tbody class="divide-y dark:divide-gray-700">
                     @forelse($tasks as $t)
                         <tr>
+                            <td class="px-4 py-3 text-left">{{ ($tasks->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                                 {{ $t->name }}
                             </td>
@@ -87,7 +89,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400" colspan="5">
+                            <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400" colspan="6">
                                 No tasks found
                             </td>
                         </tr>

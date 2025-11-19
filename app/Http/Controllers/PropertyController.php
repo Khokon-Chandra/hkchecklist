@@ -18,23 +18,26 @@ class PropertyController extends Controller
 
     public function index(Request $request)
     {
-        $user = $request->user();
-        $q    = (string) $request->query('q', '');
+        $authenticatedUser = $request->user();
+        $searchTerm        = (string) $request->query('q', '');
 
-        $query = Property::query();
+        $propertyQuery = Property::query();
 
-        if ($user->hasRole('owner')) {
-            $query->where('owner_id', $user->id);
-        } elseif ($user->hasRole('housekeeper')) {
-            $query->whereIn('id', function ($sub) use ($user) {
-                $sub->select('property_id')
+        if ($authenticatedUser->hasRole('admin')) {
+            // Admin can see all properties, no extra constraints
+        } elseif ($authenticatedUser->hasRole('owner')) {
+            $propertyQuery->where('owner_id', $authenticatedUser->id);
+        } elseif ($authenticatedUser->hasRole('housekeeper')) {
+            $propertyQuery->whereIn('id', function ($subQuery) use ($authenticatedUser) {
+                $subQuery->select('property_id')
                     ->from('cleaning_sessions')
-                    ->where('housekeeper_id', $user->id);
+                    ->where('housekeeper_id', $authenticatedUser->id);
             });
         }
 
-        $properties = $query
-            ->when($q !== '', fn($qry) => $qry->where('name', 'like', "%{$q}%"))
+        $properties = $propertyQuery
+            ->when($searchTerm !== '', fn($query) => $query->where('name', 'like', "%{$searchTerm}%"))
+            ->when($request->owner_id, fn($query) => $query->where('owner_id', $request->owner_id))
             ->with(['owner'])
             ->withCount('rooms')
             ->orderBy('name')
@@ -42,8 +45,13 @@ class PropertyController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('properties.index', compact('properties'));
+        $owners = User::whereHas('roles', function ($query) {
+            $query->where('name', 'owner');
+        })->get();
+
+        return view('properties.index', compact('properties', 'owners'));
     }
+
 
     public function create()
     {
@@ -130,7 +138,6 @@ class PropertyController extends Controller
 
                 $taskAttach = [];
                 foreach ($room->tasks as $task) {
-                    // syncWithoutDetaching avoids duplicates; include sort_order pivot
                     $taskAttach[$task->id] = ['sort_order' => $tNext++];
                 }
                 if (!empty($taskAttach)) {
@@ -141,7 +148,7 @@ class PropertyController extends Controller
 
         return redirect()
             ->route('properties.index')
-            ->with('success', match ($attach) {
+            ->with('ok', match ($attach) {
                 'rooms'        => 'Property created and default rooms assigned.',
                 'rooms_tasks'  => 'Property created with default rooms & tasks assigned.',
                 default        => 'Property created successfully.',
@@ -210,7 +217,7 @@ class PropertyController extends Controller
 
         return redirect()
             ->route('properties.index')
-            ->with('success', 'Property updated successfully.');
+            ->with('ok', 'Property updated successfully.');
     }
 
     public function destroy(Property $property)

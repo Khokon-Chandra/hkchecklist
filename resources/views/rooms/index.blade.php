@@ -6,7 +6,17 @@
         </h2>
     </x-slot>
 
-    <div class="flex items-center justify-end mb-4 gap-2">
+    <div class="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <form method="get" action="{{ route('rooms.index') }}" class="flex-1 flex items-center gap-2">
+            <x-form.input name="search" placeholder="Search rooms…" value="{{ request('search') }}" class="w-full" />
+
+            <x-button type="submit" class="whitespace-nowrap">Filter</x-button>
+
+            @if (request('search'))
+                <a href="{{ route('rooms.index') }}"
+                    class="text-sm underline text-gray-600 dark:text-gray-300">Reset</a>
+            @endif
+        </form>
         <x-button variant="primary" href="{{ route('rooms.create') }}">+ Add Room</x-button>
     </div>
 

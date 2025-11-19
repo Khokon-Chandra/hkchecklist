@@ -10,10 +10,15 @@ use Illuminate\Support\Facades\DB;
 class RoomController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
 
-        $rooms = Room::withCount('tasks')->latest()->paginate(20);
+        $rooms = Room::withCount('tasks')
+            ->when($request->search ?? false, function ($query, $search) {
+                $query->where('name', 'like', "%$search%");
+            })
+            ->latest()
+            ->paginate(20);
 
         return view('rooms.index', [
             'rooms'       => $rooms,
