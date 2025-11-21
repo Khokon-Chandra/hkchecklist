@@ -18,7 +18,6 @@ use App\Http\Controllers\RoomTaskAttachController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskMediaController;
 use App\Http\Controllers\TaskSuggestionController;
-use App\Models\Property;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,8 +88,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/tasks/{task}/media',               [TaskMediaController::class, 'store'])->name('tasks.media.store');
         Route::delete('/tasks/{task}/media/{media}',     [TaskMediaController::class, 'destroy'])->name('tasks.media.destroy');
     });
-
-    // Tasks (nested under property + room)
 
     // Users (read/assign role)
     Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
