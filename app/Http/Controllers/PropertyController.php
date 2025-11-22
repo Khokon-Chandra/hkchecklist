@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PropertyStoreRequest;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\Task;
@@ -57,47 +58,28 @@ class PropertyController extends Controller
     {
 
         return view('properties.create', [
-            'owners' => User::role('owner')->pluck('name', 'id')->all()
+            'owners' => User::role('owner')->pluck('name', 'id')->all(),
+            "rooms" => Room::where('is_default', true)->get()
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PropertyStoreRequest $request)
     {
-        $user    = $request->user();
-        $isAdmin = $user->hasRole('admin');
-
-        $data = $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'address'      => ['nullable', 'string', 'max:255'],
-            'latitude'     => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude'    => ['nullable', 'numeric', 'between:-180,180'],
-            'geo_radius_m' => ['nullable', 'integer', 'min:50'],
-            'photo'        => ['nullable', 'image', 'max:5120'], // 5MB
-            'owner_id'     => $isAdmin ? ['required', Rule::exists('users', 'id')] : ['nullable'],
-            'attach'       => ['nullable', Rule::in(['none', 'rooms', 'rooms_tasks'])],
-        ]);
-
-        if (! $isAdmin) {
-            $data['owner_id'] = $user->id;
-        }
+        $data = $request->validated();
 
         if ($request->hasFile('photo')) {
             $data['photo_path'] = $request->file('photo')->store('properties', 'public');
         }
 
-        $attach = $request->input('attach', 'none'); // none | rooms | rooms_tasks
+        $attach = $request->input('attach', 'none');
 
         DB::transaction(function () use ($data, $attach) {
             /** @var Property $property */
             $property = Property::create($data);
 
-            if ($attach === 'none') {
-                // Done—no room/task work requested.
-                return;
-            }
+            if ($attach !== 'rooms') return;
 
             // -------- Attach DEFAULT ROOMS --------
-            // global Room templates with is_default = true
             $defaultRooms = Room::query()
                 ->where('is_default', true)
                 ->orderBy('name')
@@ -105,11 +87,10 @@ class PropertyController extends Controller
 
             if ($defaultRooms->isNotEmpty()) {
                 $nextOrder = (int) $property->rooms()->max('property_room.sort_order');
-                $nextOrder = $nextOrder > 0 ? $nextOrder + 1 : 1;
+                $nextOrder = $nextOrder ? $nextOrder + 1 : 1;
 
                 $payload = [];
                 foreach ($defaultRooms as $r) {
-                    // avoid duplicates if any pre-exist
                     if (! $property->rooms()->where('rooms.id', $r->id)->exists()) {
                         $payload[$r->id] = ['sort_order' => $nextOrder++];
                     }
@@ -118,39 +99,12 @@ class PropertyController extends Controller
                     $property->rooms()->attach($payload);
                 }
             }
-
-            if ($attach !== 'rooms_tasks') {
-                // Caller only wanted default rooms, not tasks.
-                return;
-            }
-
-            // -------- Attach DEFAULT TASKS to those rooms --------
-            // Reload the rooms that are now attached to this property and eager-load their default tasks.
-            $rooms = $property->rooms()->with(['tasks' => function ($q) {
-                $q->where('tasks.is_default', true)->orderBy('tasks.name');
-            }])->get();
-
-            foreach ($rooms as $room) {
-                if ($room->tasks->isEmpty()) continue;
-
-                $tNext = (int) $room->tasks()->max('room_task.sort_order');
-                $tNext = $tNext > 0 ? $tNext + 1 : 1;
-
-                $taskAttach = [];
-                foreach ($room->tasks as $task) {
-                    $taskAttach[$task->id] = ['sort_order' => $tNext++];
-                }
-                if (!empty($taskAttach)) {
-                    $room->tasks()->syncWithoutDetaching($taskAttach);
-                }
-            }
         });
 
         return redirect()
             ->route('properties.index')
             ->with('ok', match ($attach) {
                 'rooms'        => 'Property created and default rooms assigned.',
-                'rooms_tasks'  => 'Property created with default rooms & tasks assigned.',
                 default        => 'Property created successfully.',
             });
     }
