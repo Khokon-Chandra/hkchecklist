@@ -4,18 +4,17 @@
     {{-- Add Rooms (opens modal) --}}
     <x-dropdown.item as="button"
         x-on:click="
-                $dispatch('open-modal', 'assign-rooms-{{ $p->id }}');
-                // close dropdown after action
-                $root.closest('[x-data]')?.__x?.$data?.close?.();
-            ">
+        $dispatch('open-preview-panel', 'assign-rooms-{{ $property->id }}');
+        $dispatch('dropdown-close');
+     ">
         {{-- inline plus icon --}}
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z" />
+            <path d=" M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z" />
         </svg>
         <span>Add Rooms</span>
     </x-dropdown.item>
 
-    <x-dropdown.item href="{{ route('properties.rooms.index', ['property' => $p->id]) }}">
+    <x-dropdown.item href="{{ route('properties.rooms.index', ['property' => $property->id]) }}">
         {{-- rooms icon --}}
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -27,7 +26,7 @@
     <x-dropdown.divider />
 
     @role('admin|owner')
-        <x-dropdown.item href="{{ route('properties.edit', $p) }}">
+        <x-dropdown.item href="{{ route('properties.edit', $property) }}">
             {{-- edit icon --}}
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                 <path
@@ -39,8 +38,8 @@
         <x-dropdown.item as="button"
             class="text-rose-600 dark:text-rose-400 hover:bg-rose-50/60 dark:hover:bg-rose-900/20"
             x-on:click="
-                    $dispatch('open-modal', 'confirm-delete-property-{{ $p->id }}');
-                    $root.closest('[x-data]')?.__x?.$data?.close?.();
+                    $dispatch('open-modal', 'confirm-delete-property-{{ $property->id }}');
+                    $dispatch('dropdown-close');
                 ">
             {{-- trash icon --}}
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -53,25 +52,29 @@
 </x-action-dropdown>
 
 {{-- Your modals remain in the cell (or anywhere). Teleport prevents clipping --}}
-<x-assign-rooms-modal :property="$p" />
+@include('properties.__assign_rooms_panel', [
+    'roomsForJs' => $rooms,
+    'property' => $property,
+    'attachedRoomIds' => $property->rooms()->pluck('room_id'),
+])
 
-<x-modal name="confirm-delete-property-{{ $p->id }}" :show="false" maxWidth="md">
+<x-modal name="confirm-delete-property-{{ $property->id }}" :show="false" maxWidth="md">
     <div class="p-6 text-left">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete
             Property
         </h3>
         <div class="mt-2 text-sm text-gray-600 dark:text-gray-300 text-wrap">
             You are about to permanently delete the property
-            <strong>{{ $p->name }}</strong>.
+            <strong>{{ $property->name }}</strong>.
             This will remove the property and its
-            {{ $p->rooms_count ?? 'associated' }}
+            {{ $property->rooms_count ?? 'associated' }}
             rooms and related data and cannot be undone.
             Please confirm you want to proceed.
         </div>
 
         <div class="mt-6 flex items-center justify-end gap-2">
             <x-button variant="secondary" x-on:click="$dispatch('close')">Cancel</x-button>
-            <form method="post" action="{{ route('properties.destroy', $p) }}">
+            <form method="post" action="{{ route('properties.destroy', $property) }}">
                 @csrf
                 @method('DELETE')
                 <x-button class="bg-rose-600 hover:bg-rose-700 focus:ring-rose-500">Delete</x-button>

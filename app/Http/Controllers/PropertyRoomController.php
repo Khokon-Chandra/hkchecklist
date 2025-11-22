@@ -50,6 +50,10 @@ class PropertyRoomController extends Controller
             ]);
         }
 
+        if ($request->ajax()) {
+            return response()->json($room);
+        }
+
         return redirect()
             ->route('properties.rooms.index', $property)
             ->with('status', $already

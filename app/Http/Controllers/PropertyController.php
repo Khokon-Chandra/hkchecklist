@@ -39,7 +39,7 @@ class PropertyController extends Controller
         $properties = $propertyQuery
             ->when($searchTerm !== '', fn($query) => $query->where('name', 'like', "%{$searchTerm}%"))
             ->when($request->owner_id, fn($query) => $query->where('owner_id', $request->owner_id))
-            ->with(['owner'])
+            ->with(['owner', 'rooms'])
             ->withCount('rooms')
             ->orderBy('name')
             ->orderByDesc('created_at')
@@ -50,7 +50,11 @@ class PropertyController extends Controller
             $query->where('name', 'owner');
         })->get();
 
-        return view('properties.index', compact('properties', 'owners'));
+        $rooms = Room::select('id', 'name', 'is_default')
+            ->orderBy('name')
+            ->get();
+
+        return view('properties.index', compact('properties', 'owners', 'rooms'));
     }
 
 

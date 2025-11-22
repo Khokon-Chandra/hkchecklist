@@ -119,10 +119,11 @@
             ?
             'right-0 md:rounded-l-2xl' :
             'left-0 md:rounded-r-2xl'"
-        role="dialog" aria-modal="true" aria-labelledby="{{ $name }}-title" style="display: none;">
+        role="dialog" aria-modal="true" aria-labelledby="{{ $name }}-title" style="display: none;"
+        @click.outside="close()">
         {{-- Header --}}
         <div class="flex items-center justify-between gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="min-w-0">
+            <div class="min-w-0 text-left">
                 @if (isset($title))
                     <h3 id="{{ $name }}-title" class="font-semibold truncate text-gray-900 dark:text-gray-100">
                         {{ $title }}
@@ -154,7 +155,7 @@
 
         {{-- Body --}}
         <div class="relative flex-1 overflow-hidden">
-            <div class="h-full overflow-y-auto">
+            <div class="h-full overflow-y-auto preview-scroll">
                 {{ $slot }}
             </div>
 
@@ -173,3 +174,45 @@
         @endif
     </aside>
 </div>
+<style>
+    /* base */
+    .preview-scroll {
+        scrollbar-width: thin;
+        /* Firefox */
+        scrollbar-color: #d1d5db #f9fafb;
+        /* thumb track */
+    }
+
+    /* WebKit browsers */
+    .preview-scroll::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .preview-scroll::-webkit-scrollbar-track {
+        background: #f9fafb;
+        /* light track (gray-50) */
+    }
+
+    .preview-scroll::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        /* light thumb (gray-300) */
+        border-radius: 9999px;
+    }
+
+    /* Dark mode (Tailwind .dark on html/body) */
+    .dark .preview-scroll {
+        scrollbar-color: #4b5563 #030712;
+        /* thumb track */
+    }
+
+    .dark .preview-scroll::-webkit-scrollbar-track {
+        background: #030712;
+        /* gray-950 */
+    }
+
+    .dark .preview-scroll::-webkit-scrollbar-thumb {
+        background-color: #4b5563;
+        /* gray-600 */
+        border-radius: 9999px;
+    }
+</style>

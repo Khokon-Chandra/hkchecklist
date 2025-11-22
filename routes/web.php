@@ -66,7 +66,6 @@ Route::middleware('auth')->group(function () {
     Route::prefix('properties')->name('properties.')->group(function () {
         Route::get('{property}/rooms', [PropertyController::class, 'rooms'])->name('rooms.index');
         Route::get('{property}/rooms/create', [PropertyController::class, 'createRoom'])->middleware('role:admin|owner')->name('rooms.create');
-        Route::post('{property}/rooms', [RoomController::class, 'store'])->name('rooms.store');
         Route::get('{property}/rooms/{room}/edit', [PropertyController::class, 'editRoom'])->name('rooms.edit');
         Route::put('{property}/rooms/{room}', [PropertyController::class, 'updateRoom'])->name('rooms.update');
         Route::delete('{property}/rooms/{room}', [PropertyController::class, 'destroyRoom'])->name('rooms.destroy');

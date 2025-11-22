@@ -40,33 +40,37 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y dark:divide-gray-700">
-                    @forelse($properties as $p)
+                    @forelse($properties as $property)
                         <tr>
                             <td class="px-4 py-2">
                                 @php
-                                    $photoUrl = method_exists($p, 'getPhotoUrlAttribute')
-                                        ? $p->photo_url
-                                        : ($p->photo_path
-                                            ? (Str::startsWith($p->photo_path, ['http://', 'https://'])
-                                                ? $p->photo_path
-                                                : asset('storage/' . $p->photo_path))
+                                    $photoUrl = method_exists($property, 'getPhotoUrlAttribute')
+                                        ? $property->photo_url
+                                        : ($property->photo_path
+                                            ? (Str::startsWith($property->photo_path, ['http://', 'https://'])
+                                                ? $property->photo_path
+                                                : asset('storage/' . $property->photo_path))
                                             : asset('images/placeholders/property.png'));
                                 @endphp
                                 <img src="{{ $photoUrl }}" class="h-12 w-12 rounded-xl object-cover" alt="Photo">
                             </td>
-                            <td class="px-4 py-2 font-medium">{{ $p->name }}</td>
-                            <td class="py-2 font-medium">{{ $p->owner->name }}</td>
-                            <td class="px-4 py-2">{{ $p->rooms_count }}</td>
-                            <td class="px-4 py-2">{{ $p->address ?? '—' }}</td>
+                            <td class="px-4 py-2 font-medium">{{ $property->name }}</td>
+                            <td class="py-2 font-medium">{{ $property->owner->name }}</td>
+                            <td class="px-4 py-2">{{ $property->rooms_count }}</td>
+                            <td class="px-4 py-2">{{ $property->address ?? '—' }}</td>
                             <td class="px-4 py-2">
-                                @if ($p->latitude && $p->longitude)
-                                    {{ number_format($p->latitude, 5) }}, {{ number_format($p->longitude, 5) }}
+                                @if ($property->latitude && $property->longitude)
+                                    {{ number_format($property->latitude, 5) }},
+                                    {{ number_format($property->longitude, 5) }}
                                 @else
                                     —
                                 @endif
                             </td>
                             <td class="px-4 py-2 text-center whitespace-nowrap">
-                                @includeIf('properties.__property_action', ['p' => $p])
+                                @includeIf('properties.__property_action', [
+                                    'property' => $property,
+                                    'rooms' => $rooms,
+                                ])
                             </td>
 
 
@@ -83,4 +87,82 @@
 
         {{ $properties->links() }}
     </div>
+    <script>
+        function assignRoomsPanel(propertyId, allRooms, initialAttachedIds = [], propertyRoomSoreUrl,
+            propertyRoomsAttachUrl) {
+            return {
+                propertyId,
+                rooms: allRooms,
+                search: '',
+                selectedIds: Array.from(new Set(initialAttachedIds)), // preselect attached rooms
+                newRoomName: '',
+                isSaving: false,
+                isCreating: false,
+
+                get filtered() {
+                    if (!this.search) return this.rooms
+                    const q = this.search.toLowerCase()
+                    return this.rooms.filter(r => r.name.toLowerCase().includes(q))
+                },
+
+                isSelected(id) {
+                    return this.selectedIds.includes(id)
+                },
+
+                toggle(id) {
+                    if (this.isSelected(id)) {
+                        this.selectedIds = this.selectedIds.filter(x => x !== id)
+                    } else {
+                        this.selectedIds.push(id)
+                    }
+                },
+
+                selectAll() {
+                    this.selectedIds = this.filtered.map(r => r.id)
+                },
+
+                clearSelection() {
+                    this.selectedIds = []
+                },
+
+                async createRoom() {
+                    if (!this.newRoomName.trim()) return
+
+                    this.isCreating = true
+                    try {
+                        api.post(propertyRoomSoreUrl, {
+                            name: this.newRoomName.trim()
+                        })
+                        const newId = Date.now()
+                        this.rooms.push({
+                            id: newId,
+                            name: this.newRoomName.trim(),
+                            is_default: false,
+                        })
+                        this.selectedIds.push(newId)
+                        this.newRoomName = ''
+                    } finally {
+                        this.isCreating = false
+                    }
+                },
+
+                async save() {
+                    this.isSaving = true
+                    try {
+                        await api.post(propertyRoomsAttachUrl, {
+                            room_ids: this.selectedIds
+                        })
+                        this.$dispatch('close-preview-panel', `assign-rooms-${this.propertyId}`)
+                        window.location.reload()
+                    } catch (e) {
+                        console.error(e)
+                        alert('Save failed – see console for details.')
+                    } finally {
+                        this.isSaving = false
+                    }
+                },
+            }
+        }
+    </script>
+
 </x-app-layout>
