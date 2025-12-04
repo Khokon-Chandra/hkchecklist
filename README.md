@@ -338,17 +338,13 @@ Then upload the `public/build` directory to the server.
 2. Point the domain/subdomain to: `public_html/hkchecklist/public`
 3. Or use **"Document Root"** feature to set: `/home/username/public_html/hkchecklist/public`
 
-#### Step 9: Set Up Cron Jobs
-
-In cPanel, go to **"Cron Jobs"** and add:
+#### Step 9: Create Storage Link
 
 ```bash
-# Queue Worker (runs every minute)
-* * * * * cd /home/username/public_html/hkchecklist && php artisan schedule:run >> /dev/null 2>&1
-
-# Or if you want to run queue worker continuously:
-* * * * * cd /home/username/public_html/hkchecklist && php artisan queue:work --stop-when-empty >> /dev/null 2>&1
+php artisan storage:link
 ```
+
+This creates a symbolic link from `public/storage` to `storage/app/public` for public access to uploaded files.
 
 #### Step 10: Optimize for Production
 
@@ -366,15 +362,17 @@ php artisan view:cache
 composer dump-autoload --optimize
 ```
 
-#### Step 11: Set Up Queue Worker (Alternative to Cron)
+#### Step 11: Set Up Queue Worker (Optional)
 
-For better performance, set up a supervisor or use cPanel's process manager to keep the queue worker running:
+For better performance, you can set up a supervisor or use cPanel's process manager to keep the queue worker running:
 
 ```bash
 php artisan queue:work --daemon
 ```
 
 Or configure via cPanel's **"Process Manager"** if available.
+
+**Note:** Queue processing is optional. The application will function without a continuous queue worker, though some background tasks may be delayed.
 
 ---
 
@@ -526,7 +524,6 @@ php artisan test
 - **PHP Version**: Always use PHP 8.2+ via "Select PHP Version" in cPanel
 - **Composer**: May need to be installed via SSH if not available in cPanel
 - **Node.js**: May not be available; build assets locally and upload
-- **Cron Jobs**: Use cPanel's Cron Jobs interface for scheduled tasks
 - **Email**: Configure SMTP settings in `.env` for email functionality
 
 ### Development vs Production
@@ -541,7 +538,7 @@ php artisan test
 - `APP_DEBUG=false`
 - `APP_ENV=production`
 - Assets pre-built with `npm run build`
-- Queue worker should run continuously (supervisor/cron)
+- Queue worker can be set up optionally (supervisor/process manager)
 - All caches enabled (`config:cache`, `route:cache`, `view:cache`)
 
 ---
@@ -582,7 +579,6 @@ This project is proprietary software. All rights reserved.
 - [ ] Run `php artisan migrate --force`
 - [ ] Build assets (`npm run build` or upload pre-built)
 - [ ] Configure document root to `public` directory
-- [ ] Set up cron jobs
 - [ ] Run `php artisan storage:link`
 - [ ] Optimize caches
 - [ ] Test application

@@ -1,0 +1,193 @@
+================================================================================
+HK CHECKLIST - SERVER SETUP INSTRUCTIONS
+================================================================================
+
+REPOSITORY: https://github.com/Khokon-Chandra/hkchecklist.git
+
+================================================================================
+STEP 1: CLONE REPOSITORY
+================================================================================
+
+Via SSH:
+cd ~/public_html
+git clone https://github.com/Khokon-Chandra/hkchecklist.git .
+
+Or upload files via cPanel File Manager or SFTP to your domain directory.
+
+================================================================================
+STEP 2: SERVER REQUIREMENTS
+================================================================================
+
+- PHP 8.2 or higher
+- MySQL 5.7+ or MariaDB 10.3+
+- Composer 2.0+
+- Node.js 18+ (optional - can build assets locally)
+
+Required PHP Extensions:
+- BCMath, Ctype, cURL, DOM, Fileinfo, JSON, Mbstring, OpenSSL, PCRE, PDO,
+  PDO_MySQL, Tokenizer, XML, GD or Imagick
+
+In cPanel: Go to "Select PHP Version" and ensure PHP 8.2+ is selected with
+all required extensions enabled.
+
+================================================================================
+STEP 3: CREATE DATABASE
+================================================================================
+
+1. In cPanel, go to "MySQL Databases"
+2. Create a new database (e.g., "hkchecklist")
+3. Create a database user with full privileges
+4. Note down: database name, username, and password
+
+================================================================================
+STEP 4: SET FILE PERMISSIONS
+================================================================================
+
+Via SSH (replace 'username' with your cPanel username):
+
+chown -R username:username /home/username/public_html/hkchecklist
+find /home/username/public_html/hkchecklist -type d -exec chmod 755 {} \;
+find /home/username/public_html/hkchecklist -type f -exec chmod 644 {} \;
+chmod -R 775 /home/username/public_html/hkchecklist/storage
+chmod -R 775 /home/username/public_html/hkchecklist/bootstrap/cache
+
+================================================================================
+STEP 5: INSTALL DEPENDENCIES
+================================================================================
+
+Via SSH:
+
+cd /home/username/public_html/hkchecklist
+composer install --no-dev --optimize-autoloader
+
+If Composer is not installed:
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+================================================================================
+STEP 6: CONFIGURE ENVIRONMENT
+================================================================================
+
+Create .env file:
+
+cp .env.example .env
+nano .env
+
+Update these key settings:
+
+APP_NAME="HK Checklist"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database_name
+DB_USERNAME=your_database_user
+DB_PASSWORD=your_database_password
+
+SESSION_DRIVER=database
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+
+================================================================================
+STEP 7: GENERATE APPLICATION KEY
+================================================================================
+
+php artisan key:generate
+
+================================================================================
+STEP 8: RUN MIGRATIONS
+================================================================================
+
+php artisan migrate --force
+
+This creates all database tables. For demo data, use:
+php artisan migrate --seed --force
+
+================================================================================
+STEP 9: BUILD FRONTEND ASSETS
+================================================================================
+
+Option A - If Node.js is available on server:
+npm install
+npm run build
+
+Option B - Build locally and upload:
+On your local machine, run:
+npm install
+npm run build
+Then upload the 'public/build' directory to server.
+
+================================================================================
+STEP 10: CONFIGURE DOCUMENT ROOT
+================================================================================
+
+In cPanel:
+1. Go to "Subdomains" or "Addon Domains"
+2. Set Document Root to: /home/username/public_html/hkchecklist/public
+Or use "Document Root" feature to point to the 'public' directory.
+
+================================================================================
+STEP 11: CREATE STORAGE LINK
+================================================================================
+
+php artisan storage:link
+
+This creates a symbolic link for uploaded files to be accessible publicly.
+
+================================================================================
+STEP 12: OPTIMIZE FOR PRODUCTION
+================================================================================
+
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+composer dump-autoload --optimize
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Issue: 500 Internal Server Error
+- Check storage/logs/laravel.log
+- Verify storage and bootstrap/cache are writable (chmod 775)
+
+Issue: Assets not loading
+- Run: npm run build
+- Check APP_URL in .env matches your domain
+
+Issue: Images not displaying
+- Run: php artisan storage:link
+- Check file permissions on storage/app/public
+
+Issue: Permission denied
+- Verify file ownership: chown -R username:username /path/to/project
+- Check directory permissions: chmod -R 755 directories
+
+================================================================================
+QUICK VERIFICATION CHECKLIST
+================================================================================
+
+[ ] Files uploaded to server
+[ ] File permissions set correctly
+[ ] Composer dependencies installed
+[ ] .env file created and configured
+[ ] Application key generated
+[ ] Database created and migrations run
+[ ] Frontend assets built
+[ ] Document root set to 'public' directory
+[ ] Storage link created
+[ ] Production caches enabled
+[ ] Application accessible via browser
+
+================================================================================
+SUPPORT
+================================================================================
+
+For detailed instructions, see README.md in the repository.
+For issues, check storage/logs/laravel.log
+
+================================================================================
+
