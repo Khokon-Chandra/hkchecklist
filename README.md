@@ -169,9 +169,18 @@ The application will be available at `http://localhost:8000`
 #### Step 10: Access the Application
 
 Default demo users (created by seeders):
-- **Admin**: Check `database/seeders/DemoUsersSeeder.php` for credentials
-- **Owner**: Check seeders for owner account
-- **Housekeeper**: Check seeders for housekeeper account
+
+**Admin:**
+- Email: `admin@example.com`
+- Password: `password`
+
+**Owner:**
+- Email: `owner@example.com`
+- Password: `password`
+
+**Housekeeper:**
+- Email: `housekeeper@example.com`
+- Password: `password`
 
 ---
 
