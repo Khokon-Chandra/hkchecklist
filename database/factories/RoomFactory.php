@@ -12,7 +12,6 @@ class RoomFactory extends Factory
     public function definition(): array
     {
         return [
-            'property_id' => 1, // override in seeder
             'name'        => fake()->randomElement(['Bedroom', 'Kitchen', 'Bathroom', 'Living Room', 'Dining']),
             'is_default'  => false,
         ];

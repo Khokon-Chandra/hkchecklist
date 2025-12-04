@@ -2,89 +2,130 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Property;
 use App\Models\Room;
+use App\Models\Task;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RoomController extends Controller
 {
 
-    public function index(Property $property)
+    public function index(Request $request)
     {
 
-        $rooms = $property->rooms()->withCount('tasks')->orderBy('name')->paginate(20);
+        $rooms = Room::withCount('tasks')
+            ->when($request->search ?? false, function ($query, $search) {
+                $query->where('name', 'like', "%$search%");
+            })
+            ->latest()
+            ->paginate(20);
+
+        $tasks = Task::orderBy('type')->orderBy('name')->get([
+            'id',
+            'name',
+            'type',
+            'is_default',
+        ]);
 
         return view('rooms.index', [
-            'property'    => $property,
             'rooms'       => $rooms,
-            'navProperty' => $property,
+            'tasks'       => $tasks
         ]);
     }
 
-    public function create(Property $property)
+    public function create()
     {
 
-        return view('rooms.create', [
-            'property'    => $property,
-            'navProperty' => $property,
-        ]);
+        return view('rooms.create');
     }
 
-    public function store(Request $request, Property $property)
+    public function store(Request $request)
     {
 
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
+            'assign_defaults'   => ['sometimes', 'boolean']
         ]);
 
-        $property->rooms()->create([
+        $room = Room::create([
             'name'       => $data['name'],
             'is_default' => (bool)($data['is_default'] ?? false),
         ]);
 
-        return redirect()->route('rooms.index', $property)->with('ok', 'Room added.');
+        return redirect()->route('rooms.index')->with('ok', 'Room added.');
     }
 
-    public function edit(Property $property, Room $room)
+    public function edit(Room $room)
     {
-        $this->assertBelongs($room, $property);
+
+        // Load all tasks that can be assigned to a room
+        $tasks = Task::orderBy('type')->orderBy('name')->get(['id', 'name', 'type', 'is_default']);
+
+        // Load current tasks for this room
+        $room->load('tasks');
 
         return view('rooms.edit', [
-            'property'    => $property,
-            'room'        => $room,
-            'navProperty' => $property,
+            'room'  => $room,
+            'tasks' => $tasks,
         ]);
     }
 
-    public function update(Request $request, Property $property, Room $room)
+    public function update(Request $request, Room $room)
     {
-        $this->assertBelongs($room, $property);
-
-        $data = $request->validate([
+        $validated = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
+
+            // tasks from the multi-select
+            'task_ids'   => ['nullable', 'array'],
+            'task_ids.*' => ['integer', 'exists:tasks,id'],
         ]);
 
         $room->update([
-            'name'       => $data['name'],
-            'is_default' => (bool)($data['is_default'] ?? false),
+            'name'       => $validated['name'],
+            'is_default' => $validated['is_default'] ?? false,
         ]);
 
-        return redirect()->route('rooms.index', $property)->with('ok', 'Room updated.');
+        // Attach / detach tasks in the pivot table
+        $room->tasks()->sync($validated['task_ids'] ?? []);
+
+        return redirect()
+            ->route('rooms.index')
+            ->with('ok', 'Room & tasks updated.');
     }
 
-    public function destroy(Property $property, Room $room)
-    {
-        $this->assertBelongs($room, $property);
 
+    public function destroy(Room $room)
+    {
         $room->delete();
 
-        return redirect()->route('rooms.index', $property)->with('ok', 'Room deleted.');
+        return redirect()->route('rooms.index')->with('ok', 'Room deleted.');
     }
 
-    private function assertBelongs(Room $room, Property $property): void
+
+    public function bulkAttachTasks(Request $request)
     {
-        abort_unless($room->property_id === $property->id, 404);
+        $validated = $request->validate([
+            'room_ids'   => ['required', 'array', 'min:1'],
+            'room_ids.*' => ['integer', 'exists:rooms,id'],
+            'task_ids'   => ['required', 'array', 'min:1'],
+            'task_ids.*' => ['integer', 'exists:tasks,id'],
+        ]);
+
+        $rooms = Room::whereIn('id', $validated['room_ids'])->get();
+
+        foreach ($rooms as $room) {
+            // assumes many-to-many relationship: Room::tasks()
+            $room->tasks()->syncWithoutDetaching($validated['task_ids']);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'ok']);
+        }
+
+        return redirect()
+            ->route('rooms.index')
+            ->with('ok', 'Tasks assigned to selected rooms.');
     }
 }

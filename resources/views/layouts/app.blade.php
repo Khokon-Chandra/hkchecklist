@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'K UI') }}</title>
+    <title>{{ config('app.name', 'HK Checklist') }}</title>
 
     <!-- Fonts -->
     <link
@@ -16,7 +16,7 @@
     <!-- Styles -->
     <style>
         [x-cloak] {
-            display: none;
+            display: none !important;
         }
     </style>
 

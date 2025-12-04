@@ -7,7 +7,7 @@
         <form method="get" class="flex flex-wrap items-end gap-3">
             <div>
                 <x-form.label value="Property" />
-                <x-form.select name="property_id" class="w-full rounded border-gray-300">
+                <x-form.select name="property_id" class="!py-1 w-full rounded border-gray-300">
                     <option value="">All</option>
                     @foreach ($properties as $p)
                         <option value="{{ $p->id }}" @selected($filters['property_id'] == $p->id)>{{ $p->name }}</option>
@@ -16,7 +16,7 @@
             </div>
             <div>
                 <x-form.label value="Housekeeper" />
-                <x-form.select name="housekeeper_id" class="w-full rounded border-gray-300">
+                <x-form.select name="housekeeper_id" class="!py-1 w-full rounded border-gray-300">
                     <option value="">All</option>
                     @foreach ($housekeepers as $hk)
                         <option value="{{ $hk->id }}" @selected($filters['housekeeper_id'] == $hk->id)>{{ $hk->name }}</option>
@@ -25,7 +25,7 @@
             </div>
             <div>
                 <x-form.label value="Status" />
-                <x-form.select name="status" class="w-full rounded border-gray-300">
+                <x-form.select name="status" class="!py-1 w-full rounded border-gray-300">
                     <option value="">All</option>
                     @foreach (['pending', 'in_progress', 'completed'] as $st)
                         <option value="{{ $st }}" @selected($filters['status'] === $st)>

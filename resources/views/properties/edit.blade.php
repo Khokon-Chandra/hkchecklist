@@ -1,11 +1,26 @@
+{{-- resources/views/properties/edit.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl">Edit Property</h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Edit Property
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Update this property. Latitude &amp; longitude will be updated automatically from the address if
+                    left empty.
+                </p>
+            </div>
+
+            <x-button variant="secondary" href="{{ route('properties.index') }}">
+                Back to List
+            </x-button>
+        </div>
     </x-slot>
 
     <x-card>
         <form x-data="propertyEditForm()" method="post" action="{{ route('properties.update', $property) }}"
-            enctype="multipart/form-data">
+            enctype="multipart/form-data" @submit.prevent="handleSubmit($event)">
             @csrf
             @method('PUT')
 
@@ -18,7 +33,7 @@
                 {{-- Left column: Image (current + replace/remove) --}}
                 <div class="lg:col-span-1">
                     <x-form.label value="Property Photo" />
-                    <div class="mt-1 border-2 border-dashed rounded-2xl p-4 text-center">
+                    <div class="mt-1 border-2 border-dashed rounded-2xl p-4 text-center bg-gray-50/40">
                         @php
                             $photoUrl = method_exists($property, 'getPhotoUrlAttribute')
                                 ? $property->photo_url
@@ -31,24 +46,31 @@
 
                         <template x-if="!previewUrl">
                             <img src="{{ $photoUrl }}" alt="Current photo"
-                                class="rounded-xl object-cover h-48 w-full" />
+                                class="rounded-xl object-cover h-48 w-full shadow-sm" />
                         </template>
+
                         <template x-if="previewUrl">
-                            <img :src="previewUrl" alt="Preview" class="rounded-xl object-cover h-48 w-full" />
+                            <img :src="previewUrl" alt="Preview"
+                                class="rounded-xl object-cover h-48 w-full shadow-sm" />
                         </template>
 
                         <input type="file" name="photo" class="hidden" x-ref="file" @change="preview($event)"
                             accept="image/*" />
+
                         <div class="mt-3 flex items-center justify-center gap-3">
-                            <x-button type="button" variant="secondary" @click="$refs.file.click()">Choose
-                                File</x-button>
+                            <x-button type="button" variant="secondary" @click="$refs.file.click()">
+                                Choose File
+                            </x-button>
+
                             @if ($property->photo_path)
-                                <label class="inline-flex items-center gap-2 text-sm">
-                                    <input type="checkbox" name="remove_photo" value="1" class="rounded">
+                                <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                                    <input type="checkbox" name="remove_photo" value="1"
+                                        class="rounded border-gray-300">
                                     Remove photo
                                 </label>
                             @endif
                         </div>
+
                         @error('photo')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -57,7 +79,6 @@
 
                 {{-- Right column: Fields --}}
                 <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-
                     {{-- Admin-only owner select --}}
                     @role('admin')
                         <div class="md:col-span-2">
@@ -75,7 +96,8 @@
                     {{-- Name --}}
                     <div class="md:col-span-2">
                         <x-form.label value="Name" />
-                        <x-form.input name="name" class="w-full" required :value="old('name', $property->name)" />
+                        <x-form.input name="name" class="w-full" required :value="old('name', $property->name)"
+                            placeholder="e.g. Seaside Apartment 3B" />
                         <x-form.error :messages="$errors->get('name')" />
                     </div>
 
@@ -84,30 +106,72 @@
                         <x-form.label value="Address (optional)" />
                         <x-form.input name="address" class="w-full" x-model="address" @blur="geocodeIfNeeded()"
                             :value="old('address', $property->address)" placeholder="e.g. 1600 Amphitheatre Pkwy, Mountain View" />
-                        <p class="text-xs text-gray-500 mt-1">
-                            If you provide an address and leave coordinates empty, we’ll auto-fill Lat/Lng.
-                        </p>
+
+                        <div class="mt-1 space-y-1">
+                            <p class="text-xs text-gray-500 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 9v3m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" />
+                                </svg>
+                                <span>
+                                    If you provide an address and leave Latitude/Longitude empty,
+                                    we’ll auto-fill them for you.
+                                </span>
+                            </p>
+
+                            <p class="text-xs text-gray-500">
+                                You do <span class="font-semibold">not</span> need to fetch latitude/longitude manually.
+                                They’re updated automatically when you save.
+                            </p>
+
+                            <template x-if="isGeocoding">
+                                <p class="text-xs text-indigo-600 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M12 3a9 9 0 019 9m-9 9a9 9 0 01-9-9" />
+                                    </svg>
+                                    Fetching coordinates&hellip; please wait.
+                                </p>
+                            </template>
+
+                            <template x-if="geocodeError">
+                                <p class="text-xs text-red-600" x-text="geocodeError"></p>
+                            </template>
+                        </div>
+
                         <x-form.error :messages="$errors->get('address')" />
                     </div>
 
-                    {{-- Latitude / Longitude --}}
+                    {{-- Latitude --}}
                     <div>
                         <x-form.label value="Latitude (optional)" />
-                        <x-form.input name="latitude" class="w-full" x-model="latitude" :value="old('latitude', $property->latitude)" />
+                        <x-form.input name="latitude" class="w-full" x-model="latitude" :value="old('latitude', $property->latitude)"
+                            placeholder="Auto-filled from address" />
                         <x-form.error :messages="$errors->get('latitude')" />
                     </div>
 
+                    {{-- Longitude --}}
                     <div>
                         <x-form.label value="Longitude (optional)" />
-                        <x-form.input name="longitude" class="w-full" x-model="longitude" :value="old('longitude', $property->longitude)" />
+                        <x-form.input name="longitude" class="w-full" x-model="longitude" :value="old('longitude', $property->longitude)"
+                            placeholder="Auto-filled from address" />
                         <x-form.error :messages="$errors->get('longitude')" />
                     </div>
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-8">
-                <x-button>Update</x-button>
-                <x-button variant="secondary" href="{{ route('properties.index') }}">Cancel</x-button>
+            <div class="flex gap-2 mt-8 justify-end">
+                <x-button x-bind:disabled="isGeocoding"
+                    x-bind:class="isGeocoding ? 'opacity-60 cursor-not-allowed' : ''">
+                    <span x-show="!isGeocoding">Update</span>
+                    <span x-show="isGeocoding">Fetching coordinates…</span>
+                </x-button>
+
+                <x-button variant="secondary" href="{{ route('properties.index') }}">
+                    Cancel
+                </x-button>
             </div>
         </form>
     </x-card>
@@ -120,13 +184,49 @@
                 latitude: @json(old('latitude', $property->latitude)),
                 longitude: @json(old('longitude', $property->longitude)),
                 previewUrl: null,
-                preview(e) {
-                    const file = e.target.files?.[0];
+
+                // UX state
+                isGeocoding: false,
+                geocodeError: '',
+
+                preview(event) {
+                    const file = event.target.files?.[0];
                     if (!file) return;
                     this.previewUrl = URL.createObjectURL(file);
                 },
-                async geocodeIfNeeded() {
-                    if (!this.address || this.latitude || this.longitude) return;
+
+                async handleSubmit(event) {
+                    this.geocodeError = '';
+
+                    if (this.isGeocoding) {
+                        return;
+                    }
+
+                    const needsGeocode = this.address && (!this.latitude || !this.longitude);
+
+                    if (needsGeocode) {
+                        await this.geocodeIfNeeded(true); // force on submit
+                    }
+
+                    // If address is set but coordinates are still missing after an attempt, block submit
+                    if (this.address && (!this.latitude || !this.longitude)) {
+                        this.geocodeError ||=
+                            'We could not fetch coordinates automatically. Please enter Latitude/Longitude manually.';
+                        return;
+                    }
+
+                    event.target.submit();
+                },
+
+                async geocodeIfNeeded(force = false) {
+                    if (!this.address) return;
+
+                    // Skip if not forced and both coords already exist
+                    if (!force && this.latitude && this.longitude) return;
+
+                    this.isGeocoding = true;
+                    this.geocodeError = '';
+
                     try {
                         const url =
                             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.address)}&limit=1`;
@@ -135,15 +235,28 @@
                                 'Accept': 'application/json'
                             }
                         });
+
+                        if (!res.ok) {
+                            throw new Error(`HTTP ${res.status}`);
+                        }
+
                         const data = await res.json();
+
                         if (Array.isArray(data) && data.length) {
                             this.latitude = data[0].lat;
                             this.longitude = data[0].lon;
+                        } else {
+                            this.geocodeError =
+                                'No coordinates found for this address. You can still enter them manually.';
                         }
-                    } catch (e) {
-                        console.warn('Geocoding failed', e);
+                    } catch (error) {
+                        console.warn('Geocoding failed', error);
+                        this.geocodeError =
+                            'Unable to fetch coordinates right now. Please try again or enter them manually.';
+                    } finally {
+                        this.isGeocoding = false;
                     }
-                }
+                },
             }
         }
     </script>

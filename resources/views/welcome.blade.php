@@ -215,7 +215,7 @@
                 <ol class="mt-4 grid sm:grid-cols-3 gap-6 text-sm">
                     <li class="rounded-lg p-4 bg-gray-50 dark:bg-gray-900/40">
                         <div class="font-medium">1. Set up</div>
-                        <p class="mt-1 text-gray-600 dark:text-gray-300">Create properties, rooms, and default tasks.
+                        <p class="mt-1 text-gray-600 dark:text-gray-300">Create properties, rooms, and default properties.tasks.
                         </p>
                     </li>
                     <li class="rounded-lg p-4 bg-gray-50 dark:bg-gray-900/40">

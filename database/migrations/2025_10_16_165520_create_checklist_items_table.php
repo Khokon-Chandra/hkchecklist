@@ -21,7 +21,6 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->timestamp('checked_at')->nullable();
             $table->timestamps();
-            $table->unique(['session_id', 'task_id']);
         });
     }
 

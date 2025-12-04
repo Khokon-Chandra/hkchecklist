@@ -25,22 +25,27 @@
 
     {{-- KPIs --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Properties</div>
-            <div class="text-2xl font-semibold mt-1">{{ data_get($stats, 'properties', 0) }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1"><a href="{{ route('properties.index') }}"
-                    class="text-indigo-600 hover:underline">View all</a></div>
+            <a href="{{ route('properties.index') }}" class="block">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Properties</div>
+                <div class="text-2xl font-semibold mt-1">{{ data_get($stats, 'properties', 0) }}</div>
+            </a>
         </div>
+
+
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">Rooms</div>
             <div class="text-2xl font-semibold mt-1">{{ data_get($stats, 'rooms', 0) }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">across all properties</div>
         </div>
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-            <div class="text-sm text-gray-500 dark:text-gray-400">Upcoming Sessions (7d)</div>
-            <div class="text-2xl font-semibold mt-1">{{ data_get($stats, 'upcoming_7d', 0) }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1"><a href="{{ route('calendar.index') }}"
-                    class="text-indigo-600 hover:underline">See calendar</a></div>
+            <a href="{{ route('manage.sessions.index') }}" class="block">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Upcoming Sessions (7d)</div>
+                <div class="text-2xl font-semibold mt-1">{{ data_get($stats, 'upcoming_7d', 0) }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1"><a href="{{ route('calendar.index') }}"
+                        class="text-indigo-600 hover:underline">See calendar</a></div>
+            </a>
         </div>
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">Completed (30d)</div>
@@ -183,7 +188,7 @@
                                                 {{ $p->rooms_count ?? '0' }} rooms</div>
                                         </div>
                                         <div class="flex items-center gap-3">
-                                            <a href="{{ route('rooms.index', $p) }}"
+                                            <a href="{{ route('properties.rooms.index', $p) }}"
                                                 class="text-sm text-indigo-600 hover:underline">Rooms</a>
                                             <a href="{{ route('properties.edit', $p) }}"
                                                 class="text-sm text-gray-600 dark:text-gray-300 hover:underline">Edit</a>

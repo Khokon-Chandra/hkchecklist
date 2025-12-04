@@ -5,7 +5,7 @@
 
     <div class="flex items-center justify-between mb-4">
         <form method="get" class="flex gap-2">
-            <x-form.select name="role">
+            <x-form.select class="!py-1" name="role">
                 <option value="">All roles</option>
                 <option value="admin" @selected(request('role') === 'admin')>Admin</option>
                 <option value="owner" @selected(request('role') === 'owner')>Owner</option>
@@ -46,7 +46,7 @@
                                 <form method="post" action="{{ route('users.assignRole', $u) }}"
                                     class="inline-flex gap-2">
                                     @csrf
-                                    <x-form.select name="role">
+                                    <x-form.select name="role" class="!border-0 !py-1">
                                         <option>--select role--</option>
                                         <option value="owner">Owner</option>
                                         <option value="housekeeper">Housekeeper</option>

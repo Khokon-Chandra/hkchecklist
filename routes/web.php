@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\DashboardController;
@@ -7,6 +8,16 @@ use App\Http\Controllers\ManageSessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyRoomAttachController;
+use App\Http\Controllers\PropertyRoomController;
+use App\Http\Controllers\RoomTaskOrderController;
+use App\Http\Controllers\PropertyRoomOrderController;
+use App\Http\Controllers\RoomController;
+use App\Http\Controllers\RoomSuggestionController;
+use App\Http\Controllers\RoomTaskAttachController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskMediaController;
+use App\Http\Controllers\TaskSuggestionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,23 +41,52 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+
+
+    Route::resource('rooms', RoomController::class)->except('show');
+
+    Route::post('/rooms/{room}/tasks/attach', [RoomTaskAttachController::class, 'store'])
+        ->name('rooms.tasks.attach');
+
+    Route::post(
+        '/rooms/bulk-attach-tasks',
+        [RoomController::class, 'bulkAttachTasks']
+    )->name('rooms.bulk-attach-tasks');
+
+
+    Route::resource('tasks', TaskController::class)->except('show');
+
+    Route::get('/activity', [ActivityController::class, 'index'])
+        ->name('activity.index');
+
+
     Route::resource('properties', PropertyController::class)->except('show');
 
+    // Rooms and tasks (nested under property)
+    Route::prefix('properties')->name('properties.')->group(function () {
+        Route::get('{property}/rooms', [PropertyController::class, 'rooms'])->name('rooms.index');
+        Route::get('{property}/rooms/create', [PropertyController::class, 'createRoom'])->middleware('role:admin|owner')->name('rooms.create');
+        Route::get('{property}/rooms/{room}/edit', [PropertyController::class, 'editRoom'])->name('rooms.edit');
+        Route::put('{property}/rooms/{room}', [PropertyController::class, 'updateRoom'])->name('rooms.update');
+        Route::delete('{property}/rooms/{room}', [PropertyController::class, 'destroyRoom'])->name('rooms.destroy');
+        Route::patch('{property}/rooms/order', [PropertyRoomOrderController::class, 'update'])
+            ->name('rooms.order');
 
-    // Rooms (nested under property)
-    Route::get('properties/{property}/rooms', [\App\Http\Controllers\RoomController::class, 'index'])->name('rooms.index');
-    Route::get('properties/{property}/rooms/create', [\App\Http\Controllers\RoomController::class, 'create'])->middleware('role:admin|owner')->name('rooms.create');
-    Route::post('properties/{property}/rooms', [\App\Http\Controllers\RoomController::class, 'store'])->name('rooms.store');
-    Route::get('properties/{property}/rooms/{room}/edit', [\App\Http\Controllers\RoomController::class, 'edit'])->name('rooms.edit');
-    Route::put('properties/{property}/rooms/{room}', [\App\Http\Controllers\RoomController::class, 'update'])->name('rooms.update');
-    Route::delete('properties/{property}/rooms/{room}', [\App\Http\Controllers\RoomController::class, 'destroy'])->name('rooms.destroy');
+        Route::post('{property}/rooms/attach', [PropertyRoomAttachController::class, 'store'])
+            ->name('rooms.attach');
 
-    // Tasks (nested under property + room)
-    Route::get('properties/{property}/rooms/{room}/tasks', [\App\Http\Controllers\TaskController::class, 'index'])->name('tasks.index');
-    Route::get('properties/{property}/rooms/{room}/tasks/create', [\App\Http\Controllers\TaskController::class, 'create'])->name('tasks.create');
-    Route::post('properties/{property}/rooms/{room}/tasks', [\App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
-    Route::get('properties/{property}/rooms/{room}/tasks/{task}/edit', [\App\Http\Controllers\TaskController::class, 'edit'])->name('tasks.edit');
-    Route::put('properties/{property}/rooms/{room}/tasks/{task}', [\App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
+        Route::get('{property}/rooms/{room}/tasks', [PropertyController::class, 'tasks'])->name('tasks.index');
+        Route::patch('{property}/rooms/{room}/tasks', [RoomTaskOrderController::class, 'update'])->name('tasks.order');
+        Route::get('{property}/rooms/{room}/tasks/create', [PropertyController::class, 'createTask'])->name('tasks.create');
+        Route::post('{property}/rooms/{room}/tasks', [PropertyController::class, 'storeTask'])->name('tasks.store');
+        Route::get('{property}/rooms/{room}/tasks/{task}/edit', [PropertyController::class, 'editTask'])->name('tasks.edit');
+        Route::put('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'updateTask'])->name('tasks.update');
+        Route::delete('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'detachTask'])->name('tasks.detach');
+
+
+        Route::post('/tasks/{task}/media',               [TaskMediaController::class, 'store'])->name('tasks.media.store');
+        Route::delete('/tasks/{task}/media/{media}',     [TaskMediaController::class, 'destroy'])->name('tasks.media.destroy');
+    });
 
     // Users (read/assign role)
     Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
@@ -58,10 +98,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/sessions/{session}/start', [\App\Http\Controllers\SessionController::class, 'start'])->name('sessions.start');
     Route::post('/sessions/{session}/complete', [\App\Http\Controllers\SessionController::class, 'complete'])->name('sessions.complete');
 
-    Route::post('/sessions/{session}/checklist/{task}/toggle', [ChecklistController::class, 'toggle'])
+    Route::post('/sessions/{session}/rooms/{room}/tasks/{task}/toggle', [ChecklistController::class, 'toggle'])
         ->name('checklist.toggle');
-    Route::post('/sessions/{session}/checklist/{task}/note',   [ChecklistController::class, 'note'])
+
+    Route::post('/sessions/{session}/rooms/{room}/tasks/{task}/note', [ChecklistController::class, 'note'])
         ->name('checklist.note');
+
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
 
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
@@ -79,18 +121,26 @@ Route::middleware(['auth', 'role:owner|admin'])
     });
 
 
-// useless routes
-// Just to demo sidebar dropdown links active states.
-Route::get('/buttons/text', function () {
-    return view('buttons-showcase.text');
-})->middleware(['auth'])->name('buttons.text');
+Route::middleware(['auth'])->group(function () {
+    // Autocomplete suggestions for room names
+    Route::get('/rooms/suggest', [RoomSuggestionController::class, 'index'])
+        ->name('rooms.suggest');
 
-Route::get('/buttons/icon', function () {
-    return view('buttons-showcase.icon');
-})->middleware(['auth'])->name('buttons.icon');
+    Route::get('/tasks/suggest', [TaskSuggestionController::class, 'index'])
+        ->name('tasks.suggest');
 
-Route::get('/buttons/text-icon', function () {
-    return view('buttons-showcase.text-icon');
-})->middleware(['auth'])->name('buttons.text-icon');
+    // Property → Rooms create/store
+    Route::get('/properties/{property}/rooms/create', [PropertyRoomController::class, 'create'])
+        ->name('properties.rooms.create');
+
+    Route::post('/properties/{property}/rooms', [PropertyRoomController::class, 'store'])
+        ->name('properties.rooms.store');
+});
+
+
+
+
+
+
 
 require __DIR__ . '/auth.php';
