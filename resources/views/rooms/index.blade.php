@@ -116,20 +116,42 @@
 
 
 
-                                        <x-dropdown.item as="form" method="POST"
-                                            href="{{ route('rooms.destroy', $r) }}">
-                                            @method('DELETE')
-                                            <button type="submit" data-menu-item
-                                                class="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50/60 dark:hover:bg-rose-900/20 rounded">
+                                        @if($r->properties_count > 0)
+                                            {{-- Button that shows modal if room has properties --}}
+                                            <x-dropdown.item as="button"
+                                                x-on:click="
+                                                    $dispatch('open-modal', 'cannot-delete-room-{{ $r->id }}');
+                                                    $root.closest('[x-data]')?.__x?.$data?.close?.();
+                                                ">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
                                                     viewBox="0 0 24 24" fill="currentColor">
                                                     <path
                                                         d="M9 3a1 1 0 0 0-1 1v1H4a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm2 4a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7zm4 0a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7z" />
                                                 </svg>
                                                 <span>Delete</span>
-                                            </button>
-                                        </x-dropdown.item>
+                                            </x-dropdown.item>
+                                        @else
+                                            {{-- Form for rooms without properties --}}
+                                            <x-dropdown.item as="form" method="POST"
+                                                href="{{ route('rooms.destroy', $r) }}">
+                                                @method('DELETE')
+                                                <button type="submit" data-menu-item
+                                                    class="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50/60 dark:hover:bg-rose-900/20 rounded">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                        viewBox="0 0 24 24" fill="currentColor">
+                                                        <path
+                                                            d="M9 3a1 1 0 0 0-1 1v1H4a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm2 4a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7zm4 0a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7z" />
+                                                    </svg>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </x-dropdown.item>
+                                        @endif
                                     </x-action-dropdown>
+
+                                    {{-- Cannot Delete Modal - Shows when room has properties --}}
+                                    @if($r->properties_count > 0)
+                                        <x-cannot-delete-room-modal :room="$r" />
+                                    @endif
                                 </td>
                             </tr>
                         @empty

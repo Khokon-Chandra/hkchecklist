@@ -15,6 +15,10 @@ class RoomController extends Controller
     {
 
         $rooms = Room::withCount('tasks')
+            ->withCount('properties')
+            ->with(['properties' => function ($query) {
+                $query->select('properties.id', 'properties.name', 'properties.address');
+            }])
             ->when($request->search ?? false, function ($query, $search) {
                 $query->where('name', 'like', "%$search%");
             })
