@@ -25,4 +25,22 @@ class RoomTaskOrderController extends Controller
 
         return response()->json(['status' => 'ok']);
     }
+
+    /**
+     * PATCH /rooms/{room}/tasks
+     * Handle task ordering for standalone rooms (not under properties)
+     */
+    public function updateForRoom(Request $request, Room $room)
+    {
+        $data = $request->validate([
+            'order' => ['required', 'array'],
+            'order.*' => ['integer', 'exists:tasks,id'],
+        ]);
+
+        foreach ($data['order'] as $index => $taskId) {
+            $room->tasks()->updateExistingPivot($taskId, ['sort_order' => $index + 1]);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
 }
