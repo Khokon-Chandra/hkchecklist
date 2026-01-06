@@ -95,20 +95,6 @@
 
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     <x-action-dropdown align="right" width="w-56" label="Room actions">
-                                        <x-dropdown.item as="button"
-                                            x-on:click="
-                                                            $dispatch('open-modal', 'assign-tasks-{{ $r->id }}');
-                                                            $root.closest('[x-data]')?.__x?.$data?.close?.();
-                                                         ">
-                                            {{-- plus icon --}}
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
-                                                fill="currentColor">
-                                                <path
-                                                    d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z" />
-                                            </svg>
-                                            <span>Assign Tasks</span>
-                                        </x-dropdown.item>
-
                                         <x-dropdown.item href="{{ route('rooms.edit', $r) }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
                                                 fill="currentColor">
@@ -119,7 +105,7 @@
                                         </x-dropdown.item>
 
 
-                                        <x-dropdown.item href="{{ route('tasks.index', ['room_id' => $r->id]) }}">
+                                        <x-dropdown.item href="{{ route('rooms.tasks.index', $r) }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
                                                 fill="currentColor">
                                                 <path
@@ -144,9 +130,6 @@
                                             </button>
                                         </x-dropdown.item>
                                     </x-action-dropdown>
-
-                                    {{-- existing per-room modal --}}
-                                    <x-assign-tasks :room="$r" />
                                 </td>
                             </tr>
                         @empty
