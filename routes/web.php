@@ -43,7 +43,7 @@ Route::middleware('auth')->group(function () {
 
 
 
-    Route::resource('rooms', RoomController::class)->except('show');
+    Route::resource('rooms', RoomController::class)->except(['show', 'create']);
 
     Route::post('/rooms/{room}/tasks/attach', [RoomTaskAttachController::class, 'store'])
         ->name('rooms.tasks.attach');

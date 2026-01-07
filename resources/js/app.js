@@ -31,6 +31,7 @@ import dropdown from './dropdown'
 import roomsIndex from './rooms-index'
 import roomTasksEditor from './room-tasks-editor'
 import taskCreateForm from './task-create-form'
+import roomCreateForm from './room-create-form'
 
 // ⛔️ DO NOT MODIFY — main app interaction (kept exactly as you sent)
 document.addEventListener('alpine:init', () => {
@@ -119,6 +120,9 @@ document.addEventListener('alpine:init', () => {
 
     // New: task create form
     Alpine.data('taskCreateForm', taskCreateForm)
+
+    // New: room create form
+    Alpine.data('roomCreateForm', roomCreateForm)
 })
 
 Alpine.plugin(collapse)

@@ -38,15 +38,8 @@ class RoomController extends Controller
         ]);
     }
 
-    public function create()
-    {
-
-        return view('rooms.create');
-    }
-
     public function store(Request $request)
     {
-
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
@@ -57,6 +50,14 @@ class RoomController extends Controller
             'name'       => $data['name'],
             'is_default' => (bool)($data['is_default'] ?? false),
         ]);
+
+        // Return JSON for AJAX requests, otherwise redirect
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => 'Room added.',
+                'room' => $room,
+            ]);
+        }
 
         return redirect()->route('rooms.index')->with('ok', 'Room added.');
     }

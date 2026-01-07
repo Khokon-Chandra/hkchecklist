@@ -36,7 +36,7 @@
                         x-show="selectedRoomIds.length > 0" x-text="selectedRoomIds.length"></span>
                 </x-button>
 
-                <x-button variant="primary" href="{{ route('rooms.create') }}">
+                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room')">
                     + Add Room
                 </x-button>
             </div>
@@ -269,4 +269,97 @@
             </div>
         </x-modal>
     </div>
+
+    {{-- Add Room Sidebar Panel --}}
+    <x-preview-panel
+        name="add-room"
+        :overlay="true"
+        side="right"
+        initialWidth="28rem"
+        minWidth="24rem"
+        title="Add Room"
+        subtitle="Create a new room template">
+
+        <div class="p-6 space-y-6" x-data="roomCreateForm({
+            storeUrl: @js(route('rooms.store')),
+            csrf: @js(csrf_token())
+        })">
+            <form @submit.prevent="submitForm" class="space-y-6">
+                {{-- Room Name --}}
+                <div>
+                    <label for="room-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Room Name <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="room-name"
+                        name="name"
+                        x-model="formData.name"
+                        required
+                        placeholder="e.g. Bedroom, Kitchen, Bathroom"
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                               focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+                               transition-all duration-200 px-4 py-2.5 text-sm"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Enter a descriptive name for this room type</p>
+                </div>
+
+                {{-- Default Template Checkbox --}}
+                <div class="space-y-3">
+                    <label class="flex items-start gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700
+                                  hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
+                        <input
+                            type="checkbox"
+                            name="is_default"
+                            value="1"
+                            x-model="formData.is_default"
+                            class="mt-0.5 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500"
+                        >
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Mark as default template</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Default rooms can be auto-assigned when new properties are created.
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                {{-- Error Message --}}
+                <div x-show="error" x-cloak class="p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+                    <p class="text-sm text-rose-800 dark:text-rose-200" x-text="error"></p>
+                </div>
+
+                {{-- Success Message --}}
+                <div x-show="success" x-cloak class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <p class="text-sm text-emerald-800 dark:text-emerald-200" x-text="success"></p>
+                </div>
+
+                {{-- Footer Actions --}}
+                <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                        type="button"
+                        @click="$dispatch('close-preview-panel', 'add-room')"
+                        class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
+                               bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
+                               rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="submitting"
+                        :class="submitting ? 'opacity-60 cursor-not-allowed' : ''"
+                        class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600
+                               hover:bg-indigo-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                        <svg x-show="submitting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span x-text="submitting ? 'Creating...' : 'Create Room'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </x-preview-panel>
 </x-app-layout>
