@@ -64,18 +64,18 @@
                         @forelse($rooms as $r)
                             <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-900/30">
                                 {{-- Row checkbox --}}
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-2">
                                     <input type="checkbox" class="rounded border-gray-300" :value="{{ $r->id }}"
                                         x-model="selectedRoomIds" />
                                 </td>
 
 
 
-                                <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                                <td class="px-4 py-2 font-medium text-gray-900 dark:text-gray-100">
                                     {{ $r->name }}
                                 </td>
 
-                                <td class="px-4 py-3 text-center">
+                                <td class="px-4 py-2 text-center">
                                     <span
                                         class="px-2 py-0.5 rounded text-xs
                                         {{ $r->is_default
@@ -85,15 +85,15 @@
                                     </span>
                                 </td>
 
-                                <td class="px-4 py-3 text-center">
+                                <td class="px-4 py-2 text-center">
                                     {{ $r->tasks_count ?? $r->tasks()->count() }}
                                 </td>
 
-                                <td class="px-4 py-3 text-center">
+                                <td class="px-4 py-2 text-center">
                                     {{ $r->created_at?->format('Y-m-d') }}
                                 </td>
 
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <td class="px-4 py-2 text-right whitespace-nowrap">
                                     <x-action-dropdown align="right" width="w-56" label="Room actions">
                                         <x-dropdown.item href="{{ route('rooms.edit', $r) }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24"
