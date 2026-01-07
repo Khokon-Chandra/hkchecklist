@@ -6,7 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'HK Checklist') }}</title>
+    <title>{{ $siteName ?? config('app.name', 'HK Checklist') }}</title>
+
+    <!-- Favicon -->
+    @php
+        $faviconPath = \App\Models\Setting::get('favicon_path');
+        if ($faviconPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($faviconPath)) {
+            $faviconUrl = asset('storage/' . $faviconPath);
+            $faviconExt = strtolower(pathinfo($faviconPath, PATHINFO_EXTENSION));
+            $faviconType = match($faviconExt) {
+                'ico' => 'image/x-icon',
+                'png' => 'image/png',
+                'svg' => 'image/svg+xml',
+                'jpg', 'jpeg' => 'image/jpeg',
+                default => 'image/x-icon',
+            };
+        }
+    @endphp
+    @if (isset($faviconUrl))
+        <link rel="icon" type="{{ $faviconType }}" href="{{ $faviconUrl }}">
+        <link rel="shortcut icon" type="{{ $faviconType }}" href="{{ $faviconUrl }}">
+    @else
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    @endif
 
     <!-- Fonts -->
     <link
@@ -17,6 +39,11 @@
     <style>
         [x-cloak] {
             display: none !important;
+        }
+
+        /* Dynamic Theme Color */
+        :root {
+            --theme-primary: {!! \App\Models\Setting::get('theme_color', '#842eb8') !!};
         }
     </style>
 

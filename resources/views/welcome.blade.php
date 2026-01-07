@@ -4,8 +4,30 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'HK Checklist') }}</title>
+    <title>{{ $siteName ?? config('app.name', 'HK Checklist') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Favicon -->
+    @php
+        $faviconPath = \App\Models\Setting::get('favicon_path');
+        if ($faviconPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($faviconPath)) {
+            $faviconUrl = asset('storage/' . $faviconPath);
+            $faviconExt = strtolower(pathinfo($faviconPath, PATHINFO_EXTENSION));
+            $faviconType = match($faviconExt) {
+                'ico' => 'image/x-icon',
+                'png' => 'image/png',
+                'svg' => 'image/svg+xml',
+                'jpg', 'jpeg' => 'image/jpeg',
+                default => 'image/x-icon',
+            };
+        }
+    @endphp
+    @if (isset($faviconUrl))
+        <link rel="icon" type="{{ $faviconType }}" href="{{ $faviconUrl }}">
+        <link rel="shortcut icon" type="{{ $faviconType }}" href="{{ $faviconUrl }}">
+    @else
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -22,7 +44,7 @@
             <div class="flex h-16 items-center justify-between">
                 <a href="{{ url('/') }}" class="flex items-center gap-2">
                     <x-application-logo class="h-8 w-auto text-gray-900 dark:text-gray-100 fill-current" />
-                    <span class="hidden sm:block font-semibold">{{ config('app.name', 'HK Checklist') }}</span>
+                    <span class="hidden sm:block font-semibold">{{ $siteName ?? config('app.name', 'HK Checklist') }}</span>
                 </a>
 
                 <div class="flex items-center gap-3">
@@ -166,7 +188,7 @@
     <!-- Features -->
     <section class="py-14">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h3 class="text-lg font-semibold mb-6">Why teams use {{ config('app.name', 'HK Checklist') }}</h3>
+            <h3 class="text-lg font-semibold mb-6">Why teams use {{ $siteName ?? config('app.name', 'HK Checklist') }}</h3>
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @php
                     $features = [
@@ -262,7 +284,7 @@
     <footer class="py-8 border-t border-gray-200 dark:border-gray-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-sm text-gray-600 dark:text-gray-300">
             <div class="flex items-center justify-between">
-                <p>© {{ date('Y') }} {{ config('app.name', 'HK Checklist') }}. All rights reserved.</p>
+                <p>© {{ date('Y') }} {{ $siteName ?? config('app.name', 'HK Checklist') }}. All rights reserved.</p>
                 <div class="flex items-center gap-4">
                     <a href="{{ route('calendar.index') }}" class="hover:underline">Calendar</a>
                     @auth

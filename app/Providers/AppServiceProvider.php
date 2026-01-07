@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Share site name with all views
+        view()->composer('*', function ($view) {
+            $view->with('siteName', \App\Models\Setting::get('site_name', config('app.name', 'HK Checklist')));
+        });
     }
 }

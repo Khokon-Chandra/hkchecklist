@@ -109,6 +109,10 @@ Route::middleware('auth')->group(function () {
     // User deletion (admin only)
     Route::middleware('role:admin')->group(function () {
         Route::delete('users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+
+        // Settings (admin only)
+        Route::get('settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+        Route::put('settings', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
     });
 
     // Sessions (housekeeper)
