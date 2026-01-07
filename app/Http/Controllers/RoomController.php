@@ -155,16 +155,6 @@ class RoomController extends Controller
     }
 
     /**
-     * GET /rooms/{room}/tasks/create
-     */
-    public function createTask(Room $room)
-    {
-        return view('rooms.tasks.create', [
-            'room' => $room,
-        ]);
-    }
-
-    /**
      * POST /rooms/{room}/tasks
      */
     public function storeTask(Request $request, Room $room)

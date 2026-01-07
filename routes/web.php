@@ -56,7 +56,6 @@ Route::middleware('auth')->group(function () {
     // Room-specific task management (standalone rooms, not under properties)
     Route::get('/rooms/{room}/tasks', [RoomController::class, 'tasks'])->name('rooms.tasks.index');
     Route::patch('/rooms/{room}/tasks', [RoomTaskOrderController::class, 'updateForRoom'])->name('rooms.tasks.order');
-    Route::get('/rooms/{room}/tasks/create', [RoomController::class, 'createTask'])->name('rooms.tasks.create');
     Route::post('/rooms/{room}/tasks', [RoomController::class, 'storeTask'])->name('rooms.tasks.store');
     Route::get('/rooms/{room}/tasks/{task}/edit', [RoomController::class, 'editTask'])->name('rooms.tasks.edit');
     Route::put('/rooms/{room}/tasks/{task}', [RoomController::class, 'updateTask'])->name('rooms.tasks.update');
