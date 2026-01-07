@@ -63,16 +63,25 @@ class RoomController extends Controller
 
     public function edit(Room $room)
     {
+        // Load current tasks for this room with their sort_order from pivot
+        $room->load(['tasks' => function ($query) {
+            $query->orderBy('room_task.sort_order');
+        }]);
 
-        // Load all tasks that can be assigned to a room
-        $tasks = Task::orderBy('type')->orderBy('name')->get(['id', 'name', 'type', 'is_default']);
-
-        // Load current tasks for this room
-        $room->load('tasks');
+        // Format room tasks with pivot data for the frontend
+        $roomTasks = $room->tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'name' => $task->name,
+                'type' => $task->type,
+                'is_default' => $task->is_default,
+                'sort_order' => $task->pivot->sort_order ?? 0,
+            ];
+        })->values();
 
         return view('rooms.edit', [
             'room'  => $room,
-            'tasks' => $tasks,
+            'roomTasks' => $roomTasks,
         ]);
     }
 
@@ -81,10 +90,6 @@ class RoomController extends Controller
         $validated = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
-
-            // tasks from the multi-select
-            'task_ids'   => ['nullable', 'array'],
-            'task_ids.*' => ['integer', 'exists:tasks,id'],
         ]);
 
         $room->update([
@@ -92,12 +97,9 @@ class RoomController extends Controller
             'is_default' => $validated['is_default'] ?? false,
         ]);
 
-        // Attach / detach tasks in the pivot table
-        $room->tasks()->sync($validated['task_ids'] ?? []);
-
         return redirect()
             ->route('rooms.index')
-            ->with('ok', 'Room & tasks updated.');
+            ->with('ok', 'Room updated.');
     }
 
 

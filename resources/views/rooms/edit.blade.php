@@ -7,7 +7,7 @@
                     Edit Room & Tasks
                 </h2>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Update the room details and which tasks are attached, all in one place.
+                    Update the room details and manage tasks for this room. Drag tasks to reorder.
                 </p>
             </div>
 
@@ -18,8 +18,7 @@
     </x-slot>
 
     <x-card>
-        <form method="POST" action="{{ route('rooms.update', $room) }}" x-data="roomTasksEditor" x-init="init()"
-            data-tasks='@json($tasks)' data-selected-task-ids='@json($room->tasks->pluck('id'))'>
+        <form method="POST" action="{{ route('rooms.update', $room) }}">
             @csrf
             @method('PUT')
 
@@ -42,99 +41,163 @@
 
             {{-- Tasks section --}}
             <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                            Tasks for this room
-                        </h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            Attach or detach tasks. These tasks will appear for this room in cleaning sessions.
-                        </p>
-                    </div>
+                @php
+                    $orderUrl = route('rooms.tasks.order', $room);
+                    $attachUrl = route('rooms.tasks.attach', $room);
+                    $suggestUrl = route('tasks.suggest');
+                    // Base URL for detach - we'll append task ID in JS
+                    $detachBaseUrl = route('rooms.tasks.detach', [$room, 0]);
+                    $detachBaseUrl = str_replace('/0', '', $detachBaseUrl);
+                @endphp
 
-                    <div class="text-xs text-gray-500 dark:text-gray-400 text-right space-y-0.5">
-                        <p>
-                            <span class="font-semibold" x-text="selectedTaskIds.length"></span>
-                            task(s) selected
-                        </p>
-                        <p>
-                            <span x-text="filteredTasks().length"></span>
-                            task(s) visible with current filters
-                        </p>
-                    </div>
-                </div>
-
-                {{-- Filters --}}
-                <div class="flex flex-col sm:flex-row gap-3 sm:items-center mb-4">
-                    <div class="flex-1">
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Search tasks
-                        </label>
-                        <input type="text"
-                            class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm"
-                            placeholder="Type to filter by name…" x-model="search" />
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Type
-                        </label>
-                        <x-form.select class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm"
-                            x-model="typeFilter">
-                            <option value="">All types</option>
-                            <option value="room">Room</option>
-                            <option value="inventory">Inventory</option>
-                        </x-form.select>
-                    </div>
-
-                    <button type="button"
-                        class="mt-4 items-end px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                        @click="toggleSelectAllVisible()">
-                        Select all visible
-                    </button>
-                </div>
-
-                {{-- Task list --}}
-                <div
-                    class="max-h-80 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700">
-                    <template x-if="filteredTasks().length === 0">
-                        <div class="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
-                            No tasks match your filters.
+                <div x-data="roomTasksEditor({
+                    orderUrl: @js($orderUrl),
+                    attachUrl: @js($attachUrl),
+                    suggestUrl: @js($suggestUrl),
+                    detachBaseUrl: @js($detachBaseUrl),
+                    csrf: @js(csrf_token()),
+                    roomTasks: @js($roomTasks),
+                    availableTasks: []
+                })" x-init="init()">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                Tasks for this room
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Drag tasks to reorder. Use the search below to add new tasks.
+                            </p>
                         </div>
-                    </template>
 
-                    <template x-for="task in filteredTasks()" :key="task.id">
-                        <label
-                            class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/70 cursor-pointer text-sm">
-                            <div class="flex items-center gap-3">
-                                <input type="checkbox" class="rounded border-gray-300 text-indigo-600"
-                                    :value="task.id" x-model="selectedTaskIds" name="task_ids[]" />
+                        <div class="min-h-[28px]">
+                            <span x-show="status==='saving'" x-cloak class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300">Saving…</span>
+                            <span x-show="status==='saved'" x-cloak class="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-300">✓ Saved at <span x-text="savedAt"></span></span>
+                            <span x-show="status==='error'" x-cloak class="text-xs px-2 py-1 rounded bg-rose-100 text-rose-800 dark:bg-rose-400/20 dark:text-rose-300">Failed</span>
+                        </div>
+                    </div>
 
-                                <div>
-                                    <div class="font-medium text-gray-900 dark:text-gray-100" x-text="task.name"></div>
-                                    <div class="text-[11px] text-gray-500 dark:text-gray-400">
-                                        <span class="uppercase tracking-wide" x-text="task.type"></span>
-                                        <span class="mx-1">•</span>
-                                        <span x-text="task.is_default ? 'Default task' : 'Custom task'"></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <span
-                                    class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide
-                                        bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                                    x-text="task.type"></span>
-
-                                <span class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide"
-                                    :class="task.is_default ?
-                                        'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :
-                                        'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'">
-                                    <span x-text="task.is_default ? 'Default' : 'Custom'"></span>
-                                </span>
-                            </div>
+                    {{-- Add task search --}}
+                    <div class="mb-4 relative">
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Add Task
                         </label>
-                    </template>
+                        <div class="relative">
+                            <input 
+                                type="text"
+                                x-model="searchQuery"
+                                @input="searchTasks()"
+                                @keydown="handleKeyDown($event)"
+                                @focus="searchQuery && searchTasks()"
+                                placeholder="Search tasks to add..."
+                                class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm pl-3 pr-10 py-2"
+                            />
+                            <svg x-show="loading" class="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+
+                        {{-- Suggestions dropdown --}}
+                        <div 
+                            x-show="openSuggestions && suggestions.length > 0"
+                            x-cloak
+                            class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                            @click.away="openSuggestions = false"
+                        >
+                            <template x-for="(task, index) in suggestions" :key="task.id">
+                                <button
+                                    type="button"
+                                    @click="addTask(task)"
+                                    @mouseenter="hoverIndex(index)"
+                                    :class="highlighted === index ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                    class="w-full px-4 py-2 text-left text-sm flex items-center justify-between"
+                                >
+                                    <div>
+                                        <div class="font-medium text-gray-900 dark:text-gray-100" x-text="task.name"></div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="uppercase" x-text="task.type"></span>
+                                            <span x-show="task.is_default" class="ml-2 text-emerald-600 dark:text-emerald-400">• Default</span>
+                                        </div>
+                                    </div>
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Room tasks list (draggable) --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div 
+                            x-ref="taskList"
+                            class="divide-y dark:divide-gray-700"
+                        >
+                            <template x-if="roomTasks.length === 0">
+                                <div class="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                    No tasks yet. Search above to add tasks to this room.
+                                </div>
+                            </template>
+
+                            <template x-for="(task, index) in roomTasks" :key="task.key || `task-${task.id}`">
+                                <div 
+                                    :data-task-id="task.id"
+                                    class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                >
+                                    {{-- Drag handle --}}
+                                    <button 
+                                        type="button"
+                                        class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 flex-shrink-0"
+                                        title="Drag to reorder"
+                                    >
+                                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M7 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM7 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM7 14a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM13 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM13 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM13 14a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"></path>
+                                        </svg>
+                                    </button>
+
+                                    {{-- Task info --}}
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-medium text-gray-900 dark:text-gray-100" x-text="task.name"></div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            <span class="uppercase tracking-wide" x-text="task.type"></span>
+                                            <span class="mx-1">•</span>
+                                            <span x-text="task.is_default ? 'Default task' : 'Custom task'"></span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Badges --}}
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <span
+                                            class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide
+                                                bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                                            x-text="task.type"
+                                        ></span>
+
+                                        <span 
+                                            class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide"
+                                            :class="task.is_default ?
+                                                'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :
+                                                'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'"
+                                        >
+                                            <span x-text="task.is_default ? 'Default' : 'Custom'"></span>
+                                        </span>
+                                    </div>
+
+                                    {{-- Remove button --}}
+                                    <button
+                                        type="button"
+                                        @click="removeTask(task.id)"
+                                        class="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 flex-shrink-0 p-1"
+                                        title="Remove task from room"
+                                    >
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -145,7 +208,7 @@
                 </x-button>
 
                 <x-button type="submit">
-                    Save Room & Tasks
+                    Save Room
                 </x-button>
             </div>
         </form>
