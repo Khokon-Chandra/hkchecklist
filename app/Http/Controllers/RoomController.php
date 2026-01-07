@@ -224,6 +224,14 @@ class RoomController extends Controller
             }
         }
 
+        // Return JSON for AJAX requests, otherwise redirect
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => "Task attached: {$task->name}",
+                'task' => $task->load('media'),
+            ]);
+        }
+
         return redirect()->route('rooms.tasks.index', $room)
             ->with('status', "Task attached: {$task->name}");
     }
