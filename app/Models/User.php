@@ -23,6 +23,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone_number',
+        'profile_photo_path',
     ];
 
     /**
@@ -46,5 +48,20 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the URL to the user's profile photo.
+     */
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        if ($this->profile_photo_path) {
+            return str_starts_with($this->profile_photo_path, 'http')
+                ? $this->profile_photo_path
+                : asset('storage/' . $this->profile_photo_path);
+        }
+
+        // Return a default avatar placeholder
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=6366f1&color=fff&size=128';
     }
 }

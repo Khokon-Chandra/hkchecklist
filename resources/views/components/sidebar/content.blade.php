@@ -50,6 +50,10 @@
             :active="request()->routeIs('users.*')">
             <x-slot name="icon"><x-heroicon-o-users class="w-6 h-6" aria-hidden="true" /></x-slot>
 
+            <x-sidebar.sublink title="Create User"
+                href="{{ route('users.create') }}"
+                :active="request()->routeIs('users.create')" />
+
             {{-- All (no role filter) --}}
             <x-sidebar.sublink title="All Users"
                 href="{{ route('users.index') }}"

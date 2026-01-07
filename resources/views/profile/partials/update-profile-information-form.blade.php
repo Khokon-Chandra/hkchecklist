@@ -17,9 +17,44 @@
         method="post"
         action="{{ route('profile.update') }}"
         class="mt-6 space-y-6"
+        enctype="multipart/form-data"
+        x-data="profilePhotoForm()"
     >
         @csrf
         @method('patch')
+
+        {{-- Profile Photo --}}
+        <div class="space-y-2">
+            <x-form.label value="Profile Photo" />
+            <div class="flex items-center gap-6">
+                <div class="flex-shrink-0">
+                    <img :src="previewUrl || '{{ $user->profile_photo_url }}'" 
+                        alt="Profile photo"
+                        class="h-24 w-24 rounded-full object-cover ring-4 ring-gray-200 dark:ring-gray-700 shadow-lg"
+                        :class="previewUrl ? 'ring-indigo-500' : ''">
+                </div>
+                <div class="flex-1">
+                    <input type="file" name="profile_photo" x-ref="file" class="hidden" 
+                        @change="preview($event)" accept="image/*">
+                    <div class="flex flex-col gap-2">
+                        <x-button type="button" variant="secondary" @click="$refs.file.click()">
+                            Choose New Photo
+                        </x-button>
+                        @if ($user->profile_photo_path)
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                                <input type="checkbox" name="remove_profile_photo" value="1"
+                                    class="rounded border-gray-300 dark:border-gray-600">
+                                Remove photo
+                            </label>
+                        @endif
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            JPG, PNG, WebP — up to 5MB
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <x-form.error :messages="$errors->get('profile_photo')" />
+        </div>
 
         <div class="space-y-2">
             <x-form.label
@@ -58,6 +93,26 @@
             />
 
             <x-form.error :messages="$errors->get('email')" />
+        </div>
+
+        <div class="space-y-2">
+            <x-form.label
+                for="phone_number"
+                :value="__('Phone Number')"
+            />
+
+            <x-form.input
+                id="phone_number"
+                name="phone_number"
+                type="tel"
+                class="block w-full"
+                :value="old('phone_number', $user->phone_number)"
+                autocomplete="tel"
+                placeholder="e.g. +1 234 567 8900"
+            />
+
+            <x-form.error :messages="$errors->get('phone_number')" />
+        </div>
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
@@ -96,4 +151,17 @@
             @endif
         </div>
     </form>
+
+    <script>
+        function profilePhotoForm() {
+            return {
+                previewUrl: null,
+                preview(event) {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    this.previewUrl = URL.createObjectURL(file);
+                }
+            }
+        }
+    </script>
 </section>

@@ -96,9 +96,20 @@ Route::middleware('auth')->group(function () {
         Route::delete('/tasks/{task}/media/{media}',     [TaskMediaController::class, 'destroy'])->name('tasks.media.destroy');
     });
 
-    // Users (read/assign role)
-    Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
-    Route::post('users/{user}/assign-role', [\App\Http\Controllers\UserController::class, 'assignRole'])->name('users.assignRole');
+    // Users management (admin and owner only, housekeepers cannot access)
+    Route::middleware('role:admin|owner')->group(function () {
+        Route::get('users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+        Route::post('users/{user}/assign-role', [\App\Http\Controllers\UserController::class, 'assignRole'])->name('users.assignRole');
+        Route::get('users/create', [\App\Http\Controllers\UserController::class, 'create'])->name('users.create');
+        Route::post('users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+        Route::get('users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
+        Route::put('users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+    });
+
+    // User deletion (admin only)
+    Route::middleware('role:admin')->group(function () {
+        Route::delete('users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+    });
 
     // Sessions (housekeeper)
     Route::get('/sessions', [\App\Http\Controllers\SessionController::class, 'index'])->name('sessions.index');
