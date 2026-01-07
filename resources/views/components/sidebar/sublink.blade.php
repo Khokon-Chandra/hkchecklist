@@ -5,9 +5,13 @@
 
 @php
     use App\Models\Setting;
-    
-    $primaryColor = Setting::get('button_primary_color', Setting::get('theme_color', '#842eb8'));
-    
+
+    // Get theme color first, then button_primary_color as override
+    $themeColor = Setting::get('theme_color', '#842eb8');
+    $buttonPrimaryColor = Setting::get('button_primary_color');
+    // Use button_primary_color if it exists, otherwise use theme_color
+    $primaryColor = $buttonPrimaryColor ?: $themeColor;
+
     // Helper function to darken a hex color
     if (!function_exists('darkenColor')) {
         function darkenColor($hex, $percent = 15) {
@@ -15,22 +19,22 @@
             $r = hexdec(substr($hex, 0, 2));
             $g = hexdec(substr($hex, 2, 2));
             $b = hexdec(substr($hex, 4, 2));
-            
+
             $r = max(0, min(255, $r - ($r * $percent / 100)));
             $g = max(0, min(255, $g - ($g * $percent / 100)));
             $b = max(0, min(255, $b - ($b * $percent / 100)));
-            
-            return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) . 
-                       str_pad(dechex($g), 2, '0', STR_PAD_LEFT) . 
+
+            return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) .
+                       str_pad(dechex($g), 2, '0', STR_PAD_LEFT) .
                        str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
         }
     }
-    
+
     $hoverColor = darkenColor($primaryColor, 15);
-    
+
     $classes = 'transition-colors hover:text-gray-900 dark:hover:text-gray-100 block px-2 py-1 rounded-md';
     $inlineStyles = '';
-    
+
     if ($active) {
         $classes .= ' text-white font-medium';
         $inlineStyles = "background-color: {$primaryColor}; --sublink-hover-color: {$hoverColor};";

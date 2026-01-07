@@ -39,7 +39,11 @@
 
     switch ($variant) {
         case 'primary':
-            $primaryColor = Setting::get('button_primary_color', Setting::get('theme_color', '#842eb8'));
+            // Get theme color first, then button_primary_color as override
+            $themeColor = Setting::get('theme_color', '#842eb8');
+            $buttonPrimaryColor = Setting::get('button_primary_color');
+            // Use button_primary_color if it exists and is different from default, otherwise use theme_color
+            $primaryColor = $buttonPrimaryColor ?: $themeColor;
             $hoverColor = darkenColor($primaryColor, 15);
             $variantClasses = 'text-white';
             $inlineStyles = "background-color: {$primaryColor};";
@@ -85,7 +89,11 @@
             $focusRingColor = '#000000';
             break;
         default:
-            $primaryColor = Setting::get('button_primary_color', Setting::get('theme_color', '#842eb8'));
+            // Get theme color first, then button_primary_color as override
+            $themeColor = Setting::get('theme_color', '#842eb8');
+            $buttonPrimaryColor = Setting::get('button_primary_color');
+            // Use button_primary_color if it exists and is different from default, otherwise use theme_color
+            $primaryColor = $buttonPrimaryColor ?: $themeColor;
             $hoverColor = darkenColor($primaryColor, 15);
             $variantClasses = 'text-white';
             $inlineStyles = "background-color: {$primaryColor};";

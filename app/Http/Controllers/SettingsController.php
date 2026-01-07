@@ -74,6 +74,10 @@ class SettingsController extends Controller
         // Update button variant colors
         if ($request->filled('button_primary_color')) {
             Setting::set('button_primary_color', $request->button_primary_color);
+        } else {
+            // If button_primary_color wasn't set, sync it with theme_color
+            // This ensures theme color changes apply to buttons and sidebar
+            Setting::set('button_primary_color', $request->theme_color);
         }
         if ($request->filled('button_success_color')) {
             Setting::set('button_success_color', $request->button_success_color);
@@ -90,6 +94,9 @@ class SettingsController extends Controller
 
         // Clear cache
         Setting::clearCache();
+
+        // Clear view cache to ensure updated colors are reflected
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
 
         return redirect()->route('settings.index')
             ->with('success', 'Settings updated successfully!');
