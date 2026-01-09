@@ -61,7 +61,11 @@ class User extends Authenticatable
                 : asset('storage/' . $this->profile_photo_path);
         }
 
+        // Get theme color from settings and remove '#' for API
+        $themeColor = Setting::get('theme_color', '#842eb8');
+        $backgroundColor = str_replace('#', '', $themeColor);
+
         // Return a default avatar placeholder
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=6366f1&color=fff&size=128';
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=' . $backgroundColor . '&color=fff&size=128';
     }
 }
