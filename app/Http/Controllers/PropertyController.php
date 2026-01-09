@@ -371,6 +371,13 @@ class PropertyController extends Controller
             }
         }
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => "Task attached: {$task->name}",
+                'task' => $task->load('media'),
+            ]);
+        }
+
         return redirect()->route('properties.tasks.index', [$property, $room])
             ->with('status', "Task attached: {$task->name}");
     }
@@ -430,9 +437,16 @@ class PropertyController extends Controller
                     'visible_to_housekeeper' => (bool)($data['visible_to_housekeeper'] ?? true),
                 ]);
             }
-            // Update chosen type if empty; else keep existing’s type
+            // Update chosen type if empty; else keep existing's type
             $existing->type = $existing->type ?: $data['type'];
             $existing->save();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => "Switched to task: {$existing->name}",
+                    'task' => $existing->load('media'),
+                ]);
+            }
 
             return redirect()->route('properties.tasks.index', [$property, $room])
                 ->with('status', "Switched to task: {$existing->name}");
@@ -445,6 +459,14 @@ class PropertyController extends Controller
             'visible_to_owner' => (bool)($data['visible_to_owner'] ?? true),
             'visible_to_housekeeper' => (bool)($data['visible_to_housekeeper'] ?? true),
         ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => "Task updated: {$task->name}",
+                'task' => $task->load('media'),
+            ]);
+        }
+
         return redirect()->route('properties.tasks.index', [$property, $room])
             ->with('status', "Task updated: {$task->name}");
     }

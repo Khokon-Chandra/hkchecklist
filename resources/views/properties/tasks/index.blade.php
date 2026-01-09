@@ -6,7 +6,7 @@
             </h2>
             <div class="flex items-center gap-2">
                 <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}">← Rooms</x-button>
-                <x-button variant="primary" href="{{ route('properties.tasks.create', [$property, $room]) }}">+ Add Task</x-button>
+                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $property->id }}-{{ $room->id }}')">+ Add Task</x-button>
             </div>
         </div>
     </x-slot>
@@ -57,8 +57,8 @@
                                     {{ $t->media->count() }}
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <a class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                       href="{{ route('properties.tasks.edit', [$property, $room, $t]) }}">Edit</a>
+                                    <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
+                                            @click="$dispatch('open-preview-panel', 'edit-task-{{ $property->id }}-{{ $room->id }}-{{ $t->id }}')">Edit</button>
                                     <span class="mx-2 text-gray-400">·</span>
                                     <form action="{{ route('properties.tasks.detach', [$property, $room, $t]) }}" method="post" class="inline">
                                         @csrf @method('DELETE')
@@ -75,4 +75,53 @@
             </div>
         </x-card>
     </div>
+
+    {{-- Add Task Preview Panel --}}
+    <x-preview-panel
+        name="add-task-{{ $property->id }}-{{ $room->id }}"
+        :overlay="true"
+        side="right"
+        initialWidth="32rem"
+        minWidth="24rem"
+        title="Add Task"
+        :subtitle="'Add a new task to ' . $room->name . ' in ' . $property->name">
+
+        @php $suggestUrl = route('tasks.suggest'); @endphp
+
+        @include('properties.tasks.__task_form', [
+            'property' => $property,
+            'room' => $room,
+            'task' => null,
+            'pivot' => null,
+            'suggestUrl' => $suggestUrl,
+            'mode' => 'create',
+        ])
+    </x-preview-panel>
+
+    {{-- Edit Task Preview Panels --}}
+    @foreach($tasks as $t)
+        <x-preview-panel
+            name="edit-task-{{ $property->id }}-{{ $room->id }}-{{ $t->id }}"
+            :overlay="true"
+            side="right"
+            initialWidth="32rem"
+            minWidth="24rem"
+            title="Edit Task"
+            :subtitle="$t->name">
+
+            @php
+                $suggestUrl = route('tasks.suggest');
+                $pivot = $t->pivot;
+            @endphp
+
+            @include('properties.tasks.__task_form', [
+                'property' => $property,
+                'room' => $room,
+                'task' => $t,
+                'pivot' => $pivot,
+                'suggestUrl' => $suggestUrl,
+                'mode' => 'edit',
+            ])
+        </x-preview-panel>
+    @endforeach
 </x-app-layout>
