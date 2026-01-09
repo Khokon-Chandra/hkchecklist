@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use App\Models\CleaningSession;
 use App\Models\Property;
+use App\Models\Room;
 use App\Models\User;
 
 class DashboardController extends Controller
@@ -75,10 +76,10 @@ class DashboardController extends Controller
             ? Property::count()
             : Property::whereIn('id', $propIds)->count();
 
-        // Rooms count (use DB to avoid model namespace differences)
-        $roomsCount = DB::table('rooms')
-            ->when(!is_null($propIds), fn($q) => $q->whereIn('property_id', $propIds))
-            ->count();
+        // Rooms count - count distinct rooms attached to visible properties
+        $roomsCount = is_null($propIds)
+            ? Room::count()
+            : Room::whereHas('properties', fn($q) => $q->whereIn('properties.id', $propIds))->count();
 
         // Upcoming 7d (role-scoped)
         $today = Carbon::today()->toDateString();
