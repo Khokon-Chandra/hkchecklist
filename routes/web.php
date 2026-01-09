@@ -89,6 +89,11 @@ Route::middleware('auth')->group(function () {
         Route::put('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'updateTask'])->name('tasks.update');
         Route::delete('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'detachTask'])->name('tasks.detach');
 
+        // Property-level tasks (not room-specific)
+        Route::get('{property}/property-tasks', [PropertyController::class, 'propertyTasks'])->name('property-tasks.index');
+        Route::post('{property}/property-tasks', [PropertyController::class, 'storePropertyTask'])->name('property-tasks.store');
+        Route::put('{property}/property-tasks/{task}', [PropertyController::class, 'updatePropertyTask'])->name('property-tasks.update');
+        Route::delete('{property}/property-tasks/{task}', [PropertyController::class, 'detachPropertyTask'])->name('property-tasks.detach');
 
         Route::post('/tasks/{task}/media',               [TaskMediaController::class, 'store'])->name('tasks.media.store');
         Route::delete('/tasks/{task}/media/{media}',     [TaskMediaController::class, 'destroy'])->name('tasks.media.destroy');
@@ -124,6 +129,13 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/sessions/{session}/rooms/{room}/tasks/{task}/note', [ChecklistController::class, 'note'])
         ->name('checklist.note');
+
+    // Property-level task checklist actions (no room)
+    Route::post('/sessions/{session}/property-tasks/{task}/toggle', [ChecklistController::class, 'togglePropertyTask'])
+        ->name('checklist.property-task.toggle');
+
+    Route::post('/sessions/{session}/property-tasks/{task}/note', [ChecklistController::class, 'notePropertyTask'])
+        ->name('checklist.property-task.note');
 
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
 

@@ -7,6 +7,9 @@
             <div class="flex items-center gap-2">
                 <x-button variant="secondary" href="{{ route('properties.index') }}">← Back to Properties</x-button>
                 @role('admin|owner')
+                    <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}">
+                        Property Tasks
+                    </x-button>
                     <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room-{{ $property->id }}')">
                         + Add Room
                     </x-button>

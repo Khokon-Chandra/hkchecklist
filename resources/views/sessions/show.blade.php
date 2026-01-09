@@ -82,7 +82,61 @@
             </div>
         </x-card>
 
-        {{-- ROOMS STAGE --}}
+        {{-- PRE-CLEANING STAGE (Property-level tasks) --}}
+        @if ($stage === 'pre_cleaning')
+            <x-card>
+                <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Pre-Cleaning Tasks</h3>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ $checkedPreCleaningCount }} / {{ $preCleaningCount }} completed
+                    </span>
+                </div>
+
+                <ul class="divide-y dark:divide-gray-700">
+                    @forelse ($preCleaningTasks as $task)
+                        @php
+                            $item = $session->checklistItems->first(
+                                fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                            );
+                            $completed = (bool) ($item && $item->checked);
+                            $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
+                                ($completed
+                                    ? 'bg-green-600 border-green-600 text-white'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
+                            $toggleHtml = sprintf(
+                                '<form method="post" action="%s">%s<button class="%s" aria-label="Toggle complete">%s</button></form>',
+                                e(route('checklist.property-task.toggle', [$session, $task])),
+                                csrf_field(),
+                                e($btnClasses),
+                                $completed ? '✓' : '',
+                            );
+                            $noteHtml = sprintf(
+                                '<form method="post" action="%s" class="flex items-center gap-2">%s' .
+                                    '<input name="note" value="%s" placeholder="Note" ' .
+                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />' .
+                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm">Save</button>' .
+                                    '</form>',
+                                e(route('checklist.property-task.note', [$session, $task])),
+                                csrf_field(),
+                                e($item?->note ?? ''),
+                            );
+                        @endphp
+
+                        @include('sessions.partials.task-detail-panel', [
+                            'task' => $task,
+                            'completed' => $completed,
+                            'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
+                            'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
+                        ])
+                    @empty
+                        <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                            No pre-cleaning tasks defined.
+                        </li>
+                    @endforelse
+                </ul>
+            </x-card>
+        @endif
+
         {{-- ROOMS STAGE --}}
         @if ($stage === 'rooms')
             <div class="space-y-6">
@@ -162,6 +216,115 @@
             </div>
         @endif
 
+        {{-- DURING-CLEANING STAGE (Property-level tasks) --}}
+        @if ($stage === 'during_cleaning')
+            <x-card>
+                <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">During-Cleaning Tasks</h3>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ $checkedDuringCleaningCount }} / {{ $duringCleaningCount }} completed
+                    </span>
+                </div>
+
+                <ul class="divide-y dark:divide-gray-700">
+                    @forelse ($duringCleaningTasks as $task)
+                        @php
+                            $item = $session->checklistItems->first(
+                                fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                            );
+                            $completed = (bool) ($item && $item->checked);
+                            $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
+                                ($completed
+                                    ? 'bg-green-600 border-green-600 text-white'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
+                            $toggleHtml = sprintf(
+                                '<form method="post" action="%s">%s<button class="%s" aria-label="Toggle complete">%s</button></form>',
+                                e(route('checklist.property-task.toggle', [$session, $task])),
+                                csrf_field(),
+                                e($btnClasses),
+                                $completed ? '✓' : '',
+                            );
+                            $noteHtml = sprintf(
+                                '<form method="post" action="%s" class="flex items-center gap-2">%s' .
+                                    '<input name="note" value="%s" placeholder="Note" ' .
+                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />' .
+                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm">Save</button>' .
+                                    '</form>',
+                                e(route('checklist.property-task.note', [$session, $task])),
+                                csrf_field(),
+                                e($item?->note ?? ''),
+                            );
+                        @endphp
+
+                        @include('sessions.partials.task-detail-panel', [
+                            'task' => $task,
+                            'completed' => $completed,
+                            'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
+                            'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
+                        ])
+                    @empty
+                        <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                            No during-cleaning tasks defined.
+                        </li>
+                    @endforelse
+                </ul>
+            </x-card>
+        @endif
+
+        {{-- POST-CLEANING STAGE (Property-level tasks) --}}
+        @if ($stage === 'post_cleaning')
+            <x-card>
+                <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Post-Cleaning Tasks</h3>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ $checkedPostCleaningCount }} / {{ $postCleaningCount }} completed
+                    </span>
+                </div>
+
+                <ul class="divide-y dark:divide-gray-700">
+                    @forelse ($postCleaningTasks as $task)
+                        @php
+                            $item = $session->checklistItems->first(
+                                fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                            );
+                            $completed = (bool) ($item && $item->checked);
+                            $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
+                                ($completed
+                                    ? 'bg-green-600 border-green-600 text-white'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
+                            $toggleHtml = sprintf(
+                                '<form method="post" action="%s">%s<button class="%s" aria-label="Toggle complete">%s</button></form>',
+                                e(route('checklist.property-task.toggle', [$session, $task])),
+                                csrf_field(),
+                                e($btnClasses),
+                                $completed ? '✓' : '',
+                            );
+                            $noteHtml = sprintf(
+                                '<form method="post" action="%s" class="flex items-center gap-2">%s' .
+                                    '<input name="note" value="%s" placeholder="Note" ' .
+                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />' .
+                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm">Save</button>' .
+                                    '</form>',
+                                e(route('checklist.property-task.note', [$session, $task])),
+                                csrf_field(),
+                                e($item?->note ?? ''),
+                            );
+                        @endphp
+
+                        @include('sessions.partials.task-detail-panel', [
+                            'task' => $task,
+                            'completed' => $completed,
+                            'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
+                            'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
+                        ])
+                    @empty
+                        <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                            No post-cleaning tasks defined.
+                        </li>
+                    @endforelse
+                </ul>
+            </x-card>
+        @endif
 
         {{-- INVENTORY STAGE --}}
         @if ($stage === 'inventory')
@@ -368,6 +531,134 @@
         {{-- SUMMARY STAGE --}}
         @if ($stage === 'summary')
             <div class="space-y-6">
+                {{-- Property-Level Tasks Summary --}}
+                @if ($preCleaningTasks->count() > 0 || $duringCleaningTasks->count() > 0 || $postCleaningTasks->count() > 0)
+                    <x-card>
+                        <div class="px-4 py-3 border-b dark:border-gray-700">
+                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Property-Level Tasks</h3>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            {{-- Pre-Cleaning Tasks --}}
+                            @if ($preCleaningTasks->count() > 0)
+                                <div>
+                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Pre-Cleaning Tasks</h4>
+                                    <ul class="divide-y dark:divide-gray-700">
+                                        @foreach ($preCleaningTasks as $task)
+                                            @php
+                                                $item = $session->checklistItems->first(
+                                                    fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                                                );
+                                                $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
+                                                $summaryBtn .= $item && $item->checked
+                                                    ? ' bg-green-600 border-green-600 text-white'
+                                                    : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
+                                            @endphp
+                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
+                                                <div class="flex items-start sm:items-center gap-3">
+                                                    <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
+                                                        @csrf
+                                                        <button class="{{ $summaryBtn }}">
+                                                            @if ($item?->checked) ✓ @endif
+                                                        </button>
+                                                    </form>
+                                                    <span class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
+                                                        {{ $task->name }}
+                                                    </span>
+                                                </div>
+                                                <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
+                                                    @csrf
+                                                    <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
+                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
+                                                    <x-button variant="secondary">Save</x-button>
+                                                </form>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            {{-- During-Cleaning Tasks --}}
+                            @if ($duringCleaningTasks->count() > 0)
+                                <div>
+                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">During-Cleaning Tasks</h4>
+                                    <ul class="divide-y dark:divide-gray-700">
+                                        @foreach ($duringCleaningTasks as $task)
+                                            @php
+                                                $item = $session->checklistItems->first(
+                                                    fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                                                );
+                                                $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
+                                                $summaryBtn .= $item && $item->checked
+                                                    ? ' bg-green-600 border-green-600 text-white'
+                                                    : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
+                                            @endphp
+                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
+                                                <div class="flex items-start sm:items-center gap-3">
+                                                    <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
+                                                        @csrf
+                                                        <button class="{{ $summaryBtn }}">
+                                                            @if ($item?->checked) ✓ @endif
+                                                        </button>
+                                                    </form>
+                                                    <span class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
+                                                        {{ $task->name }}
+                                                    </span>
+                                                </div>
+                                                <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
+                                                    @csrf
+                                                    <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
+                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
+                                                    <x-button variant="secondary">Save</x-button>
+                                                </form>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            {{-- Post-Cleaning Tasks --}}
+                            @if ($postCleaningTasks->count() > 0)
+                                <div>
+                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Post-Cleaning Tasks</h4>
+                                    <ul class="divide-y dark:divide-gray-700">
+                                        @foreach ($postCleaningTasks as $task)
+                                            @php
+                                                $item = $session->checklistItems->first(
+                                                    fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                                                );
+                                                $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
+                                                $summaryBtn .= $item && $item->checked
+                                                    ? ' bg-green-600 border-green-600 text-white'
+                                                    : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
+                                            @endphp
+                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
+                                                <div class="flex items-start sm:items-center gap-3">
+                                                    <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
+                                                        @csrf
+                                                        <button class="{{ $summaryBtn }}">
+                                                            @if ($item?->checked) ✓ @endif
+                                                        </button>
+                                                    </form>
+                                                    <span class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
+                                                        {{ $task->name }}
+                                                    </span>
+                                                </div>
+                                                <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
+                                                    @csrf
+                                                    <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
+                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
+                                                    <x-button variant="secondary">Save</x-button>
+                                                </form>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+                    </x-card>
+                @endif
+
+                {{-- Room Tasks Summary --}}
                 @foreach ($rooms as $room)
                     @php
                         $roomTasks = $roomTasksByRoom[$room->id] ?? collect();

@@ -444,4 +444,125 @@ class PropertyController extends Controller
         return redirect()->route('properties.tasks.index', [$property, $room])
             ->with('status', "Detached task: {$task->name}");
     }
+
+    // Property-level tasks (not room-specific)
+    public function propertyTasks(Property $property)
+    {
+        $property->load('propertyTasks');
+
+        return view('properties.property-tasks.index', [
+            'property' => $property,
+            'navProperty' => $property,
+        ]);
+    }
+
+    public function storePropertyTask(Request $request, Property $property)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'phase' => ['required', Rule::in(['pre_cleaning', 'during_cleaning', 'post_cleaning'])],
+            'instructions' => ['nullable', 'string', 'max:5000'],
+            'visible_to_owner' => ['nullable', 'boolean'],
+            'visible_to_housekeeper' => ['nullable', 'boolean'],
+        ]);
+
+        // Find or create Task by case-insensitive name
+        $name = trim($validated['name']);
+        $task = Task::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if (!$task) {
+            $task = Task::create([
+                'name' => $name,
+                'type' => 'room', // Default type, can be changed
+                'phase' => $validated['phase'],
+                'is_default' => false,
+            ]);
+        } else {
+            // Update phase if not set
+            if (!$task->phase) {
+                $task->phase = $validated['phase'];
+                $task->save();
+            }
+        }
+
+        // Attach to property with next sort order
+        if (!$property->propertyTasks()->where('tasks.id', $task->id)->exists()) {
+            $nextOrder = (int) $property->propertyTasks()->max('property_tasks.sort_order') + 1;
+            $property->propertyTasks()->attach($task->id, [
+                'sort_order' => $nextOrder,
+                'instructions' => $validated['instructions'] ?? null,
+                'visible_to_owner' => (bool)($validated['visible_to_owner'] ?? true),
+                'visible_to_housekeeper' => (bool)($validated['visible_to_housekeeper'] ?? true),
+            ]);
+        }
+
+        $message = "Property task added: {$task->name}";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => $message,
+                'task' => $task,
+            ]);
+        }
+
+        return redirect()->route('properties.property-tasks.index', $property)
+            ->with('status', $message);
+    }
+
+    public function updatePropertyTask(Request $request, Property $property, Task $task)
+    {
+        abort_unless($property->propertyTasks()->where('tasks.id', $task->id)->exists(), 404, 'Task not found for this property.');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'phase' => ['required', Rule::in(['pre_cleaning', 'during_cleaning', 'post_cleaning'])],
+            'instructions' => ['nullable', 'string', 'max:5000'],
+            'visible_to_owner' => ['nullable', 'boolean'],
+            'visible_to_housekeeper' => ['nullable', 'boolean'],
+        ]);
+
+        $newName = trim($validated['name']);
+
+        // Update task name and phase if changed
+        if ($task->name !== $newName) {
+            $task->name = $newName;
+        }
+        if ($task->phase !== $validated['phase']) {
+            $task->phase = $validated['phase'];
+        }
+        $task->save();
+
+        // Update pivot data
+        $property->propertyTasks()->updateExistingPivot($task->id, [
+            'instructions' => $validated['instructions'] ?? null,
+            'visible_to_owner' => (bool)($validated['visible_to_owner'] ?? true),
+            'visible_to_housekeeper' => (bool)($validated['visible_to_housekeeper'] ?? true),
+        ]);
+
+        $message = "Property task updated: {$task->name}";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => $message,
+                'task' => $task,
+            ]);
+        }
+
+        return redirect()->route('properties.property-tasks.index', $property)
+            ->with('status', $message);
+    }
+
+    public function detachPropertyTask(Property $property, Task $task)
+    {
+        $property->propertyTasks()->detach($task->id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'message' => "Detached property task: {$task->name}",
+            ]);
+        }
+
+        return redirect()->route('properties.property-tasks.index', $property)
+            ->with('status', "Detached property task: {$task->name}");
+    }
 }

@@ -44,6 +44,42 @@ class ChecklistController extends Controller
     }
 
     /**
+     * Toggle property-level task (no room).
+     */
+    public function togglePropertyTask(CleaningSession $session, Task $task)
+    {
+        // Verify task is a property-level task for this session's property
+        abort_unless(
+            $session->property->propertyTasks()->where('tasks.id', $task->id)->exists(),
+            404,
+            'Task not found as property-level task for this session.'
+        );
+
+        // Create if missing
+        $item = ChecklistItem::firstOrCreate(
+            [
+                'session_id' => $session->id,
+                'room_id'    => null, // Property-level tasks have no room
+                'task_id'    => $task->id,
+            ],
+            [
+                'user_id' => auth()->id(),
+                'checked' => false,
+            ]
+        );
+
+        $nowChecked = ! $item->checked;
+
+        $item->update([
+            'checked'    => $nowChecked,
+            'checked_at' => $nowChecked ? now() : null,
+            'user_id'    => auth()->id(),
+        ]);
+
+        return back();
+    }
+
+    /**
      * Add/update a note for a specific (session, room, task).
      */
     public function note(Request $request, CleaningSession $session, Room $room, Task $task)
@@ -59,6 +95,42 @@ class ChecklistController extends Controller
             [
                 'session_id' => $session->id,
                 'room_id'    => $room->id,
+                'task_id'    => $task->id,
+            ],
+            [
+                'user_id' => auth()->id(),
+                'checked' => false,
+            ]
+        );
+
+        $item->update([
+            'note'    => $data['note'] ?? null,
+            'user_id' => auth()->id(),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Add/update a note for property-level task (no room).
+     */
+    public function notePropertyTask(Request $request, CleaningSession $session, Task $task)
+    {
+        $data = $request->validate([
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        // Verify task is a property-level task for this session's property
+        abort_unless(
+            $session->property->propertyTasks()->where('tasks.id', $task->id)->exists(),
+            404,
+            'Task not found as property-level task for this session.'
+        );
+
+        $item = ChecklistItem::firstOrCreate(
+            [
+                'session_id' => $session->id,
+                'room_id'    => null, // Property-level tasks have no room
                 'task_id'    => $task->id,
             ],
             [

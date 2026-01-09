@@ -37,6 +37,13 @@ class Property extends Model
         return $this->belongsTo(\App\Models\User::class, 'owner_id', 'id');
     }
 
+    public function propertyTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'property_tasks')
+            ->withTimestamps()
+            ->withPivot(['sort_order', 'instructions', 'visible_to_owner', 'visible_to_housekeeper'])
+            ->orderBy('property_tasks.sort_order');
+    }
 
     public function getPhotoUrlAttribute(): string
     {

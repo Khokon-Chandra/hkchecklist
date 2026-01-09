@@ -12,9 +12,17 @@
                 </p>
             </div>
 
-            <x-button variant="secondary" href="{{ route('properties.index') }}">
-                Back to List
-            </x-button>
+            <div class="flex items-center gap-2">
+                <x-button variant="secondary" href="{{ route('properties.index') }}">
+                    Back to List
+                </x-button>
+                <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}">
+                    Rooms
+                </x-button>
+                <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}">
+                    Property Tasks
+                </x-button>
+            </div>
         </div>
     </x-slot>
 

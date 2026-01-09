@@ -56,6 +56,54 @@ class SessionController extends Controller
         // Eager-load checklist items to avoid N+1 when the view scans them
         $session->load('checklistItems');
 
+        // Load property-level tasks
+        $property = $session->property;
+        $propertyTasks = $property->propertyTasks()
+            ->orderBy('property_tasks.sort_order')
+            ->get();
+
+        // Ensure property-level checklist items exist
+        foreach ($propertyTasks as $task) {
+            \App\Models\ChecklistItem::firstOrCreate(
+                [
+                    'session_id' => $session->id,
+                    'room_id'    => null, // Property-level tasks have no room
+                    'task_id'    => $task->id,
+                ],
+                [
+                    'user_id' => auth()->id(),
+                    'checked' => false,
+                ]
+            );
+        }
+
+        // Separate property-level tasks by phase
+        $preCleaningTasks = $propertyTasks->where('phase', 'pre_cleaning');
+        $duringCleaningTasks = $propertyTasks->where('phase', 'during_cleaning');
+        $postCleaningTasks = $propertyTasks->where('phase', 'post_cleaning');
+
+        // Count property-level tasks
+        $preCleaningCount = $preCleaningTasks->count();
+        $duringCleaningCount = $duringCleaningTasks->count();
+        $postCleaningCount = $postCleaningTasks->count();
+
+        // Count checked property-level tasks
+        $checkedPreCleaningCount = ChecklistItem::where('session_id', $session->id)
+            ->whereNull('room_id')
+            ->whereIn('task_id', $preCleaningTasks->pluck('id'))
+            ->where('checked', true)
+            ->count();
+        $checkedDuringCleaningCount = ChecklistItem::where('session_id', $session->id)
+            ->whereNull('room_id')
+            ->whereIn('task_id', $duringCleaningTasks->pluck('id'))
+            ->where('checked', true)
+            ->count();
+        $checkedPostCleaningCount = ChecklistItem::where('session_id', $session->id)
+            ->whereNull('room_id')
+            ->whereIn('task_id', $postCleaningTasks->pluck('id'))
+            ->where('checked', true)
+            ->count();
+
         // Separate tasks by type and find first incomplete room indices (unchanged)
         $roomTasksByRoom      = [];
         $inventoryTasksByRoom = [];
@@ -89,15 +137,17 @@ class SessionController extends Controller
             }
         }
 
-        // Counts & stages (unchanged)
+        // Counts & stages (updated to include property-level tasks)
         $allRoomTasksCount          = $rooms->flatMap->tasks->where('type', 'room')->count();
         $checkedRoomTasksCount      = ChecklistItem::where('session_id', $session->id)
             ->whereHas('task', fn($q) => $q->where('type', 'room'))
+            ->whereNotNull('room_id')
             ->where('checked', true)
             ->count();
         $allInventoryTasksCount     = $rooms->flatMap->tasks->where('type', 'inventory')->count();
         $checkedInventoryTasksCount = ChecklistItem::where('session_id', $session->id)
             ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
+            ->whereNotNull('room_id')
             ->where('checked', true)
             ->count();
 
@@ -107,23 +157,34 @@ class SessionController extends Controller
             ->pluck('c', 'room_id');
         $hasMinPhotos = $rooms->every(fn($room) => ($photoCounts[$room->id] ?? 0) >= 8);
 
+        // Determine current stage based on completion status
+        // Flow: pre_cleaning → rooms → during_cleaning → post_cleaning → inventory → photos
         if ($session->status === 'completed') {
             $stage = 'summary';
         } else {
-            if ($allRoomTasksCount === 0 && $allInventoryTasksCount === 0) {
+            // Check pre-cleaning tasks first
+            if ($preCleaningCount > 0 && $checkedPreCleaningCount < $preCleaningCount) {
+                $stage = 'pre_cleaning';
+            }
+            // Then room tasks
+            elseif ($allRoomTasksCount > 0 && $checkedRoomTasksCount < $allRoomTasksCount) {
+                $stage = 'rooms';
+            }
+            // Then during-cleaning tasks
+            elseif ($duringCleaningCount > 0 && $checkedDuringCleaningCount < $duringCleaningCount) {
+                $stage = 'during_cleaning';
+            }
+            // Then post-cleaning tasks
+            elseif ($postCleaningCount > 0 && $checkedPostCleaningCount < $postCleaningCount) {
+                $stage = 'post_cleaning';
+            }
+            // Then inventory tasks
+            elseif ($allInventoryTasksCount > 0 && $checkedInventoryTasksCount < $allInventoryTasksCount) {
+                $stage = 'inventory';
+            }
+            // Finally photos
+            else {
                 $stage = 'photos';
-            } else {
-                if ($checkedRoomTasksCount < $allRoomTasksCount) {
-                    $stage = 'rooms';
-                } else {
-                    if ($allInventoryTasksCount === 0) {
-                        $stage = 'photos';
-                    } elseif ($checkedInventoryTasksCount < $allInventoryTasksCount) {
-                        $stage = 'inventory';
-                    } else {
-                        $stage = 'photos';
-                    }
-                }
             }
         }
 
@@ -139,7 +200,16 @@ class SessionController extends Controller
             'inventoryTasksByRoom',
             'firstIncompleteRoomIndex',
             'firstIncompleteInventoryIndex',
-            'photosByRoom'
+            'photosByRoom',
+            'preCleaningTasks',
+            'duringCleaningTasks',
+            'postCleaningTasks',
+            'preCleaningCount',
+            'duringCleaningCount',
+            'postCleaningCount',
+            'checkedPreCleaningCount',
+            'checkedDuringCleaningCount',
+            'checkedPostCleaningCount'
         ));
     }
 
@@ -189,11 +259,17 @@ class SessionController extends Controller
             ->orderBy('property_room.sort_order')
             ->get();
 
+        // Load property-level tasks
+        $propertyTasks = $property->propertyTasks()
+            ->orderBy('property_tasks.sort_order')
+            ->get();
+
         // Build rows for bulk insert; avoid per-row queries
         $rows = [];
         $now  = now();
         $uid  = auth()->id();
 
+        // Add room-level tasks
         foreach ($rooms as $room) {
             foreach ($room->tasks as $task) {
                 $rows[] = [
@@ -206,6 +282,19 @@ class SessionController extends Controller
                     'updated_at' => $now,
                 ];
             }
+        }
+
+        // Add property-level tasks (room_id is null)
+        foreach ($propertyTasks as $task) {
+            $rows[] = [
+                'session_id' => $session->id,
+                'room_id'    => null,  // Property-level tasks have no room
+                'task_id'    => $task->id,
+                'user_id'    => $uid,
+                'checked'    => false,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
 
         if (!empty($rows)) {
