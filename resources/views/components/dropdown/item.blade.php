@@ -28,28 +28,34 @@
     $hoverBgDark = hexToRgba($primaryColor, 0.2);
 
     $base = 'flex w-full items-center gap-2 px-3 py-2 text-sm
-             text-gray-700 dark:text-gray-200
              rounded outline-none transition-colors';
-    $inlineStyles = "--dropdown-hover-bg: {$hoverBg}; --dropdown-hover-bg-dark: {$hoverBgDark}; --dropdown-hover-text: {$primaryColor};";
+    $inlineStyles = "--dropdown-hover-bg: {$hoverBg}; --dropdown-hover-bg-dark: {$hoverBgDark}; --dropdown-hover-text: {$primaryColor}; --dropdown-text-light: rgb(55, 65, 81); --dropdown-text-dark: rgb(229, 231, 235);";
 @endphp
 
 @if($as === 'button')
-    <button type="button" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}" {{ $attributes }}>
+    <button type="button" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}"
+            x-init="const updateTextColor = () => { const isDark = document.querySelector('.dark') !== null; $el.style.color = isDark ? 'var(--dropdown-text-dark)' : 'var(--dropdown-text-light)'; }; updateTextColor(); const observer = new MutationObserver(updateTextColor); observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); $el._textColorObserver = observer;"
+            {{ $attributes }}>
         {{ $slot }}
     </button>
 @elseif($as === 'form')
     <form method="{{ $method ?? 'POST' }}" action="{{ $href }}" {{ $attributes->except(['class']) }}>
         @csrf
-        <button type="submit" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}">
+        <button type="submit" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}"
+                x-init="const updateTextColor = () => { const isDark = document.querySelector('.dark') !== null; $el.style.color = isDark ? 'var(--dropdown-text-dark)' : 'var(--dropdown-text-light)'; }; updateTextColor(); const observer = new MutationObserver(updateTextColor); observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); $el._textColorObserver = observer;">
             {{ $slot }}
         </button>
     </form>
 @elseif($as === 'div')
-    <div tabindex="0" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}" {{ $attributes }}>
+    <div tabindex="0" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}"
+         x-init="const updateTextColor = () => { const isDark = document.querySelector('.dark') !== null; $el.style.color = isDark ? 'var(--dropdown-text-dark)' : 'var(--dropdown-text-light)'; }; updateTextColor(); const observer = new MutationObserver(updateTextColor); observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); $el._textColorObserver = observer;"
+         {{ $attributes }}>
         {{ $slot }}
     </div>
 @else
-    <a href="{{ $href }}" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}" {{ $attributes }}>
+    <a href="{{ $href }}" data-menu-item class="{{ $base }}" style="{{ $inlineStyles }}"
+       x-init="const updateTextColor = () => { const isDark = document.querySelector('.dark') !== null; $el.style.color = isDark ? 'var(--dropdown-text-dark)' : 'var(--dropdown-text-light)'; }; updateTextColor(); const observer = new MutationObserver(updateTextColor); observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); $el._textColorObserver = observer;"
+       {{ $attributes }}>
         {{ $slot }}
     </a>
 @endif
