@@ -7,9 +7,9 @@
                     class="px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Open
                     Calendar</a>
                 @hasanyrole('owner|admin')
-                    <a href="{{ route('manage.sessions.index') }}"
-                        class="px-3 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700">Manage
-                        Assignment</a>
+                    <x-button href="{{ route('manage.sessions.index') }}" variant="primary" >
+                        Manage Assignment
+                    </x-button>
                 @endhasanyrole
             </div>
         </div>
