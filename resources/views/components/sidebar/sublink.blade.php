@@ -30,14 +30,27 @@
         }
     }
 
-    $hoverColor = darkenColor($primaryColor, 15);
+    // Helper function to convert hex to rgba with opacity
+    if (!function_exists('hexToRgba')) {
+        function hexToRgba($hex, $opacity = 1) {
+            $hex = str_replace('#', '', $hex);
+            $r = hexdec(substr($hex, 0, 2));
+            $g = hexdec(substr($hex, 2, 2));
+            $b = hexdec(substr($hex, 4, 2));
+            return "rgba({$r}, {$g}, {$b}, {$opacity})";
+        }
+    }
 
-    $classes = 'transition-colors hover:text-gray-900 dark:hover:text-gray-100 block px-2 py-1 rounded-md';
+    $baseHoverClass = $active ? '' : 'hover:text-gray-900 dark:hover:text-gray-100';
+    $classes = "transition-colors {$baseHoverClass} block px-2 py-1 rounded-md";
     $inlineStyles = '';
 
     if ($active) {
-        $classes .= ' text-white font-medium';
-        $inlineStyles = "background-color: {$primaryColor}; --sublink-hover-color: {$hoverColor};";
+        // Use low density (light/transparent) version of primary color
+        $lowDensityBg = hexToRgba($primaryColor, 0.1);
+        $hoverBg = hexToRgba($primaryColor, 0.2);
+        $classes .= ' font-medium';
+        $inlineStyles = "background-color: {$lowDensityBg}; color: {$primaryColor}; --sublink-hover-bg: {$hoverBg};";
     } else {
         $classes .= ' text-gray-500 dark:text-gray-400';
     }
@@ -51,8 +64,8 @@
 
 @if($active && $inlineStyles)
     <style>
-        [style*="--sublink-hover-color"]:hover {
-            background-color: var(--sublink-hover-color) !important;
+        [style*="--sublink-hover-bg"]:hover {
+            background-color: var(--sublink-hover-bg) !important;
         }
     </style>
 @endif
