@@ -52,8 +52,11 @@
         case 'secondary':
             $variantClasses =
                 'bg-white text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:bg-dark-eval-1 dark:hover:bg-dark-eval-2 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-700';
+            // Get theme color first, then button_primary_color as override (same as primary)
             $themeColor = Setting::get('theme_color', '#842eb8');
-            $focusRingColor = $themeColor;
+            $buttonPrimaryColor = Setting::get('button_primary_color');
+            // Use button_primary_color if it exists, otherwise use theme_color
+            $focusRingColor = $buttonPrimaryColor ?: $themeColor;
             break;
         case 'success':
             $successColor = Setting::get('button_success_color', '#10b981');
@@ -127,7 +130,7 @@
     }
 
     // Add focus ring color class if needed
-    if ($focusRingColor && in_array($variant, ['primary', 'success', 'danger', 'warning', 'info'])) {
+    if ($focusRingColor && in_array($variant, ['primary', 'secondary', 'success', 'danger', 'warning', 'info'])) {
         $classes .= ' focus:ring';
     }
 
@@ -146,7 +149,7 @@
 
     // Add focus ring style
     $focusStyle = '';
-    if ($focusRingColor && in_array($variant, ['primary', 'success', 'danger', 'warning', 'info'])) {
+    if ($focusRingColor && in_array($variant, ['primary', 'secondary', 'success', 'danger', 'warning', 'info'])) {
         $focusStyle = "data-focus-ring=\"{$focusRingColor}\"";
     }
 @endphp
@@ -172,7 +175,7 @@
     </button>
 @endif
 
-@if($focusRingColor && in_array($variant, ['primary', 'success', 'danger', 'warning', 'info']))
+@if($focusRingColor && in_array($variant, ['primary', 'secondary', 'success', 'danger', 'warning', 'info']))
     <style>
         [data-focus-ring="{{ $focusRingColor }}"]:focus {
             --tw-ring-color: {{ $focusRingColor }} !important;
