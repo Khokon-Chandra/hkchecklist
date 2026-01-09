@@ -95,6 +95,37 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Logo Alignment Option --}}
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <x-form.label value="Logo Alignment" />
+                <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                    Choose how the logo should be aligned in the sidebar header.
+                </p>
+                <div class="flex gap-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="logo_alignment" value="left"
+                            {{ old('logo_alignment', $settings['logo_alignment'] ?? 'center') === 'left' ? 'checked' : '' }}
+                            class="mr-2 text-indigo-600 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Left</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="logo_alignment" value="center"
+                            {{ old('logo_alignment', $settings['logo_alignment'] ?? 'center') === 'center' ? 'checked' : '' }}
+                            class="mr-2 text-indigo-600 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Center</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="logo_alignment" value="right"
+                            {{ old('logo_alignment', $settings['logo_alignment'] ?? 'center') === 'right' ? 'checked' : '' }}
+                            class="mr-2 text-indigo-600 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Right</span>
+                    </label>
+                </div>
+                @error('logo_alignment')
+                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
         </x-card>
 
         {{-- Favicon Upload Section --}}

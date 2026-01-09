@@ -22,6 +22,7 @@ class SettingsController extends Controller
             'theme_color' => Setting::get('theme_color', '#842eb8'),
             'application_logo_path' => Setting::get('application_logo_path'),
             'favicon_path' => Setting::get('favicon_path'),
+            'logo_alignment' => Setting::get('logo_alignment', 'center'),
             'button_primary_color' => Setting::get('button_primary_color', '#842eb8'),
             'button_success_color' => Setting::get('button_success_color', '#10b981'),
             'button_danger_color' => Setting::get('button_danger_color', '#ef4444'),
@@ -70,6 +71,11 @@ class SettingsController extends Controller
 
         // Update theme color
         Setting::set('theme_color', $request->theme_color);
+
+        // Update logo alignment
+        if ($request->filled('logo_alignment')) {
+            Setting::set('logo_alignment', $request->logo_alignment);
+        }
 
         // Update button variant colors
         if ($request->filled('button_primary_color')) {

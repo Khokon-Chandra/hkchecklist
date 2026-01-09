@@ -1,4 +1,14 @@
-<div class="flex items-center justify-between flex-shrink-0 px-3">
+@php
+    use App\Models\Setting;
+    $logoAlignment = Setting::get('logo_alignment', 'center');
+    $justifyClass = match($logoAlignment) {
+        'left' => 'justify-start',
+        'right' => 'justify-end',
+        default => 'justify-center',
+    };
+@endphp
+
+<div class="relative flex items-center {{ $justifyClass }} flex-shrink-0 px-3">
     <!-- Logo -->
     <a
         href="{{ route('dashboard') }}"
@@ -15,6 +25,7 @@
         icon-only
         sr-text="Toggle sidebar"
         variant="secondary"
+        class="absolute right-3"
         x-show="isSidebarOpen || isSidebarHovered"
         x-on:click="isSidebarOpen = !isSidebarOpen"
     >
