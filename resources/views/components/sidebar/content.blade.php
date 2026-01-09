@@ -96,13 +96,13 @@
         </x-sidebar.dropdown>
     @endrole
 
-    @role('housekeeper')
+    @if(auth()->user()->hasRole('housekeeper') && !auth()->user()->hasAnyRole(['admin', 'owner']))
         <x-sidebar.link title="My Assignments"
             href="{{ route('sessions.index') }}"
             :isActive="request()->routeIs('sessions.*')">
             <x-slot name="icon"><x-icons.assignment class="w-6 h-6" aria-hidden="true" /></x-slot>
         </x-sidebar.link>
-    @endrole
+    @endif
 
     {{-- System / Audit --}}
     @role('admin')
