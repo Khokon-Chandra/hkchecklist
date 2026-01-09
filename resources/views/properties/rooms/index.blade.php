@@ -7,7 +7,7 @@
             <div class="flex items-center gap-2">
                 <x-button variant="secondary" href="{{ route('properties.index') }}">← Back to Properties</x-button>
                 @role('admin|owner')
-                    <x-button variant="primary" href="{{ route('properties.rooms.create', ['property' => $property->id]) }}">
+                    <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room-{{ $property->id }}')">
                         + Add Room
                     </x-button>
                 @endrole
@@ -104,10 +104,10 @@
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     @role('admin|owner')
-                                        <a class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                            href="{{ route('properties.rooms.edit', [$property, $r]) }}">
+                                        <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
+                                            @click="$dispatch('open-preview-panel', 'edit-room-{{ $property->id }}-{{ $r->id }}')">
                                             Edit
-                                        </a>
+                                        </button>
                                         <span class="mx-2 text-gray-400">·</span>
                                     @endrole
                                     <a class="text-blue-600 hover:underline dark:text-blue-400"
@@ -128,4 +128,48 @@
             </div>
         </x-card>
     </div>
+
+    {{-- Add Room Preview Panel --}}
+    @role('admin|owner')
+        <x-preview-panel
+            name="add-room-{{ $property->id }}"
+            :overlay="true"
+            side="right"
+            initialWidth="32rem"
+            minWidth="24rem"
+            title="Add Room"
+            :subtitle="'Add a new room to ' . $property->name">
+
+            @php $suggestUrl = route('rooms.suggest'); @endphp
+
+            @include('properties.rooms.__room_form', [
+                'property' => $property,
+                'room' => null,
+                'suggestUrl' => $suggestUrl,
+                'mode' => 'create',
+            ])
+        </x-preview-panel>
+
+        {{-- Edit Room Preview Panels --}}
+        @foreach($rooms as $r)
+            <x-preview-panel
+                name="edit-room-{{ $property->id }}-{{ $r->id }}"
+                :overlay="true"
+                side="right"
+                initialWidth="32rem"
+                minWidth="24rem"
+                title="Edit Room"
+                :subtitle="$r->name">
+
+                @php $suggestUrl = route('rooms.suggest'); @endphp
+
+                @include('properties.rooms.__room_form', [
+                    'property' => $property,
+                    'room' => $r,
+                    'suggestUrl' => $suggestUrl,
+                    'mode' => 'edit',
+                ])
+            </x-preview-panel>
+        @endforeach
+    @endrole
 </x-app-layout>

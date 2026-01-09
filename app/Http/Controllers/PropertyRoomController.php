@@ -50,14 +50,19 @@ class PropertyRoomController extends Controller
             ]);
         }
 
-        if ($request->ajax()) {
-            return response()->json($room);
+        $message = $already
+            ? "Assigned existing room: {$room->name}"
+            : "Created & attached room: {$room->name}";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => $message,
+                'room' => $room,
+            ]);
         }
 
         return redirect()
             ->route('properties.rooms.index', $property)
-            ->with('status', $already
-                ? "Assigned existing room: {$room->name}"
-                : "Created & attached room: {$room->name}");
+            ->with('status', $message);
     }
 }

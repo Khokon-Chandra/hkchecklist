@@ -255,14 +255,28 @@ class PropertyController extends Controller
             $existing->is_default = $isDefault;
             $existing->save();
 
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => "Switched to existing room: {$existing->name}",
+                    'room' => $existing,
+                ]);
+            }
+
             return redirect()->route('properties.rooms.index', $property)
                 ->with('status', "Switched to existing room: {$existing->name}");
         }
 
-        // No existing match → update this room’s data (global)
+        // No existing match → update this room's data (global)
         $room->name = $newName;
         $room->is_default = $isDefault;
         $room->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => "Updated room: {$room->name}",
+                'room' => $room,
+            ]);
+        }
 
         return redirect()->route('properties.rooms.index', $property)
             ->with('status', "Updated room: {$room->name}");

@@ -33,6 +33,7 @@ import roomTasksEditor from './room-tasks-editor'
 import taskCreateForm from './task-create-form'
 import roomCreateForm from './room-create-form'
 import propertyTaskForm from './property-task-form'
+import propertyRoomForm from './property-room-form'
 
 // ⛔️ DO NOT MODIFY — main app interaction (kept exactly as you sent)
 document.addEventListener('alpine:init', () => {
@@ -127,6 +128,9 @@ document.addEventListener('alpine:init', () => {
 
     // New: property task form (create/edit)
     Alpine.data('propertyTaskForm', propertyTaskForm)
+
+    // New: property room form (create/edit)
+    Alpine.data('propertyRoomForm', propertyRoomForm)
 })
 
 Alpine.plugin(collapse)
