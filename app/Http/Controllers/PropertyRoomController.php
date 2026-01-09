@@ -9,12 +9,6 @@ use Illuminate\Validation\Rule;
 
 class PropertyRoomController extends Controller
 {
-    public function create(Property $property)
-    {
-        // $roomsCount ideally passed for UX hints if needed
-        return view('properties.rooms.create', compact('property'));
-    }
-
     public function store(Request $request, Property $property)
     {
         $validated = $request->validate([

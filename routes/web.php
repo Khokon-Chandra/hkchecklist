@@ -73,8 +73,6 @@ Route::middleware('auth')->group(function () {
     // Rooms and tasks (nested under property)
     Route::prefix('properties')->name('properties.')->group(function () {
         Route::get('{property}/rooms', [PropertyController::class, 'rooms'])->name('rooms.index');
-        Route::get('{property}/rooms/create', [PropertyController::class, 'createRoom'])->middleware('role:admin|owner')->name('rooms.create');
-        Route::get('{property}/rooms/{room}/edit', [PropertyController::class, 'editRoom'])->name('rooms.edit');
         Route::put('{property}/rooms/{room}', [PropertyController::class, 'updateRoom'])->name('rooms.update');
         Route::delete('{property}/rooms/{room}', [PropertyController::class, 'destroyRoom'])->name('rooms.destroy');
         Route::patch('{property}/rooms/order', [PropertyRoomOrderController::class, 'update'])
@@ -83,11 +81,11 @@ Route::middleware('auth')->group(function () {
         Route::post('{property}/rooms/attach', [PropertyRoomAttachController::class, 'store'])
             ->name('rooms.attach');
 
+        Route::post('{property}/rooms', [PropertyRoomController::class, 'store'])->name('rooms.store');
+
         Route::get('{property}/rooms/{room}/tasks', [PropertyController::class, 'tasks'])->name('tasks.index');
         Route::patch('{property}/rooms/{room}/tasks', [RoomTaskOrderController::class, 'update'])->name('tasks.order');
-        Route::get('{property}/rooms/{room}/tasks/create', [PropertyController::class, 'createTask'])->name('tasks.create');
         Route::post('{property}/rooms/{room}/tasks', [PropertyController::class, 'storeTask'])->name('tasks.store');
-        Route::get('{property}/rooms/{room}/tasks/{task}/edit', [PropertyController::class, 'editTask'])->name('tasks.edit');
         Route::put('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'updateTask'])->name('tasks.update');
         Route::delete('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'detachTask'])->name('tasks.detach');
 
@@ -151,13 +149,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/tasks/suggest', [TaskSuggestionController::class, 'index'])
         ->name('tasks.suggest');
-
-    // Property → Rooms create/store
-    Route::get('/properties/{property}/rooms/create', [PropertyRoomController::class, 'create'])
-        ->name('properties.rooms.create');
-
-    Route::post('/properties/{property}/rooms', [PropertyRoomController::class, 'store'])
-        ->name('properties.rooms.store');
 });
 
 

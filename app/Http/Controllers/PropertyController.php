@@ -204,25 +204,6 @@ class PropertyController extends Controller
     }
 
 
-    public function createRoom(Property $property)
-    {
-
-        return view('properties.rooms.create', [
-            'property'    => $property,
-            'navProperty' => $property,
-        ]);
-    }
-
-
-    public function editRoom(Property $property, Room $room)
-    {
-
-        return view('properties.rooms.edit', [
-            'property'    => $property,
-            'room'        => $room,
-            'navProperty' => $property,
-        ]);
-    }
 
     public function updateRoom(Request $request, Property $property, Room $room)
     {
@@ -313,21 +294,6 @@ class PropertyController extends Controller
     }
 
 
-    public function createTask(Property $property, Room $room)
-    {
-        abort_unless($property->rooms()->where('rooms.id', $room->id)->exists(), 403, 'Room does not belong to the specified property.');
-
-        return view('properties.tasks.create', [
-            'property'    => $property,
-            'room'        => $room,
-            'navProperty' => $property,
-        ]);
-    }
-
-
-
-
-
     public function storeTask(Request $request, Property $property, Room $room)
     {
         $validated = $request->validate([
@@ -396,21 +362,6 @@ class PropertyController extends Controller
             ->with('status', "Task attached: {$task->name}");
     }
 
-    public function editTask(Property $property, Room $room, Task $task)
-    {
-        abort_unless($property->rooms()->where('rooms.id', $room->id)->exists(), 403, 'Room does not belong to the specified property.');
-        abort_unless($room->tasks()->where('tasks.id', $task->id)->exists(), 404, 'Task not found in the specified room.');
-
-        $task->load(['media' => fn($q) => $q->orderBy('sort_order')]);
-        $pivot = $room->tasks()->where('tasks.id', $task->id)->firstOrFail()->pivot;
-
-        return view('properties.tasks.edit', [
-            'property' => $property,
-            'room'     => $room,
-            'task'     => $task,
-            'pivot'    => $pivot,
-        ]);
-    }
 
     public function updateTask(Request $request, Property $property, Room $room, Task $task)
     {
