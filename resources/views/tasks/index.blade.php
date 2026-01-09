@@ -34,23 +34,23 @@
             <table class="min-w-full text-sm">
                 <thead class="uppercase text-xs tracking-wide">
                     <tr class="text-gray-600 dark:text-gray-300">
-                        <th class="px-4 py-2 text-left">#</th>
-                        <th class="px-4 py-2 text-left">Name</th>
-                        <th class="px-4 py-2 text-center">Type</th>
-                        <th class="px-4 py-2 text-center">Default?</th>
-                        <th class="px-4 py-2 text-center">Created</th>
-                        <th class="px-4 py-2 w-40 text-right">Action</th>
+                        <th class="px-4 py-1 text-left">#</th>
+                        <th class="px-4 py-1 text-left">Name</th>
+                        <th class="px-4 py-1 text-center">Type</th>
+                        <th class="px-4 py-1 text-center">Default?</th>
+                        <th class="px-4 py-1 text-center">Created</th>
+                        <th class="px-4 py-1 w-40 text-right">Action</th>
                     </tr>
                 </thead>
 
                 <tbody class="divide-y dark:divide-gray-700">
                     @forelse($tasks as $t)
                         <tr>
-                            <td class="px-4 py-3 text-left">{{ ($tasks->firstItem() ?? 0) + $loop->index }}</td>
-                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                            <td class="px-4 py-1 text-left">{{ ($tasks->firstItem() ?? 0) + $loop->index }}</td>
+                            <td class="px-4 py-1 font-medium text-gray-900 dark:text-gray-100">
                                 {{ $t->name }}
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-1 text-center">
                                 <span
                                     class="px-2 py-0.5 rounded text-xs
                                     {{ $t->type === 'inventory'
@@ -59,7 +59,7 @@
                                     {{ ucfirst($t->type) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-1 text-center">
                                 <span
                                     class="px-2 py-0.5 rounded text-xs
                                     {{ $t->is_default
@@ -68,23 +68,28 @@
                                     {{ $t->is_default ? 'Yes' : 'No' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-center">
+                            <td class="px-4 py-1 text-center">
                                 {{ $t->created_at?->format('Y-m-d') }}
                             </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <a class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                    href="{{ route('tasks.edit', $t) }}">Edit</a>
+                            <td class="px-4 py-1 text-right whitespace-nowrap">
+                                <x-action-dropdown align="right" width="w-48" label="Task actions">
+                                    <x-dropdown.item href="{{ route('tasks.edit', $t) }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M3 17.25V21h3.75l11-11-3.75-3.75-11 11zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.83z" />
+                                        </svg>
+                                        <span>Edit</span>
+                                    </x-dropdown.item>
 
-                                <span class="mx-2 text-gray-400">·</span>
-
-                                {{-- Row-level delete form (not nested in another form) --}}
-                                <form method="post" action="{{ route('tasks.destroy', $t) }}" class="inline">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-rose-600 hover:underline"
+                                    <x-dropdown.item as="form" method="POST" href="{{ route('tasks.destroy', $t) }}"
                                         onclick="return confirm('Delete this task?')">
-                                        Delete
-                                    </button>
-                                </form>
+                                        @csrf
+                                        @method('DELETE')
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M9 3a1 1 0 0 0-1 1v1H4a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-4V4a1 1 0 0 0-1-1H9zm2 4a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7zm4 0a1 1 0 1 0-2 0v10a1 1 0 1 0 2 0V7z" />
+                                        </svg>
+                                        <span>Delete</span>
+                                    </x-dropdown.item>
+                                </x-action-dropdown>
                             </td>
                         </tr>
                     @empty
