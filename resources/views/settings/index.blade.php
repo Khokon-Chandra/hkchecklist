@@ -15,8 +15,53 @@
     {{-- Success Message --}}
     <x-flash.ok :message="session('success')" />
 
-    <form x-data="settingsForm()" method="post" action="{{ route('settings.update') }}"
-        enctype="multipart/form-data" class="space-y-6">
+    {{-- Floating Save Status Indicator --}}
+    <div x-data="{ show: false, status: 'saving' }"
+         x-show="show"
+         x-cloak
+         x-on:settings-saving.window="show = true; status = 'saving'"
+         x-on:settings-saved.window="show = true; status = 'saved'; setTimeout(() => show = false, 2000)"
+         x-on:settings-error.window="show = true; status = 'error'; setTimeout(() => show = false, 3000)"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-2"
+         class="fixed bottom-6 right-6 z-50">
+        <div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <template x-if="status === 'saving'">
+                <div class="flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Saving...</span>
+                </div>
+            </template>
+            <template x-if="status === 'saved'">
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Saved</span>
+                </div>
+            </template>
+            <template x-if="status === 'error'">
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Error saving</span>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <form x-data="settingsForm()"
+          @submit.prevent
+          enctype="multipart/form-data"
+          class="space-y-6">
         @csrf
         @method('PUT')
 
@@ -58,9 +103,19 @@
                             <div class="w-full">
                                 <img :src="previewUrl || currentLogo" alt="Logo Preview"
                                     class="rounded-lg object-contain h-48 w-48 mx-auto shadow-lg border-4 border-white dark:border-gray-700" />
-                                <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                                <p class="mt-4 text-xs text-gray-500 dark:text-gray-400" x-show="!previewUrl">
                                     Click or drop a new file to replace the logo.
                                 </p>
+                                <template x-if="previewUrl">
+                                    <div class="mt-4 flex items-center justify-center gap-3" @click.stop>
+                                        <x-button type="button" variant="primary" size="sm" @click.stop="uploadLogo()">
+                                            Upload
+                                        </x-button>
+                                        <x-button type="button" variant="secondary" size="sm" @click.stop="cancelLogoUpload()">
+                                            Cancel
+                                        </x-button>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
@@ -104,20 +159,23 @@
                 </p>
                 <div class="flex gap-4">
                     <label class="flex items-center">
-                        <input type="radio" name="logo_alignment" value="left"
+                        <input type="radio" name="logo_alignment" value="left" x-model="logoAlignment"
                             {{ old('logo_alignment', $settings['logo_alignment'] ?? 'center') === 'left' ? 'checked' : '' }}
+                            @change="saveSettings()"
                             class="mr-2 text-indigo-600 focus:ring-indigo-500" />
                         <span class="text-sm text-gray-700 dark:text-gray-300">Left</span>
                     </label>
                     <label class="flex items-center">
-                        <input type="radio" name="logo_alignment" value="center"
+                        <input type="radio" name="logo_alignment" value="center" x-model="logoAlignment"
                             {{ old('logo_alignment', $settings['logo_alignment'] ?? 'center') === 'center' ? 'checked' : '' }}
+                            @change="saveSettings()"
                             class="mr-2 text-indigo-600 focus:ring-indigo-500" />
                         <span class="text-sm text-gray-700 dark:text-gray-300">Center</span>
                     </label>
                     <label class="flex items-center">
-                        <input type="radio" name="logo_alignment" value="right"
+                        <input type="radio" name="logo_alignment" value="right" x-model="logoAlignment"
                             {{ old('logo_alignment', $settings['logo_alignment'] ?? 'center') === 'right' ? 'checked' : '' }}
+                            @change="saveSettings()"
                             class="mr-2 text-indigo-600 focus:ring-indigo-500" />
                         <span class="text-sm text-gray-700 dark:text-gray-300">Right</span>
                     </label>
@@ -166,9 +224,19 @@
                             <div class="w-full">
                                 <img :src="faviconPreviewUrl || currentFavicon" alt="Favicon Preview"
                                     class="rounded-lg object-contain h-16 w-16 mx-auto shadow-lg border-4 border-white dark:border-gray-700" />
-                                <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                                <p class="mt-4 text-xs text-gray-500 dark:text-gray-400" x-show="!faviconPreviewUrl">
                                     Click or drop a new file to replace the favicon.
                                 </p>
+                                <template x-if="faviconPreviewUrl">
+                                    <div class="mt-4 flex items-center justify-center gap-3" @click.stop>
+                                        <x-button type="button" variant="primary" size="sm" @click.stop="uploadFavicon()">
+                                            Upload
+                                        </x-button>
+                                        <x-button type="button" variant="secondary" size="sm" @click.stop="cancelFaviconUpload()">
+                                            Cancel
+                                        </x-button>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
@@ -239,6 +307,8 @@
                 <x-form.label value="Application Name" />
                 <x-form.input name="site_name" type="text" class="w-full" required
                     :value="old('site_name', $settings['site_name'])" placeholder="Enter site name"
+                    x-model="siteName"
+                    @input.debounce.400ms="saveSettings()"
                     autofocus />
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     This name will appear in page titles, headers, and other UI elements.
@@ -288,7 +358,7 @@
                                     : 'border-gray-200 dark:border-gray-700'">
                                 <input type="radio" name="theme_color" value="{{ $color }}" x-model="selectedColor"
                                     class="sr-only"
-                                    @change="updateCustomColor('{{ $color }}')"
+                                    @change="updateCustomColor('{{ $color }}'); saveSettings()"
                                     @checked($settings['theme_color'] === $color) />
                                 <div class="w-10 h-10 rounded-full mb-2 shadow-sm"
                                     style="background-color: {{ $color }};"></div>
@@ -306,12 +376,12 @@
                     <x-form.label value="Or Choose a Custom Color" />
                     <div class="flex items-center gap-4 mt-3">
                         <div class="flex-1">
-                            <input type="color" x-model="customColor" @input="updateCustomColor(customColor)"
+                            <input type="color" x-model="customColor" @input="updateCustomColor(customColor); saveSettings()"
                                 class="w-full h-12 rounded-lg cursor-pointer border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                                 value="{{ $settings['theme_color'] }}" />
                         </div>
                         <div class="flex-1">
-                            <x-form.input type="text" x-model="customColor" @input="updateCustomColor(customColor)"
+                            <x-form.input type="text" x-model="customColor" @input.debounce.400ms="updateCustomColor(customColor); saveSettings()"
                                 pattern="^#[0-9A-Fa-f]{6}$" placeholder="#842eb8"
                                 class="w-full font-mono" />
                         </div>
@@ -394,7 +464,7 @@
                                         value="{{ $oldValue }}"
                                         class="w-full h-10 rounded-lg cursor-pointer border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
                                         data-input-id="{{ $inputId }}"
-                                        onchange="document.getElementById(this.dataset.inputId).value = this.value" />
+                                        x-on:input="document.getElementById($el.dataset.inputId).value = $el.value; window.settingsFormInstance?.saveSettings()" />
                                 </div>
                                 <div class="flex-1">
                                     <x-form.input
@@ -406,7 +476,7 @@
                                         placeholder="{{ $variant['default'] }}"
                                         class="w-full font-mono"
                                         data-color-input="{{ $settingKey }}"
-                                        onchange="document.querySelector('input[type=color][name=' + this.dataset.colorInput + ']').value = this.value" />
+                                        x-on:input.debounce.400ms="document.querySelector('input[type=color][name=' + $el.dataset.colorInput + ']').value = $el.value; window.settingsFormInstance?.saveSettings()" />
                                 </div>
                             </div>
                             {{-- Preview --}}
@@ -450,34 +520,110 @@
             </div>
         </x-card>
 
-        {{-- Submit Buttons --}}
-        <div class="flex flex-wrap justify-end gap-3">
-            <x-button type="submit" class="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M5 13l4 4L19 7" />
-                </svg>
-                Save Settings
-            </x-button>
-            <x-button variant="secondary" href="{{ route('dashboard') }}">
-                Cancel
-            </x-button>
-        </div>
     </form>
 
     {{-- Alpine.js helpers --}}
     <script>
         function settingsForm() {
-            return {
+            const instance = {
                 previewUrl: null,
                 dragOver: false,
                 faviconPreviewUrl: null,
                 faviconDragOver: false,
                 selectedColor: '{{ $settings['theme_color'] }}',
                 customColor: '{{ $settings['theme_color'] }}',
+                siteName: '{{ $settings['site_name'] }}',
+                logoAlignment: '{{ $settings['logo_alignment'] ?? 'center' }}',
                 currentLogo: @json($settings['application_logo_path'] ? asset('storage/' . $settings['application_logo_path']) : null),
                 currentFavicon: @json($settings['favicon_path'] ? asset('storage/' . $settings['favicon_path']) : null),
+                saveTimeout: null,
+
+                init() {
+                    // Make instance available globally for inline handlers
+                    window.settingsFormInstance = this;
+                },
+
+                showStatus(status) {
+                    window.dispatchEvent(new CustomEvent(`settings-${status}`));
+                },
+
+                async saveSettings(immediate = false, uploadLogo = false, uploadFavicon = false) {
+                    // Clear existing timeout
+                    if (this.saveTimeout) {
+                        clearTimeout(this.saveTimeout);
+                    }
+
+                    const save = async () => {
+                        this.showStatus('saving');
+
+                        const formData = new FormData();
+                        formData.append('_token', document.querySelector('input[name="_token"]').value);
+                        formData.append('_method', 'PUT');
+                        formData.append('site_name', this.siteName || document.querySelector('input[name="site_name"]')?.value || '{{ $settings['site_name'] }}');
+                        formData.append('theme_color', this.selectedColor || this.customColor);
+                        formData.append('logo_alignment', this.logoAlignment || document.querySelector('input[name="logo_alignment"]:checked')?.value || 'center');
+
+                        // Add button colors
+                        document.querySelectorAll('input[name^="button_"][type="text"]').forEach(input => {
+                            if (input.value) {
+                                formData.append(input.name, input.value);
+                            }
+                        });
+
+                        // Add color picker values
+                        document.querySelectorAll('input[type="color"][name^="button_"]').forEach(input => {
+                            if (input.value) {
+                                formData.append(input.name, input.value);
+                            }
+                        });
+
+                        // Add file uploads only if explicitly requested or if they exist and we're doing a general save
+                        if (uploadLogo && this.$refs.logoFile?.files?.[0]) {
+                            formData.append('application_logo', this.$refs.logoFile.files[0]);
+                        }
+                        if (uploadFavicon && this.$refs.faviconFile?.files?.[0]) {
+                            formData.append('favicon', this.$refs.faviconFile.files[0]);
+                        }
+
+                        try {
+                            const response = await fetch('{{ route('settings.update') }}', {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (response.ok) {
+                                this.showStatus('saved');
+                                // Update current logo/favicon if files were uploaded
+                                if (uploadLogo && this.$refs.logoFile?.files?.[0]) {
+                                    this.currentLogo = this.previewUrl;
+                                    // Clear the file input after successful upload
+                                    this.$refs.logoFile.value = '';
+                                    this.previewUrl = null;
+                                }
+                                if (uploadFavicon && this.$refs.faviconFile?.files?.[0]) {
+                                    this.currentFavicon = this.faviconPreviewUrl;
+                                    // Clear the file input after successful upload
+                                    this.$refs.faviconFile.value = '';
+                                    this.faviconPreviewUrl = null;
+                                }
+                            } else {
+                                this.showStatus('error');
+                            }
+                        } catch (error) {
+                            console.error('Error saving settings:', error);
+                            this.showStatus('error');
+                        }
+                    };
+
+                    if (immediate) {
+                        await save();
+                    } else {
+                        this.saveTimeout = setTimeout(save, 400);
+                    }
+                },
 
                 preview(event) {
                     const file = event.target.files?.[0];
@@ -517,11 +663,37 @@
                     });
                 },
 
+                async uploadLogo() {
+                    if (!this.$refs.logoFile?.files?.[0]) return;
+                    await this.saveSettings(true, true, false);
+                },
+
+                cancelLogoUpload() {
+                    this.previewUrl = null;
+                    if (this.$refs.logoFile) {
+                        this.$refs.logoFile.value = '';
+                    }
+                },
+
+                async uploadFavicon() {
+                    if (!this.$refs.faviconFile?.files?.[0]) return;
+                    await this.saveSettings(true, false, true);
+                },
+
+                cancelFaviconUpload() {
+                    this.faviconPreviewUrl = null;
+                    if (this.$refs.faviconFile) {
+                        this.$refs.faviconFile.value = '';
+                    }
+                },
+
                 updateCustomColor(color) {
                     this.selectedColor = color;
                     this.customColor = color;
                 }
-            }
+            };
+
+            return instance;
         }
     </script>
 </x-app-layout>
