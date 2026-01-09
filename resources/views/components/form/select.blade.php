@@ -7,6 +7,8 @@
 ])
 
 @php
+    use App\Models\Setting;
+
     $isMultiple = $attributes->has('multiple');
 
     // Keep parity with your input component: pl-11 when withicon, else px-4
@@ -15,8 +17,10 @@
     $rightPad = $isMultiple ? 'pr-4' : 'pr-10';
     $padding = trim($leftPad . ' ' . $rightPad);
 
+    $themeColor = Setting::get('theme_color', '#842eb8');
+
     $base =
-        'py-2 border-gray-300 rounded-md focus:border-gray-400 focus:ring focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-white dark:border-gray-700 dark:bg-dark-eval-1 dark:text-gray-300 dark:focus:ring-offset-dark-eval-1';
+        'py-2 border-gray-300 rounded-md focus:border-gray-400 focus:ring focus:ring-offset-2 focus:ring-offset-white dark:border-gray-700 dark:bg-dark-eval-1 dark:text-gray-300 dark:focus:ring-offset-dark-eval-1';
     $state = $disabled ? 'opacity-60 cursor-not-allowed' : '';
 
     $name = $attributes->get('name');
@@ -24,9 +28,11 @@
 @endphp
 
 <div class="{{ $isMultiple ? '' : 'relative' }}">
-    <select {{ $disabled ? 'disabled' : '' }} {!! $attributes->merge([
-        'class' => "appearance-none {$padding} {$base} {$state}",
-    ]) !!}>
+    <select {{ $disabled ? 'disabled' : '' }}
+            data-focus-ring="{{ $themeColor }}"
+            {!! $attributes->merge([
+                'class' => "appearance-none {$padding} {$base} {$state}",
+            ]) !!}>
         @if ($placeholder)
             <option value="" disabled {{ $current === null || $current === '' ? 'selected' : '' }} hidden>
                 {{ $placeholder }}
@@ -55,3 +61,9 @@
         </span>
     @endunless
 </div>
+
+<style>
+    [data-focus-ring="{{ $themeColor }}"]:focus {
+        --tw-ring-color: {{ $themeColor }} !important;
+    }
+</style>
