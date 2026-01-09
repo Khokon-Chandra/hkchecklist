@@ -7,6 +7,10 @@
 ])
 
 @php
+    use App\Models\Setting;
+    
+    $themeColor = Setting::get('theme_color', '#842eb8');
+    
     $iconSvg =
         $icon === 'horizontal'
             ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>'
@@ -18,9 +22,10 @@
     {{-- Trigger --}}
     <button type="button" x-ref="button" x-on:click.stop="toggle()" :aria-expanded="open" aria-haspopup="true"
         aria-label="{{ $label }}"
+        data-focus-ring="{{ $themeColor }}"
         class="inline-flex items-center justify-center rounded-md p-2
                hover:bg-gray-100 dark:hover:bg-gray-700
-               focus:outline-none focus:ring-2 focus:ring-indigo-500">
+               focus:outline-none focus:ring-2">
         {!! $iconSvg !!}
     </button>
 
@@ -39,3 +44,9 @@
         </div>
     </template>
 </div>
+
+<style>
+    [data-focus-ring="{{ $themeColor }}"]:focus {
+        --tw-ring-color: {{ $themeColor }} !important;
+    }
+</style>
