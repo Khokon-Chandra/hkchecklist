@@ -28,6 +28,15 @@ class SettingsController extends Controller
             'button_danger_color' => Setting::get('button_danger_color', '#ef4444'),
             'button_warning_color' => Setting::get('button_warning_color', '#f59e0b'),
             'button_info_color' => Setting::get('button_info_color', '#06b6d4'),
+            'date_format' => Setting::get('date_format', 'M d, Y'),
+            'time_format' => Setting::get('time_format', '12'),
+            'items_per_page' => Setting::get('items_per_page', 15),
+            'timezone' => Setting::get('timezone', config('app.timezone', 'UTC')),
+            'auto_save_enabled' => Setting::get('auto_save_enabled', true),
+            'auto_save_delay' => Setting::get('auto_save_delay', 400),
+            'notify_session_started' => Setting::get('notify_session_started', true),
+            'notify_session_completed' => Setting::get('notify_session_completed', true),
+            'notify_assignments' => Setting::get('notify_assignments', true),
         ];
 
         return view('settings.index', compact('settings'));
@@ -97,6 +106,27 @@ class SettingsController extends Controller
         if ($request->filled('button_info_color')) {
             Setting::set('button_info_color', $request->button_info_color);
         }
+
+        // Update preferences
+        if ($request->filled('date_format')) {
+            Setting::set('date_format', $request->date_format);
+        }
+        if ($request->filled('time_format')) {
+            Setting::set('time_format', $request->time_format);
+        }
+        if ($request->filled('items_per_page')) {
+            Setting::set('items_per_page', $request->items_per_page);
+        }
+        if ($request->filled('timezone')) {
+            Setting::set('timezone', $request->timezone);
+        }
+        Setting::set('auto_save_enabled', $request->boolean('auto_save_enabled'));
+        if ($request->filled('auto_save_delay')) {
+            Setting::set('auto_save_delay', $request->auto_save_delay);
+        }
+        Setting::set('notify_session_started', $request->boolean('notify_session_started'));
+        Setting::set('notify_session_completed', $request->boolean('notify_session_completed'));
+        Setting::set('notify_assignments', $request->boolean('notify_assignments'));
 
         // Clear cache
         Setting::clearCache();
