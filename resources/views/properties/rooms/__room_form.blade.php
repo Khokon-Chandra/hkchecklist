@@ -146,13 +146,11 @@
             <div class="@if($isEdit) lg:col-span-1 @endif">
                 <label class="inline-flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700
                               hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-                    <input
-                        type="checkbox"
+                    <x-form.checkbox
                         name="is_default"
                         value="1"
                         x-model="formData.is_default"
-                        class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500"
-                    >
+                    />
                     <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Mark as default template</div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">Default rooms are highlighted in suggestions</div>

@@ -31,9 +31,7 @@
 
                 {{-- Default template --}}
                 <div class="flex items-center gap-2 pt-6">
-                    <input id="is_default" type="checkbox" name="is_default" value="1"
-                           @checked(old('is_default'))
-                           class="rounded border-gray-300 dark:border-gray-700">
+                    <x-form.checkbox id="is_default" name="is_default" value="1" :checked="old('is_default')" />
                     <label for="is_default">Mark as default template</label>
                 </div>
 

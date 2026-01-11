@@ -72,8 +72,7 @@
 
                             @if ($property->photo_path)
                                 <label class="inline-flex items-center gap-2 text-sm text-gray-600">
-                                    <input type="checkbox" name="remove_photo" value="1"
-                                        class="rounded border-gray-300">
+                                    <x-form.checkbox name="remove_photo" value="1" />
                                     Remove photo
                                 </label>
                             @endif

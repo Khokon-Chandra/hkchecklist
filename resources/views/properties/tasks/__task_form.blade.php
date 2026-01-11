@@ -185,13 +185,11 @@
             <div class="space-y-2">
                 <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700
                               hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-                    <input
-                        type="checkbox"
+                    <x-form.checkbox
                         name="visible_to_owner"
                         value="1"
                         x-model="formData.visible_to_owner"
-                        class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500"
-                    >
+                    />
                     <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Owner can view</div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">Task visible to property owners</div>
@@ -199,13 +197,11 @@
                 </label>
                 <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700
                               hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-                    <input
-                        type="checkbox"
+                    <x-form.checkbox
                         name="visible_to_housekeeper"
                         value="1"
                         x-model="formData.visible_to_housekeeper"
-                        class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500"
-                    >
+                    />
                     <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Housekeeper can view</div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">Task visible during cleaning sessions</div>
