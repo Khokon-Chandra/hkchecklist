@@ -152,14 +152,44 @@
                 async save() {
                     this.isSaving = true
                     try {
-                        await api.post(propertyRoomsAttachUrl, {
+                        const response = await api.post(propertyRoomsAttachUrl, {
                             room_ids: this.selectedIds
                         })
+
+                        // Success - show success message
+                        this.$dispatch('toast', {
+                            type: 'success',
+                            message: response.message || 'Rooms attached successfully!'
+                        })
+
                         this.$dispatch('close-preview-panel', `assign-rooms-${this.propertyId}`)
                         window.location.reload()
                     } catch (e) {
-                        console.error(e)
-                        alert('Save failed – see console for details.')
+                        // Extract error message from axios error response
+                        let errorMessage = 'Failed to attach rooms. Please try again.'
+
+                        if (e.response && e.response.data) {
+                            const data = e.response.data
+                            errorMessage = data.message || data.error || errorMessage
+
+                            // Handle validation errors
+                            if (data.errors) {
+                                const firstError = Object.values(data.errors)[0]
+                                if (Array.isArray(firstError)) {
+                                    errorMessage = firstError[0]
+                                } else {
+                                    errorMessage = firstError
+                                }
+                            }
+                        } else if (e.message) {
+                            errorMessage = e.message
+                        }
+
+                        // Show error toast
+                        this.$dispatch('toast', {
+                            type: 'error',
+                            message: errorMessage
+                        })
                     } finally {
                         this.isSaving = false
                     }
