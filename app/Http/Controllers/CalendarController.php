@@ -62,13 +62,22 @@ class CalendarController extends Controller
             $q->whereHas('property', fn($p) => $p->where('owner_id', $u->id));
         } // admin -> no scope
 
-        $sessions = $q->orderBy('scheduled_date')->get();
+        $sessions = $q->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get();
 
         // Group sessions by date for calendar dots/counts
         $byDate = $sessions->groupBy(fn($s) => Carbon::parse($s->scheduled_date)->toDateString());
 
-        // Optional: a list for the selected day
+        // Optional: a list for the selected day, sorted by time (earliest to latest)
         $daySessions = $selectedDay ? ($byDate[$selectedDay] ?? collect()) : collect();
+        
+        // Sort day sessions by scheduled_time (earliest to latest)
+        if ($daySessions->isNotEmpty()) {
+            $daySessions = $daySessions->sortBy(function($session) {
+                return $session->scheduled_time ? $session->scheduled_time->format('H:i:s') : '23:59:59';
+            })->values();
+        }
 
         // Build day cells
         $days = [];

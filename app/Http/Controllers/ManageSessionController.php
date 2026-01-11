@@ -103,6 +103,7 @@ class ManageSessionController extends Controller
             'property_id'    => ['required', 'integer', 'exists:properties,id'],
             'housekeeper_id' => ['required', 'integer', 'exists:users,id'],
             'scheduled_date' => ['required', 'date'],
+            'scheduled_time' => ['nullable', 'date_format:H:i'],
             'status'         => ['nullable', Rule::in(['pending', 'in_progress', 'completed'])],
         ]);
 
@@ -154,6 +155,7 @@ class ManageSessionController extends Controller
             'owner_id'       => $ownerId,
             'housekeeper_id' => $data['housekeeper_id'],
             'scheduled_date' => $data['scheduled_date'],
+            'scheduled_time' => $data['scheduled_time'] ?? null,
             'status'         => $data['status'] ?? 'pending',
         ]);
 
@@ -194,6 +196,7 @@ class ManageSessionController extends Controller
             'property_id'    => ['required', 'integer', 'exists:properties,id'],
             'housekeeper_id' => ['required', 'integer', 'exists:users,id'],
             'scheduled_date' => ['required', 'date'],
+            'scheduled_time' => ['nullable', 'date_format:H:i'],
             'status'         => ['required', Rule::in(['pending', 'in_progress', 'completed'])],
         ]);
 

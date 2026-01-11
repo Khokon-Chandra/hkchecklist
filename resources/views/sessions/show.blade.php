@@ -9,50 +9,147 @@
         </h2>
     </x-slot>
 
+    {{-- View-only notice for housekeepers --}}
+    @if (isset($isViewOnly) && $isViewOnly)
+        <x-card class="p-4 rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 mb-4">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+                <div>
+                    <p class="font-medium text-amber-800 dark:text-amber-200">View Only Mode</p>
+                    <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        This assignment is scheduled for {{ $session->scheduled_date->format('F j, Y') }}.
+                        You can view the checklist, but you can only start working on the scheduled date when you're at the property location.
+                    </p>
+                </div>
+            </div>
+        </x-card>
+    @endif
+
     {{-- PENDING: Start gate --}}
     @if ($session->status === 'pending')
         <x-card class="p-6 rounded border dark:border-gray-700 bg-white dark:bg-gray-800">
-            <p class="mb-3 text-gray-700 dark:text-gray-300">
-                You can start now. GPS is optional—if your device provides a location we'll attach it automatically.
-            </p>
-
-            <form method="post" action="{{ route('sessions.start', $session) }}" id="gps-start"
-                class="flex flex-col sm:flex-row sm:items-center gap-2">
-                @csrf
-                <x-form.input type="hidden" name="latitude" id="lat" />
-                <x-form.input type="hidden" name="longitude" id="lng" />
+            @if (isset($isViewOnly) && $isViewOnly)
+                <p class="mb-3 text-gray-700 dark:text-gray-300">
+                    This assignment is scheduled for {{ $session->scheduled_date->format('F j, Y') }}.
+                    You can start working on the scheduled date when you're at the property location.
+                </p>
                 <div class="flex items-center gap-2">
-                    <x-button>Start Session</x-button>
+                    <x-button disabled>Start Session</x-button>
                     <span class="text-xs text-gray-500 dark:text-gray-400">
-                        If location is available it will be attached automatically.
+                        Available on {{ $session->scheduled_date->format('M j, Y') }} at property location
                     </span>
                 </div>
-            </form>
+            @else
+                <p class="mb-3 text-gray-700 dark:text-gray-300">
+                    You can start now. Please ensure you're at the property location. GPS will be used to verify your location.
+                </p>
 
-            @error('gps')
-                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+                <form method="post" action="{{ route('sessions.start', $session) }}" id="gps-start"
+                    class="flex flex-col sm:flex-row sm:items-center gap-2">
+                    @csrf
+                    <x-form.input type="hidden" name="latitude" id="lat" />
+                    <x-form.input type="hidden" name="longitude" id="lng" />
+                    <div class="flex items-center gap-2">
+                        <x-button id="start-btn">Start Session</x-button>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                            Location will be verified automatically.
+                        </span>
+                    </div>
+                </form>
 
-            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                If your browser blocks location, the session will still start without GPS.
-            </p>
+                @error('gps')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="location-status">
+                    Checking location...
+                </p>
+            @endif
         </x-card>
 
-        {{-- Optional, non-blocking GPS capture --}}
-        <script>
-            navigator.geolocation?.getCurrentPosition(
-                function(position) {
-                    document.getElementById('lat').value = position.coords.latitude;
-                    document.getElementById('lng').value = position.coords.longitude;
-                },
-                function() {
-                    /* silent fail */
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 4000
+        {{-- GPS capture and location verification --}}
+        @if (!isset($isViewOnly) || !$isViewOnly)
+            <script>
+                const propertyLat = {{ $session->property->latitude ?? 'null' }};
+                const propertyLng = {{ $session->property->longitude ?? 'null' }};
+                const propertyRadius = {{ $session->property->geo_radius_m ?? 100 }};
+                const startForm = document.getElementById('gps-start');
+                const startBtn = document.getElementById('start-btn');
+                const locationStatus = document.getElementById('location-status');
+                let userLat = null;
+                let userLng = null;
+
+                function checkLocation() {
+                    if (!navigator.geolocation) {
+                        locationStatus.textContent = 'Location services not available. You can still start the session.';
+                        return;
+                    }
+
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            userLat = position.coords.latitude;
+                            userLng = position.coords.longitude;
+
+                            document.getElementById('lat').value = userLat;
+                            document.getElementById('lng').value = userLng;
+
+                            if (propertyLat !== null && propertyLng !== null) {
+                                // Calculate distance (Haversine formula)
+                                const R = 6371000; // Earth radius in meters
+                                const dLat = (userLat - propertyLat) * Math.PI / 180;
+                                const dLng = (userLng - propertyLng) * Math.PI / 180;
+                                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                    Math.cos(propertyLat * Math.PI / 180) * Math.cos(userLat * Math.PI / 180) *
+                                    Math.sin(dLng/2) * Math.sin(dLng/2);
+                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                                const distance = R * c;
+
+                                if (distance <= propertyRadius) {
+                                    locationStatus.innerHTML = '<span class="text-green-600 dark:text-green-400">✓ Location verified. You\'re at the property.</span>';
+                                    startBtn.disabled = false;
+                                } else {
+                                    locationStatus.innerHTML = '<span class="text-amber-600 dark:text-amber-400">⚠ You\'re ' + Math.round(distance) + 'm away from the property. Please move closer to start.</span>';
+                                    startBtn.disabled = true;
+                                }
+                            } else {
+                                locationStatus.textContent = 'Location captured. Property location not set, so verification skipped.';
+                                startBtn.disabled = false;
+                            }
+                        },
+                        function(error) {
+                            locationStatus.textContent = 'Could not get location. You can still start the session, but location won\'t be verified.';
+                            startBtn.disabled = false;
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        }
+                    );
                 }
-            );
-        </script>
+
+                // Check location on page load
+                checkLocation();
+
+                // Re-check location when form is submitted
+                if (startForm) {
+                    startForm.addEventListener('submit', function(e) {
+                        if (propertyLat !== null && propertyLng !== null && (userLat === null || userLng === null)) {
+                            e.preventDefault();
+                            locationStatus.textContent = 'Please wait while we verify your location...';
+                            checkLocation();
+                            setTimeout(() => {
+                                if (userLat !== null && userLng !== null) {
+                                    startForm.submit();
+                                }
+                            }, 2000);
+                        }
+                    });
+                }
+            </script>
+        @endif
     @else
         {{-- PROGRESS HEADER --}}
         <x-card
@@ -99,26 +196,32 @@
                                 fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
                             );
                             $completed = (bool) ($item && $item->checked);
+                            $propDisabled = isset($isViewOnly) && $isViewOnly;
                             $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
+                                ($propDisabled ? 'opacity-50 cursor-not-allowed ' : '') .
                                 ($completed
                                     ? 'bg-green-600 border-green-600 text-white'
                                     : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
                             $toggleHtml = sprintf(
-                                '<form method="post" action="%s">%s<button class="%s" aria-label="Toggle complete">%s</button></form>',
+                                '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
                                 e(route('checklist.property-task.toggle', [$session, $task])),
                                 csrf_field(),
                                 e($btnClasses),
+                                $propDisabled ? 'disabled' : '',
                                 $completed ? '✓' : '',
                             );
                             $noteHtml = sprintf(
                                 '<form method="post" action="%s" class="flex items-center gap-2">%s' .
                                     '<input name="note" value="%s" placeholder="Note" ' .
-                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />' .
-                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm">Save</button>' .
+                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
+                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s" %s>Save</button>' .
                                     '</form>',
                                 e(route('checklist.property-task.note', [$session, $task])),
                                 csrf_field(),
                                 e($item?->note ?? ''),
+                                $propDisabled ? 'readonly' : '',
+                                $propDisabled ? 'opacity-50 cursor-not-allowed' : '',
+                                $propDisabled ? 'disabled' : '',
                             );
                         @endphp
 
@@ -143,7 +246,7 @@
                 @foreach ($rooms as $index => $room)
                     @php
                         $tasks = $roomTasksByRoom[$room->id] ?? collect();
-                        $disabled = $firstIncompleteRoomIndex !== null && $index > $firstIncompleteRoomIndex;
+                        $disabled = (isset($isViewOnly) && $isViewOnly) || ($firstIncompleteRoomIndex !== null && $index > $firstIncompleteRoomIndex);
                     @endphp
 
                     <x-card>
@@ -233,26 +336,32 @@
                                 fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
                             );
                             $completed = (bool) ($item && $item->checked);
+                            $propDisabled = isset($isViewOnly) && $isViewOnly;
                             $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
+                                ($propDisabled ? 'opacity-50 cursor-not-allowed ' : '') .
                                 ($completed
                                     ? 'bg-green-600 border-green-600 text-white'
                                     : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
                             $toggleHtml = sprintf(
-                                '<form method="post" action="%s">%s<button class="%s" aria-label="Toggle complete">%s</button></form>',
+                                '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
                                 e(route('checklist.property-task.toggle', [$session, $task])),
                                 csrf_field(),
                                 e($btnClasses),
+                                $propDisabled ? 'disabled' : '',
                                 $completed ? '✓' : '',
                             );
                             $noteHtml = sprintf(
                                 '<form method="post" action="%s" class="flex items-center gap-2">%s' .
                                     '<input name="note" value="%s" placeholder="Note" ' .
-                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />' .
-                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm">Save</button>' .
+                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
+                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s" %s>Save</button>' .
                                     '</form>',
                                 e(route('checklist.property-task.note', [$session, $task])),
                                 csrf_field(),
                                 e($item?->note ?? ''),
+                                $propDisabled ? 'readonly' : '',
+                                $propDisabled ? 'opacity-50 cursor-not-allowed' : '',
+                                $propDisabled ? 'disabled' : '',
                             );
                         @endphp
 
@@ -288,26 +397,32 @@
                                 fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
                             );
                             $completed = (bool) ($item && $item->checked);
+                            $propDisabled = isset($isViewOnly) && $isViewOnly;
                             $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
+                                ($propDisabled ? 'opacity-50 cursor-not-allowed ' : '') .
                                 ($completed
                                     ? 'bg-green-600 border-green-600 text-white'
                                     : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
                             $toggleHtml = sprintf(
-                                '<form method="post" action="%s">%s<button class="%s" aria-label="Toggle complete">%s</button></form>',
+                                '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
                                 e(route('checklist.property-task.toggle', [$session, $task])),
                                 csrf_field(),
                                 e($btnClasses),
+                                $propDisabled ? 'disabled' : '',
                                 $completed ? '✓' : '',
                             );
                             $noteHtml = sprintf(
                                 '<form method="post" action="%s" class="flex items-center gap-2">%s' .
                                     '<input name="note" value="%s" placeholder="Note" ' .
-                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />' .
-                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm">Save</button>' .
+                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
+                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s" %s>Save</button>' .
                                     '</form>',
                                 e(route('checklist.property-task.note', [$session, $task])),
                                 csrf_field(),
                                 e($item?->note ?? ''),
+                                $propDisabled ? 'readonly' : '',
+                                $propDisabled ? 'opacity-50 cursor-not-allowed' : '',
+                                $propDisabled ? 'disabled' : '',
                             );
                         @endphp
 
@@ -332,7 +447,7 @@
                 @foreach ($rooms as $index => $room)
                     @php
                         $tasks = $inventoryTasksByRoom[$room->id] ?? collect();
-                        $disabled = $firstIncompleteInventoryIndex !== null && $index > $firstIncompleteInventoryIndex;
+                        $disabled = (isset($isViewOnly) && $isViewOnly) || ($firstIncompleteInventoryIndex !== null && $index > $firstIncompleteInventoryIndex);
                     @endphp
 
                     @if ($tasks->count())
@@ -371,7 +486,7 @@
                                                     class="flex-shrink-0">
                                                     @csrf
                                                     <button class="{{ $invBtnClasses }}"
-                                                        @if ($disabled) disabled @endif>
+                                                        {{ $disabled ? 'disabled' : '' }}>
                                                         {{ $item?->checked ? '✓' : 'Mark' }}
                                                     </button>
                                                 </form>
@@ -519,7 +634,11 @@
                 <x-card>
                     <form method="post" action="{{ route('sessions.complete', $session) }}" class="text-center">
                         @csrf
-                        <x-button>Submit Checklist</x-button>
+                        @if(isset($isViewOnly) && $isViewOnly)
+                            <x-button disabled>Submit Checklist</x-button>
+                        @else
+                            <x-button>Submit Checklist</x-button>
+                        @endif
                         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                             Requires ≥8 photos per room. Timestamp overlay is automatic on upload.
                         </p>
@@ -548,7 +667,11 @@
                                                 $item = $session->checklistItems->first(
                                                     fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
                                                 );
+                                                $propDisabled = isset($isViewOnly) && $isViewOnly;
                                                 $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
+                                                if ($propDisabled) {
+                                                    $summaryBtn .= ' opacity-50 cursor-not-allowed';
+                                                }
                                                 $summaryBtn .= $item && $item->checked
                                                     ? ' bg-green-600 border-green-600 text-white'
                                                     : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
@@ -557,7 +680,7 @@
                                                 <div class="flex items-start sm:items-center gap-3">
                                                     <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
                                                         @csrf
-                                                        <button class="{{ $summaryBtn }}">
+                                                        <button class="{{ $summaryBtn }}" {{ $propDisabled ? 'disabled' : '' }}>
                                                             @if ($item?->checked) ✓ @endif
                                                         </button>
                                                     </form>
@@ -568,8 +691,13 @@
                                                 <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
                                                     @csrf
                                                     <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
-                                                    <x-button variant="secondary">Save</x-button>
+                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200"
+                                                        {{ $propDisabled ? 'readonly' : '' }} />
+                                                    @if($propDisabled)
+                                                        <x-button variant="secondary" disabled>Save</x-button>
+                                                    @else
+                                                        <x-button variant="secondary">Save</x-button>
+                                                    @endif
                                                 </form>
                                             </li>
                                         @endforeach
@@ -587,7 +715,11 @@
                                                 $item = $session->checklistItems->first(
                                                     fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
                                                 );
+                                                $propDisabled = isset($isViewOnly) && $isViewOnly;
                                                 $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
+                                                if ($propDisabled) {
+                                                    $summaryBtn .= ' opacity-50 cursor-not-allowed';
+                                                }
                                                 $summaryBtn .= $item && $item->checked
                                                     ? ' bg-green-600 border-green-600 text-white'
                                                     : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
@@ -596,7 +728,7 @@
                                                 <div class="flex items-start sm:items-center gap-3">
                                                     <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
                                                         @csrf
-                                                        <button class="{{ $summaryBtn }}">
+                                                        <button class="{{ $summaryBtn }}" {{ $propDisabled ? 'disabled' : '' }}>
                                                             @if ($item?->checked) ✓ @endif
                                                         </button>
                                                     </form>
@@ -607,8 +739,13 @@
                                                 <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
                                                     @csrf
                                                     <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
-                                                    <x-button variant="secondary">Save</x-button>
+                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200"
+                                                        {{ $propDisabled ? 'readonly' : '' }} />
+                                                    @if($propDisabled)
+                                                        <x-button variant="secondary" disabled>Save</x-button>
+                                                    @else
+                                                        <x-button variant="secondary">Save</x-button>
+                                                    @endif
                                                 </form>
                                             </li>
                                         @endforeach
@@ -626,7 +763,11 @@
                                                 $item = $session->checklistItems->first(
                                                     fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
                                                 );
+                                                $propDisabled = isset($isViewOnly) && $isViewOnly;
                                                 $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
+                                                if ($propDisabled) {
+                                                    $summaryBtn .= ' opacity-50 cursor-not-allowed';
+                                                }
                                                 $summaryBtn .= $item && $item->checked
                                                     ? ' bg-green-600 border-green-600 text-white'
                                                     : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
@@ -635,7 +776,7 @@
                                                 <div class="flex items-start sm:items-center gap-3">
                                                     <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
                                                         @csrf
-                                                        <button class="{{ $summaryBtn }}">
+                                                        <button class="{{ $summaryBtn }}" {{ $propDisabled ? 'disabled' : '' }}>
                                                             @if ($item?->checked) ✓ @endif
                                                         </button>
                                                     </form>
@@ -646,8 +787,13 @@
                                                 <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
                                                     @csrf
                                                     <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
-                                                    <x-button variant="secondary">Save</x-button>
+                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200"
+                                                        {{ $propDisabled ? 'readonly' : '' }} />
+                                                    @if($propDisabled)
+                                                        <x-button variant="secondary" disabled>Save</x-button>
+                                                    @else
+                                                        <x-button variant="secondary">Save</x-button>
+                                                    @endif
                                                 </form>
                                             </li>
                                         @endforeach

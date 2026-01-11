@@ -96,17 +96,26 @@
                         @else
                             <ul class="space-y-3">
                                 @foreach ($daySessions as $s)
-                                    <li class="border border-gray-200 dark:border-gray-700 rounded p-3">
+                                    <li class="border border-gray-200 dark:border-gray-700 rounded p-3 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition">
                                         <div class="flex items-center justify-between">
-                                            <div>
-                                                <div class="font-medium">{{ $s->property->name }}</div>
-                                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                    Housekeeper: {{ $s->housekeeper->name }}
+                                            <div class="flex-1">
+                                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $s->property->name }}</div>
+                                                <div class="flex items-center gap-3 mt-1">
+                                                    @if ($s->scheduled_time)
+                                                        <div class="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                                            {{ \Carbon\Carbon::parse($s->scheduled_time)->format('g:i A') }}
+                                                        </div>
+                                                    @endif
+                                                    @if ($acting !== 'housekeeper')
+                                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                            Housekeeper: {{ $s->housekeeper->name }}
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                             <a href="{{ route('sessions.show', $s) }}"
-                                                class="text-indigo-600 hover:underline text-sm">
-                                                Open
+                                                class="ml-3 px-3 py-1.5 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                                                View
                                             </a>
                                         </div>
                                         <div class="mt-2">

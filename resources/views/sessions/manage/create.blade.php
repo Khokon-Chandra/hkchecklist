@@ -37,6 +37,14 @@
             </div>
 
             <div>
+                <x-form.label value="Scheduled time" />
+                <x-form.input type="time" name="scheduled_time"
+                    value="{{ old('scheduled_time') }}" />
+                <x-form.error :messages="$errors->get('scheduled_time')" />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Optional: Set the time for this assignment</p>
+            </div>
+
+            <div>
                 <x-form.label value="Status" />
                 <x-form.select name="status" class="w-full rounded border-gray-300">
                     @foreach (['pending', 'in_progress', 'completed'] as $st)

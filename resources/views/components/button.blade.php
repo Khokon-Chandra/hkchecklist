@@ -142,7 +142,8 @@
 @else
     <button {{ $attributes->merge(['type' => 'submit', 'class' => $classes]) }}
             {!! $styleAttr !!}
-            {!! $focusStyle !!}>
+            {!! $focusStyle !!}
+            @if($disabled) disabled @endif>
         {{ $slot }}
         @if ($iconOnly)
             <span class="sr-only">{{ $srText ?? '' }}</span>

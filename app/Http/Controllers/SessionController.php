@@ -190,6 +190,23 @@ class SessionController extends Controller
 
         $photosByRoom = $session->photos()->latest()->get()->groupBy('room_id');
 
+        // For housekeepers: determine if they can edit (must be current date and at property location)
+        // Location check will be done via JavaScript when they try to start, but we check date here
+        $canEdit = true;
+        $isViewOnly = false;
+        
+        if (auth()->user()->hasRole('housekeeper') && !auth()->user()->hasAnyRole(['admin', 'owner'])) {
+            $isCurrentDate = $session->scheduled_date->isToday();
+            $isInProgressOrCompleted = in_array($session->status, ['in_progress', 'completed']);
+            
+            // Can edit if: it's the current date AND (session is pending OR already in progress/completed)
+            // OR if session is already in progress/completed (they can continue working)
+            if (!$isCurrentDate && $session->status === 'pending') {
+                $canEdit = false;
+                $isViewOnly = true;
+            }
+        }
+
         return view('sessions.show', compact(
             'session',
             'rooms',
@@ -209,7 +226,9 @@ class SessionController extends Controller
             'postCleaningCount',
             'checkedPreCleaningCount',
             'checkedDuringCleaningCount',
-            'checkedPostCleaningCount'
+            'checkedPostCleaningCount',
+            'canEdit',
+            'isViewOnly'
         ));
     }
 
