@@ -106,22 +106,16 @@
                                     {{ $r->created_at->diffForHumans() }}
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    @role('admin|owner')
-                                        <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                            @click="$dispatch('open-preview-panel', 'edit-room-{{ $property->id }}-{{ $r->id }}')">
-                                            Edit
-                                        </button>
-                                        <span class="mx-2 text-gray-400">·</span>
-                                    @endrole
-                                    <a class="text-blue-600 hover:underline dark:text-blue-400"
-                                        href="{{ route('properties.tasks.index', ['property' => $property->id, 'room' => $r->id]) }}">
-                                        Tasks
-                                    </a>
+                                    @include('properties.rooms.__room_action', [
+                                        'property' => $property,
+                                        'room' => $r,
+                                    ])
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400" colspan="6">
+                                <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400"
+                                    @if(auth()->user()->hasAnyRole(['admin', 'owner'])) colspan="6" @else colspan="5" @endif>
                                     No rooms yet — add your first one.
                                 </td>
                             </tr>
@@ -171,6 +165,22 @@
                     'room' => $r,
                     'suggestUrl' => $suggestUrl,
                     'mode' => 'edit',
+                ])
+            </x-preview-panel>
+
+            {{-- Bulk Add Tasks Preview Panel for each room --}}
+            <x-preview-panel
+                name="bulk-add-tasks-{{ $property->id }}-{{ $r->id }}"
+                :overlay="true"
+                side="right"
+                initialWidth="32rem"
+                minWidth="24rem"
+                title="Bulk Add Tasks"
+                :subtitle="'Quickly add multiple tasks to ' . $r->name . ' in ' . $property->name">
+
+                @include('properties.tasks.__bulk_task_form', [
+                    'property' => $property,
+                    'room' => $r,
                 ])
             </x-preview-panel>
         @endforeach
