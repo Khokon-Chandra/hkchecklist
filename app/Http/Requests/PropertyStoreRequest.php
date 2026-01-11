@@ -14,7 +14,9 @@ class PropertyStoreRequest extends FormRequest
 
     public function rules(): array
     {
-        $isAdmin = $this->user()?->hasRole('admin');
+        $user = $this->user();
+        $isAdmin = $user?->hasRole('admin');
+        $userId = $user?->id;
 
         return [
             'name'         => ['required', 'string', 'max:255'],
@@ -26,7 +28,7 @@ class PropertyStoreRequest extends FormRequest
 
             'owner_id'     => $isAdmin
                 ? ['required', 'integer', Rule::exists('users', 'id')]
-                : ['prohibited'],
+                : ['required', 'integer', Rule::in([$userId])], // For owners, must be their own ID
 
             'attach'       => ['nullable', Rule::in(['none', 'rooms'])],
         ];

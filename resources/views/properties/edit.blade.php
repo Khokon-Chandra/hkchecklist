@@ -1,34 +1,35 @@
 {{-- resources/views/properties/edit.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 max-w-full overflow-hidden">
+            <div class="flex-1 min-w-0 max-w-full">
+                <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight break-words">
                     Edit Property
                 </h2>
-                <p class="mt-1 text-sm text-gray-500">
+                <p class="mt-1 text-xs sm:text-sm text-gray-500 break-words">
                     Update this property. Latitude &amp; longitude will be updated automatically from the address if
                     left empty.
                 </p>
             </div>
 
-            <div class="flex items-center gap-2">
-                <x-button variant="secondary" href="{{ route('properties.index') }}">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                <x-button variant="secondary" href="{{ route('properties.index') }}" class="w-full sm:w-auto text-center whitespace-nowrap">
                     Back to List
                 </x-button>
-                <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}">
+                <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}" class="w-full sm:w-auto text-center whitespace-nowrap">
                     Rooms
                 </x-button>
-                <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}">
-                    Property Tasks
+                <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}" class="w-full sm:w-auto text-center whitespace-nowrap">
+                    <span class="hidden sm:inline">Property Tasks</span>
+                    <span class="sm:hidden">Tasks</span>
                 </x-button>
             </div>
         </div>
     </x-slot>
 
-    <x-card>
-        <form x-data="propertyEditForm()" method="post" action="{{ route('properties.update', $property) }}"
-            enctype="multipart/form-data" @submit.prevent="handleSubmit($event)">
+    <x-card class="max-w-full overflow-hidden">
+        <form x-data="propertyEditForm()" x-init="init()" method="post" action="{{ route('properties.update', $property) }}"
+            enctype="multipart/form-data" @submit.prevent="handleSubmit($event)" class="max-w-full overflow-hidden">
             @csrf
             @method('PUT')
 
@@ -37,11 +38,11 @@
                 <input type="hidden" name="owner_id" value="{{ auth()->id() }}">
             @endif
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 max-w-full">
                 {{-- Left column: Image (current + replace/remove) --}}
-                <div class="lg:col-span-1">
+                <div class="lg:col-span-1 max-w-full overflow-hidden">
                     <x-form.label value="Property Photo" />
-                    <div class="mt-1 border-2 border-dashed rounded-2xl p-4 text-center bg-gray-50/40">
+                    <div class="mt-1 border-2 border-dashed rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center bg-gray-50/40 max-w-full overflow-hidden">
                         @php
                             $photoUrl = method_exists($property, 'getPhotoUrlAttribute')
                                 ? $property->photo_url
@@ -54,26 +55,34 @@
 
                         <template x-if="!previewUrl">
                             <img src="{{ $photoUrl }}" alt="Current photo"
-                                class="rounded-xl object-cover h-48 w-full shadow-sm" />
+                                class="rounded-xl object-cover h-48 w-full shadow-sm max-w-full" />
                         </template>
 
                         <template x-if="previewUrl">
-                            <img :src="previewUrl" alt="Preview"
-                                class="rounded-xl object-cover h-48 w-full shadow-sm" />
+                            <div class="w-full max-w-full overflow-hidden">
+                                <img :src="previewUrl" alt="Preview"
+                                    class="rounded-xl object-cover h-48 w-full shadow-sm max-w-full" />
+                                <template x-if="previewUrl && !hasFileSelected">
+                                    <div class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800 max-w-full overflow-hidden">
+                                        <p class="font-semibold break-words">⚠️ Image preview restored</p>
+                                        <p class="mt-1 break-words">Please click "Choose File" to re-select the image file. Browser security requires this after a page refresh.</p>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
 
                         <input type="file" name="photo" class="hidden" x-ref="file" @change="preview($event)"
                             accept="image/*" />
 
-                        <div class="mt-3 flex items-center justify-center gap-3">
-                            <x-button type="button" variant="secondary" @click="$refs.file.click()">
+                        <div class="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3 max-w-full overflow-hidden">
+                            <x-button type="button" variant="secondary" @click="$refs.file.click()" class="w-full sm:w-auto whitespace-nowrap">
                                 Choose File
                             </x-button>
 
                             @if ($property->photo_path)
-                                <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                                <label class="inline-flex items-center justify-center gap-2 text-sm text-gray-600 cursor-pointer break-words">
                                     <x-form.checkbox name="remove_photo" value="1" />
-                                    Remove photo
+                                    <span class="break-words">Remove photo</span>
                                 </label>
                             @endif
                         </div>
@@ -85,7 +94,7 @@
                 </div>
 
                 {{-- Right column: Fields --}}
-                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-full overflow-hidden">
                     {{-- Admin-only owner select --}}
                     @role('admin')
                         <div class="md:col-span-2">
@@ -169,14 +178,14 @@
                 </div>
             </div>
 
-            <div class="flex gap-2 mt-8 justify-end">
+            <div class="flex flex-col sm:flex-row gap-2 mt-6 sm:mt-8 sm:justify-end max-w-full">
                 <x-button x-bind:disabled="isGeocoding"
-                    x-bind:class="isGeocoding ? 'opacity-60 cursor-not-allowed' : ''">
+                    x-bind:class="isGeocoding ? 'opacity-60 cursor-not-allowed' : ''" class="w-full sm:w-auto whitespace-nowrap">
                     <span x-show="!isGeocoding">Update</span>
                     <span x-show="isGeocoding">Fetching coordinates…</span>
                 </x-button>
 
-                <x-button variant="secondary" href="{{ route('properties.index') }}">
+                <x-button variant="secondary" href="{{ route('properties.index') }}" class="w-full sm:w-auto whitespace-nowrap">
                     Cancel
                 </x-button>
             </div>
@@ -191,38 +200,102 @@
                 latitude: @json(old('latitude', $property->latitude)),
                 longitude: @json(old('longitude', $property->longitude)),
                 previewUrl: null,
+                hasFileSelected: false, // Track if file input has a file
 
                 // UX state
                 isGeocoding: false,
                 geocodeError: '',
+                isSubmitting: false, // Flag to prevent re-triggering submit handler
+
+                init() {
+                    // Restore preview from sessionStorage if it exists (e.g., after form error)
+                    const savedPreview = sessionStorage.getItem('property_photo_preview_edit');
+                    if (savedPreview) {
+                        this.previewUrl = savedPreview;
+                        this.hasFileSelected = false; // File input is cleared by browser on refresh
+                    }
+
+                    // Check if file input has a file (in case it was preserved somehow)
+                    this.$nextTick(() => {
+                        if (this.$refs.file && this.$refs.file.files.length > 0) {
+                            this.hasFileSelected = true;
+                            // If file is actually present, update preview from it
+                            const file = this.$refs.file.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    this.previewUrl = e.target.result;
+                                    sessionStorage.setItem('property_photo_preview_edit', e.target.result);
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }
+                    });
+
+                    // Only clear sessionStorage if form loads without any errors AND no file is selected
+                    // This means it was a successful submission (page redirected back fresh)
+                    @if($errors->isEmpty())
+                        // Small delay to ensure file check completes first
+                        setTimeout(() => {
+                            if (!this.hasFileSelected) {
+                                sessionStorage.removeItem('property_photo_preview_edit');
+                            }
+                        }, 100);
+                    @endif
+                },
 
                 preview(event) {
                     const file = event.target.files?.[0];
-                    if (!file) return;
-                    this.previewUrl = URL.createObjectURL(file);
+                    if (!file) {
+                        this.hasFileSelected = false;
+                        return;
+                    }
+
+                    this.hasFileSelected = true;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.previewUrl = e.target.result;
+                        // Save to sessionStorage to preserve on page refresh
+                        sessionStorage.setItem('property_photo_preview_edit', e.target.result);
+                    };
+                    reader.readAsDataURL(file);
                 },
 
                 async handleSubmit(event) {
+                    // If we're already submitting (after geocoding attempt), let it proceed
+                    if (this.isSubmitting) {
+                        return;
+                    }
+
                     this.geocodeError = '';
 
                     if (this.isGeocoding) {
+                        event.preventDefault();
                         return;
                     }
 
                     const needsGeocode = this.address && (!this.latitude || !this.longitude);
 
                     if (needsGeocode) {
+                        event.preventDefault();
                         await this.geocodeIfNeeded(true); // force on submit
-                    }
 
-                    // If address is set but coordinates are still missing after an attempt, block submit
-                    if (this.address && (!this.latitude || !this.longitude)) {
-                        this.geocodeError ||=
-                            'We could not fetch coordinates automatically. Please enter Latitude/Longitude manually.';
+                        // If geocoding fails, show a warning but allow submission to continue
+                        // since coordinates are optional
+                        if (this.address && (!this.latitude || !this.longitude)) {
+                            this.geocodeError =
+                                'Could not find coordinates for this address. You can continue without them or enter them manually.';
+                        }
+
+                        // Set flag and submit the form directly
+                        // Don't clear sessionStorage here - let it persist in case of backend errors
+                        this.isSubmitting = true;
+                        event.target.submit();
                         return;
                     }
 
-                    event.target.submit();
+                    // Don't clear sessionStorage here - it will be cleared in init() if submission was successful
+                    // This way, if there's a backend validation error, the preview will be restored
                 },
 
                 async geocodeIfNeeded(force = false) {
@@ -235,8 +308,13 @@
                     this.geocodeError = '';
 
                     try {
+                        const apiKey = @json(config('services.google.geocoding_api_key'));
+                        if (!apiKey) {
+                            throw new Error('Google Geocoding API key is not configured');
+                        }
+
                         const url =
-                            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.address)}&limit=1`;
+                            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(this.address)}&key=${apiKey}`;
                         const res = await fetch(url, {
                             headers: {
                                 'Accept': 'application/json'
@@ -249,12 +327,15 @@
 
                         const data = await res.json();
 
-                        if (Array.isArray(data) && data.length) {
-                            this.latitude = data[0].lat;
-                            this.longitude = data[0].lon;
-                        } else {
+                        if (data.status === 'OK' && data.results && data.results.length > 0) {
+                            const location = data.results[0].geometry.location;
+                            this.latitude = location.lat;
+                            this.longitude = location.lng;
+                        } else if (data.status === 'ZERO_RESULTS') {
                             this.geocodeError =
                                 'No coordinates found for this address. You can still enter them manually.';
+                        } else {
+                            throw new Error(`Geocoding API error: ${data.status}`);
                         }
                     } catch (error) {
                         console.warn('Geocoding failed', error);

@@ -1,26 +1,26 @@
 {{-- resources/views/properties/create.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-400 leading-tight">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 max-w-full overflow-hidden">
+            <div class="flex-1 min-w-0 max-w-full">
+                <h2 class="font-semibold text-lg sm:text-xl text-gray-800 dark:text-gray-400 leading-tight break-words">
                     New Property
                 </h2>
-                <p class="mt-1 text-sm text-gray-500">
+                <p class="mt-1 text-xs sm:text-sm text-gray-500 break-words">
                     Add a new property. Latitude &amp; longitude will be updated automatically from the address.
                 </p>
             </div>
 
-
             {{-- Trigger --}}
-            <div class="flex items-center gap-4">
-                <div x-data>
-                    <x-button variant="secondary" @click="$dispatch('open-preview-panel', 'rooms-preview')">
-                        Preview Room list
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 flex-shrink-0 w-full sm:w-auto">
+                <div x-data class="w-full sm:w-auto">
+                    <x-button variant="secondary" class="w-full sm:w-auto text-center whitespace-nowrap" @click="$dispatch('open-preview-panel', 'rooms-preview')">
+                        <span class="hidden sm:inline">Preview Room list</span>
+                        <span class="sm:hidden">Preview Rooms</span>
                     </x-button>
                 </div>
 
-                <x-button variant="secondary" href="{{ route('properties.index') }}">
+                <x-button variant="secondary" href="{{ route('properties.index') }}" class="w-full sm:w-auto text-center whitespace-nowrap">
                     Back to List
                 </x-button>
             </div>
@@ -31,47 +31,50 @@
     {{-- Preview panel --}}
     @include('properties.__preview_panel', ['rooms' => $rooms])
 
-    <x-card>
-        <form x-data="propertyForm()" method="post" action="{{ route('properties.store') }}"
-            enctype="multipart/form-data" @submit="handleSubmit($event)">
+    <x-card class="max-w-full overflow-hidden">
+        <form x-data="propertyForm()" x-init="init()" method="post" action="{{ route('properties.store') }}"
+            enctype="multipart/form-data" @submit="handleSubmit($event)" class="max-w-full overflow-hidden">
             @csrf
 
-            {{-- If the current user is an owner, set owner_id automatically --}}
-            @if (auth()->user()->hasRole('owner'))
-                <input type="hidden" name="owner_id" value="{{ auth()->id() }}">
-            @endif
+            {{-- Note: owner_id is automatically set in PropertyStoreRequest::prepareForValidation() for owners --}}
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 max-w-full">
                 {{-- Left column: Image uploader --}}
-                <div class="lg:col-span-1">
+                <div class="lg:col-span-1 max-w-full overflow-hidden">
                     <x-form.label value="Property Photo" />
 
-                    <div class="mt-1 border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors"
+                    <div class="mt-1 border-2 border-dashed rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors max-w-full overflow-hidden"
                         :class="dragOver ? 'border-indigo-500 bg-indigo-50/40' :
                             'border-gray-300 dark:border-gray-500 bg-gray-50/40 dark:bg-gray-800 dark:hover:bg-gray-900'"
                         @click="$refs.file.click()" @dragover.prevent="dragOver = true"
                         @dragleave.prevent="dragOver = false" @drop.prevent="handleDrop($event)">
                         <template x-if="!previewUrl">
-                            <div class="text-gray-500">
+                            <div class="text-gray-500 max-w-full">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                         d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l5.5 5.5M21 7l-5.5 5.5M12 3v12" />
                                 </svg>
-                                <p class="mt-2 text-sm font-medium">Drag &amp; drop or click to upload</p>
-                                <p class="mt-1 text-xs text-gray-400">
+                                <p class="mt-2 text-sm font-medium break-words">Drag &amp; drop or click to upload</p>
+                                <p class="mt-1 text-xs text-gray-400 break-words">
                                     JPG, PNG, WebP — up to ~5MB
                                 </p>
                             </div>
                         </template>
 
                         <template x-if="previewUrl">
-                            <div class="w-full">
+                            <div class="w-full max-w-full overflow-hidden">
                                 <img :src="previewUrl" alt="Preview"
-                                    class="rounded-xl object-cover h-48 w-full shadow-sm" />
-                                <p class="mt-2 text-xs text-gray-500">
+                                    class="rounded-xl object-cover h-48 w-full shadow-sm max-w-full" />
+                                <p class="mt-2 text-xs text-gray-500 break-words">
                                     Click or drop a new file to replace the photo.
                                 </p>
+                                <template x-if="previewUrl && !hasFileSelected">
+                                    <div class="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800 max-w-full overflow-hidden">
+                                        <p class="font-semibold break-words">⚠️ Image preview restored</p>
+                                        <p class="mt-1 break-words">Please click above to re-select the image file. Browser security requires this after a page refresh.</p>
+                                    </div>
+                                </template>
                             </div>
                         </template>
 
@@ -85,7 +88,7 @@
                 </div>
 
                 {{-- Right column: Form fields --}}
-                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-full overflow-hidden">
                     {{-- Admin can assign owner --}}
                     @role('admin')
                         <div class="md:col-span-2">
@@ -171,22 +174,23 @@
                 </div>
             </div>
 
-            <div class="mt-8 flex flex-wrap justify-end gap-2">
+            <div class="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-2 sm:justify-end max-w-full">
                 {{-- Plain save --}}
                 <x-button type="submit" name="attach" value="none" x-bind:disabled="isGeocoding"
-                    x-bind:class="isGeocoding ? 'opacity-60 cursor-not-allowed' : ''">
+                    x-bind:class="isGeocoding ? 'opacity-60 cursor-not-allowed' : ''" class="w-full sm:w-auto whitespace-nowrap">
                     <span x-show="!isGeocoding">Save</span>
                     <span x-show="isGeocoding">Fetching coordinates…</span>
                 </x-button>
 
                 {{-- Save + default rooms --}}
                 <x-button type="submit" name="attach" value="rooms"
-                    class="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500" x-bind:disabled="isGeocoding"
+                    class="bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 w-full sm:w-auto whitespace-nowrap" x-bind:disabled="isGeocoding"
                     x-bind:class="isGeocoding ? 'opacity-60 cursor-not-allowed' : ''">
-                    Save + Assign Default Rooms
+                    <span class="hidden sm:inline">Save + Assign Default Rooms</span>
+                    <span class="sm:hidden">Save + Default Rooms</span>
                 </x-button>
 
-                <x-button variant="secondary" href="{{ route('properties.index') }}">
+                <x-button variant="secondary" href="{{ route('properties.index') }}" class="w-full sm:w-auto whitespace-nowrap">
                     Cancel
                 </x-button>
             </div>
@@ -202,15 +206,65 @@
                 longitude: @json(old('longitude', '')),
                 previewUrl: null,
                 dragOver: false,
+                hasFileSelected: false, // Track if file input has a file
 
                 // UX state
                 isGeocoding: false,
                 geocodeError: '',
+                isSubmitting: false, // Flag to prevent re-triggering submit handler
+
+                init() {
+                    // Restore preview from sessionStorage if it exists (e.g., after form error)
+                    const savedPreview = sessionStorage.getItem('property_photo_preview');
+                    if (savedPreview) {
+                        this.previewUrl = savedPreview;
+                        this.hasFileSelected = false; // File input is cleared by browser on refresh
+                    }
+
+                    // Check if file input has a file (in case it was preserved somehow)
+                    this.$nextTick(() => {
+                        if (this.$refs.file && this.$refs.file.files.length > 0) {
+                            this.hasFileSelected = true;
+                            // If file is actually present, update preview from it
+                            const file = this.$refs.file.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    this.previewUrl = e.target.result;
+                                    sessionStorage.setItem('property_photo_preview', e.target.result);
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }
+                    });
+
+                    // Only clear sessionStorage if form loads without any errors AND no file is selected
+                    // This means it was a successful submission (page redirected back fresh)
+                    @if($errors->isEmpty())
+                        // Small delay to ensure file check completes first
+                        setTimeout(() => {
+                            if (!this.hasFileSelected) {
+                                sessionStorage.removeItem('property_photo_preview');
+                            }
+                        }, 100);
+                    @endif
+                },
 
                 preview(event) {
                     const file = event.target.files?.[0];
-                    if (!file) return;
-                    this.previewUrl = URL.createObjectURL(file);
+                    if (!file) {
+                        this.hasFileSelected = false;
+                        return;
+                    }
+
+                    this.hasFileSelected = true;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.previewUrl = e.target.result;
+                        // Save to sessionStorage to preserve on page refresh
+                        sessionStorage.setItem('property_photo_preview', e.target.result);
+                    };
+                    reader.readAsDataURL(file);
                 },
 
                 handleDrop(evt) {
@@ -227,6 +281,11 @@
                 },
 
                 async handleSubmit(event) {
+                    // If we're already submitting (after geocoding attempt), let it proceed
+                    if (this.isSubmitting) {
+                        return;
+                    }
+
                     this.geocodeError = '';
 
                     if (this.isGeocoding) {
@@ -239,18 +298,22 @@
                         event.preventDefault();
                         await this.geocodeIfNeeded(true);
 
+                        // If geocoding fails, show a warning but allow submission to continue
+                        // since coordinates are optional
                         if (this.address && (!this.latitude || !this.longitude)) {
-                            this.geocodeError ||=
-                                'We could not fetch coordinates automatically. Please enter Latitude/Longitude manually.';
-                            return;
+                            this.geocodeError =
+                                'Could not find coordinates for this address. You can continue without them or enter them manually.';
                         }
 
-                        if (event.submitter) {
-                            event.target.requestSubmit(event.submitter);
-                        } else {
-                            event.target.requestSubmit();
-                        }
+                        // Set flag and submit the form directly
+                        // Don't clear sessionStorage here - let it persist in case of backend errors
+                        this.isSubmitting = true;
+                        event.target.submit();
+                        return;
                     }
+
+                    // Don't clear sessionStorage here - it will be cleared in init() if submission was successful
+                    // This way, if there's a backend validation error, the preview will be restored
                 },
 
                 async geocodeIfNeeded(force = false) {
@@ -262,8 +325,13 @@
                     this.geocodeError = '';
 
                     try {
+                        const apiKey = @json(config('services.google.geocoding_api_key'));
+                        if (!apiKey) {
+                            throw new Error('Google Geocoding API key is not configured');
+                        }
+
                         const url =
-                            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.address)}&limit=1`;
+                            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(this.address)}&key=${apiKey}`;
                         const res = await fetch(url, {
                             headers: {
                                 'Accept': 'application/json'
@@ -276,12 +344,15 @@
 
                         const data = await res.json();
 
-                        if (Array.isArray(data) && data.length) {
-                            this.latitude = data[0].lat;
-                            this.longitude = data[0].lon;
-                        } else {
+                        if (data.status === 'OK' && data.results && data.results.length > 0) {
+                            const location = data.results[0].geometry.location;
+                            this.latitude = location.lat;
+                            this.longitude = location.lng;
+                        } else if (data.status === 'ZERO_RESULTS') {
                             this.geocodeError =
                                 'No coordinates found for this address. You can still enter them manually.';
+                        } else {
+                            throw new Error(`Geocoding API error: ${data.status}`);
                         }
                     } catch (error) {
                         console.warn('Geocoding failed', error);
