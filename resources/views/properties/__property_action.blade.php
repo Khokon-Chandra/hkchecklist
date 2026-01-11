@@ -67,7 +67,7 @@
 @include('properties.__assign_rooms_panel', [
     'roomsForJs' => $rooms,
     'property' => $property,
-    'attachedRoomIds' => $property->rooms()->pluck('room_id'),
+    'attachedRoomIds' => $property->rooms->pluck('id')->toArray(),
 ])
 
 <x-modal name="confirm-delete-property-{{ $property->id }}" :show="false" maxWidth="md">

@@ -39,7 +39,7 @@ class PropertyController extends Controller
         $properties = $propertyQuery
             ->when($searchTerm !== '', fn($query) => $query->where('name', 'like', "%{$searchTerm}%"))
             ->when($request->owner_id, fn($query) => $query->where('owner_id', $request->owner_id))
-            ->with(['owner', 'rooms'])
+            ->with(['owner.roles', 'rooms'])
             ->withCount('rooms')
             ->orderBy('name')
             ->orderByDesc('created_at')
@@ -48,7 +48,7 @@ class PropertyController extends Controller
 
         $owners = User::whereHas('roles', function ($query) {
             $query->where('name', 'owner');
-        })->get();
+        })->with('roles')->get();
 
         $rooms = Room::select('id', 'name', 'is_default')
             ->orderBy('name')
@@ -441,7 +441,7 @@ class PropertyController extends Controller
                 ->with('status', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'message' => 'Failed to create tasks: ' . $e->getMessage()
