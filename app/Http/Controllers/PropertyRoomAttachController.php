@@ -11,6 +11,7 @@ class PropertyRoomAttachController extends Controller
 {
     public function store(Request $request, Property $property)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can attach rooms to properties.');
 
         $data = $request->validate([
             'room_ids'   => ['array'],

@@ -20,13 +20,13 @@
         </x-dropdown.item>
     @endrole
 
-    {{-- Edit Tasks --}}
+    {{-- View/Edit Tasks --}}
     <x-dropdown.item href="{{ route('properties.tasks.index', ['property' => $property->id, 'room' => $room->id]) }}">
         {{-- list/edit tasks icon --}}
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
         </svg>
-        <span>Edit Tasks</span>
+        <span>@role('admin|owner')Edit @else View @endrole Tasks</span>
     </x-dropdown.item>
 
     <x-dropdown.divider />

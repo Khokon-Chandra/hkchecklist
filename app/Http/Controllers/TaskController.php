@@ -33,8 +33,10 @@ class TaskController extends Controller
     /**
      * GET /tasks/create
      */
-    public function create()
+    public function create(Request $request)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can create tasks.');
+        
         return view('tasks.create');
     }
 
@@ -44,6 +46,8 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can create tasks.');
+        
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:255', Rule::unique('tasks', 'name')],
             'type'       => ['required', Rule::in(['room', 'inventory'])],
@@ -82,8 +86,10 @@ class TaskController extends Controller
     /**
      * GET /tasks/{task}/edit
      */
-    public function edit(Task $task)
+    public function edit(Request $request, Task $task)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can edit tasks.');
+        
         return view('tasks.edit', compact('task'));
     }
 
@@ -92,6 +98,8 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can update tasks.');
+        
         $data = $request->validate([
             'name'       => [
                 'required',
@@ -121,8 +129,10 @@ class TaskController extends Controller
     /**
      * DELETE /tasks/{task}
      */
-    public function destroy(Task $task)
+    public function destroy(Request $request, Task $task)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can delete tasks.');
+        
         // If you want to prevent deletion when attached to rooms, guard here:
         // if ($task->rooms()->exists()) { return back()->with('error', 'Task is in use. Detach first.'); }
 

@@ -6,8 +6,10 @@
             </h2>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}" class="w-full sm:w-auto whitespace-nowrap">← Rooms</x-button>
-                <x-button variant="secondary" @click="$dispatch('open-preview-panel', 'bulk-add-tasks-{{ $property->id }}-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">+ Bulk Add Tasks</x-button>
-                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $property->id }}-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">+ Add Task</x-button>
+                @role('admin|owner')
+                    <x-button variant="secondary" @click="$dispatch('open-preview-panel', 'bulk-add-tasks-{{ $property->id }}-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">+ Bulk Add Tasks</x-button>
+                    <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $property->id }}-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">+ Add Task</x-button>
+                @endrole
             </div>
         </div>
     </x-slot>
@@ -29,20 +31,26 @@
                 <table class="min-w-full text-sm">
                     <thead class="uppercase text-xs tracking-wide sticky top-0 z-10">
                         <tr class="text-gray-600 dark:text-gray-300">
-                            <th class="px-3 py-2 w-10"></th>
+                            @role('admin|owner')
+                                <th class="px-3 py-2 w-10"></th>
+                            @endrole
                             <th class="px-4 py-2 text-left">Task</th>
                             <th class="px-4 py-2 text-center">Type</th>
                             <th class="px-4 py-2">Instructions</th>
                             <th class="px-4 py-2 text-center">Media</th>
-                            <th class="px-4 py-2 w-48 text-right">Action</th>
+                            @role('admin|owner')
+                                <th class="px-4 py-2 w-48 text-right">Action</th>
+                            @endrole
                         </tr>
                     </thead>
                     <tbody x-ref="tbody" class="divide-y dark:divide-gray-700">
                         @forelse($tasks as $t)
                             <tr data-task-id="{{ $t->id }}" class=" hover:bg-gray-100 dark:hover:bg-gray-900">
-                                <td class="px-3">
-                                    <button type="button" class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" title="Drag">⋮⋮</button>
-                                </td>
+                                @role('admin|owner')
+                                    <td class="px-3">
+                                        <button type="button" class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" title="Drag">⋮⋮</button>
+                                    </td>
+                                @endrole
                                 <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{{ $t->name }}</td>
                                 <td class="px-4 py-3 text-center">
                                     <span class="text-xs px-2 py-0.5 rounded
@@ -57,19 +65,23 @@
                                 <td class="px-4 py-3 text-center">
                                     {{ $t->media->count() }}
                                 </td>
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                            @click="$dispatch('open-preview-panel', 'edit-task-{{ $property->id }}-{{ $room->id }}-{{ $t->id }}')">Edit</button>
-                                    <span class="mx-2 text-gray-400">·</span>
-                                    <form action="{{ route('properties.tasks.detach', [$property, $room, $t]) }}" method="post" class="inline">
-                                        @csrf @method('DELETE')
-                                        <button class="text-rose-600 hover:underline dark:text-rose-400"
-                                                onclick="return confirm('Detach this task from the room?')">Detach</button>
-                                    </form>
-                                </td>
+                                @role('admin|owner')
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
+                                                @click="$dispatch('open-preview-panel', 'edit-task-{{ $property->id }}-{{ $room->id }}-{{ $t->id }}')">Edit</button>
+                                        <span class="mx-2 text-gray-400">·</span>
+                                        <form action="{{ route('properties.tasks.detach', [$property, $room, $t]) }}" method="post" class="inline">
+                                            @csrf @method('DELETE')
+                                            <button class="text-rose-600 hover:underline dark:text-rose-400"
+                                                    onclick="return confirm('Detach this task from the room?')">Detach</button>
+                                        </form>
+                                    </td>
+                                @endrole
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">No tasks yet</td></tr>
+                            <tr>
+                                <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400" @if(auth()->user()->hasAnyRole(['admin', 'owner'])) colspan="6" @else colspan="5" @endif>No tasks yet</td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -77,68 +89,70 @@
         </x-card>
     </div>
 
-    {{-- Add Task Preview Panel --}}
-    <x-preview-panel
-        name="add-task-{{ $property->id }}-{{ $room->id }}"
-        :overlay="true"
-        side="right"
-        initialWidth="32rem"
-        minWidth="24rem"
-        title="Add Task"
-        :subtitle="'Add a new task to ' . $room->name . ' in ' . $property->name">
-
-        @php $suggestUrl = route('tasks.suggest'); @endphp
-
-        @include('properties.tasks.__task_form', [
-            'property' => $property,
-            'room' => $room,
-            'task' => null,
-            'pivot' => null,
-            'suggestUrl' => $suggestUrl,
-            'mode' => 'create',
-        ])
-    </x-preview-panel>
-
-    {{-- Bulk Add Tasks Preview Panel --}}
-    <x-preview-panel
-        name="bulk-add-tasks-{{ $property->id }}-{{ $room->id }}"
-        :overlay="true"
-        side="right"
-        initialWidth="32rem"
-        minWidth="24rem"
-        title="Bulk Add Tasks"
-        :subtitle="'Quickly add multiple tasks to ' . $room->name . ' in ' . $property->name">
-
-        @include('properties.tasks.__bulk_task_form', [
-            'property' => $property,
-            'room' => $room,
-        ])
-    </x-preview-panel>
-
-    {{-- Edit Task Preview Panels --}}
-    @foreach($tasks as $t)
+    @role('admin|owner')
+        {{-- Add Task Preview Panel --}}
         <x-preview-panel
-            name="edit-task-{{ $property->id }}-{{ $room->id }}-{{ $t->id }}"
+            name="add-task-{{ $property->id }}-{{ $room->id }}"
             :overlay="true"
             side="right"
             initialWidth="32rem"
             minWidth="24rem"
-            title="Edit Task"
-            :subtitle="$t->name">
+            title="Add Task"
+            :subtitle="'Add a new task to ' . $room->name . ' in ' . $property->name">
 
-            @php
-                $suggestUrl = route('tasks.suggest');
-                $pivot = $t->pivot;
-            @endphp
+            @php $suggestUrl = route('tasks.suggest'); @endphp
 
             @include('properties.tasks.__task_form', [
                 'property' => $property,
                 'room' => $room,
-                'task' => $t,
-                'pivot' => $pivot,
+                'task' => null,
+                'pivot' => null,
                 'suggestUrl' => $suggestUrl,
-                'mode' => 'edit',
+                'mode' => 'create',
             ])
         </x-preview-panel>
-    @endforeach
+
+        {{-- Bulk Add Tasks Preview Panel --}}
+        <x-preview-panel
+            name="bulk-add-tasks-{{ $property->id }}-{{ $room->id }}"
+            :overlay="true"
+            side="right"
+            initialWidth="32rem"
+            minWidth="24rem"
+            title="Bulk Add Tasks"
+            :subtitle="'Quickly add multiple tasks to ' . $room->name . ' in ' . $property->name">
+
+            @include('properties.tasks.__bulk_task_form', [
+                'property' => $property,
+                'room' => $room,
+            ])
+        </x-preview-panel>
+
+        {{-- Edit Task Preview Panels --}}
+        @foreach($tasks as $t)
+            <x-preview-panel
+                name="edit-task-{{ $property->id }}-{{ $room->id }}-{{ $t->id }}"
+                :overlay="true"
+                side="right"
+                initialWidth="32rem"
+                minWidth="24rem"
+                title="Edit Task"
+                :subtitle="$t->name">
+
+                @php
+                    $suggestUrl = route('tasks.suggest');
+                    $pivot = $t->pivot;
+                @endphp
+
+                @include('properties.tasks.__task_form', [
+                    'property' => $property,
+                    'room' => $room,
+                    'task' => $t,
+                    'pivot' => $pivot,
+                    'suggestUrl' => $suggestUrl,
+                    'mode' => 'edit',
+                ])
+            </x-preview-panel>
+        @endforeach
+    @endrole
 </x-app-layout>

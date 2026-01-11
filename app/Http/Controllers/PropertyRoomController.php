@@ -11,6 +11,8 @@ class PropertyRoomController extends Controller
 {
     public function store(Request $request, Property $property)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can add rooms to properties.');
+        
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'is_default' => ['nullable', Rule::in(['0', '1'])],
