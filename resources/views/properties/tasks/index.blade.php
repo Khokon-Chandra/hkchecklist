@@ -6,6 +6,7 @@
             </h2>
             <div class="flex items-center gap-2">
                 <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}">← Rooms</x-button>
+                <x-button variant="secondary" @click="$dispatch('open-preview-panel', 'bulk-add-tasks-{{ $property->id }}-{{ $room->id }}')">+ Bulk Add Tasks</x-button>
                 <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $property->id }}-{{ $room->id }}')">+ Add Task</x-button>
             </div>
         </div>
@@ -95,6 +96,22 @@
             'pivot' => null,
             'suggestUrl' => $suggestUrl,
             'mode' => 'create',
+        ])
+    </x-preview-panel>
+
+    {{-- Bulk Add Tasks Preview Panel --}}
+    <x-preview-panel
+        name="bulk-add-tasks-{{ $property->id }}-{{ $room->id }}"
+        :overlay="true"
+        side="right"
+        initialWidth="32rem"
+        minWidth="24rem"
+        title="Bulk Add Tasks"
+        :subtitle="'Quickly add multiple tasks to ' . $room->name . ' in ' . $property->name">
+
+        @include('properties.tasks.__bulk_task_form', [
+            'property' => $property,
+            'room' => $room,
         ])
     </x-preview-panel>
 

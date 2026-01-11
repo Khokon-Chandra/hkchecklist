@@ -155,7 +155,7 @@
 
         {{-- Body --}}
         <div class="relative flex-1 overflow-hidden">
-            <div class="h-full overflow-y-auto preview-scroll">
+            <div class="h-full overflow-y-auto preview-scroll p-4">
                 {{ $slot }}
             </div>
 

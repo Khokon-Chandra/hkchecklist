@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::get('{property}/rooms/{room}/tasks', [PropertyController::class, 'tasks'])->name('tasks.index');
         Route::patch('{property}/rooms/{room}/tasks', [RoomTaskOrderController::class, 'update'])->name('tasks.order');
         Route::post('{property}/rooms/{room}/tasks', [PropertyController::class, 'storeTask'])->name('tasks.store');
+        Route::post('{property}/rooms/{room}/tasks/bulk', [PropertyController::class, 'bulkStoreTask'])->name('tasks.bulk-store');
         Route::put('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'updateTask'])->name('tasks.update');
         Route::delete('{property}/rooms/{room}/tasks/{task}', [PropertyController::class, 'detachTask'])->name('tasks.detach');
 

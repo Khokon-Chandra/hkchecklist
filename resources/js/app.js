@@ -135,6 +135,132 @@ document.addEventListener('alpine:init', () => {
 
     // New: property property task form (create/edit)
     Alpine.data('propertyPropertyTaskForm', propertyPropertyTaskForm)
+
+    // Bulk task form (defined inline in blade, but register here for consistency)
+    Alpine.data('bulkTaskForm', function(config) {
+        return {
+            tasks: [],
+            defaultType: 'room',
+            status: null,
+            message: '',
+            taskInput: null,
+
+            init() {
+                this.$refs.taskInput?.focus();
+            },
+
+            addTaskFromInput() {
+                const input = this.$refs.taskInput;
+                if (!input) return;
+
+                const value = input.value.trim();
+                if (!value) return;
+
+                // Check for duplicates (case-insensitive)
+                const exists = this.tasks.some(t => t.name.toLowerCase() === value.toLowerCase());
+                if (exists) {
+                    this.showMessage('error', `"${value}" is already in the list`);
+                    return;
+                }
+
+                this.tasks.push({ name: value });
+                input.value = '';
+                this.status = null;
+            },
+
+            addSuggestedTask(taskName) {
+                if (!taskName || !taskName.trim()) return;
+
+                const value = taskName.trim();
+                
+                // Check for duplicates (case-insensitive)
+                const exists = this.tasks.some(t => t.name.toLowerCase() === value.toLowerCase());
+                if (exists) {
+                    this.showMessage('error', `"${value}" is already in the list`);
+                    return;
+                }
+
+                this.tasks.push({ name: value });
+                this.status = null;
+            },
+
+            handlePaste(event) {
+                event.preventDefault();
+                const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+                const lines = pastedText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+                if (lines.length > 0) {
+                    lines.forEach(line => {
+                        const exists = this.tasks.some(t => t.name.toLowerCase() === line.toLowerCase());
+                        if (!exists) {
+                            this.tasks.push({ name: line });
+                        }
+                    });
+                    this.$refs.taskInput.value = '';
+                }
+            },
+
+            removeTask(index) {
+                this.tasks.splice(index, 1);
+            },
+
+            clearAll() {
+                if (confirm(`Remove all ${this.tasks.length} tasks from the list?`)) {
+                    this.tasks = [];
+                    this.status = null;
+                }
+            },
+
+            showMessage(status, message) {
+                this.status = status;
+                this.message = message;
+                if (status === 'saved') {
+                    setTimeout(() => {
+                        this.status = null;
+                    }, 3000);
+                }
+            },
+
+            async saveAll() {
+                if (this.tasks.length === 0) return;
+
+                this.status = 'saving';
+                this.message = `Creating ${this.tasks.length} task(s)...`;
+
+                const formData = new FormData();
+                formData.append('_token', config.csrf);
+                formData.append('tasks', JSON.stringify(this.tasks.map(t => t.name)));
+                formData.append('default_type', this.defaultType);
+
+                try {
+                    const response = await fetch(config.storeUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.showMessage('saved', `Successfully created ${data.created || this.tasks.length} task(s)!`);
+                        this.tasks = [];
+                        
+                        // Reload page after a short delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        this.showMessage('error', data.message || 'Failed to create tasks. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error saving bulk tasks:', error);
+                    this.showMessage('error', 'An error occurred while saving tasks. Please try again.');
+                }
+            }
+        };
+    })
 })
 
 Alpine.plugin(collapse)
