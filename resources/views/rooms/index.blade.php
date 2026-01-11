@@ -1,7 +1,7 @@
 {{-- resources/views/rooms/index.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl flex items-center gap-2">
+        <h2 class="text-lg sm:text-xl font-semibold flex items-center gap-2">
             Rooms
         </h2>
     </x-slot>
@@ -9,24 +9,24 @@
     <div x-data="roomsIndex" x-init="init()" data-rooms='@json($rooms->pluck('id'))'
         data-tasks='@json($tasks)' data-bulk-url="{{ route('rooms.bulk-attach-tasks') }}"
         data-csrf="{{ csrf_token() }}">
-        <div class="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <form method="get" action="{{ route('rooms.index') }}" class="flex-1 flex items-center gap-2">
+        <div class="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-1 sm:px-0">
+            <form method="get" action="{{ route('rooms.index') }}" class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
                 <x-form.input name="search" placeholder="Search rooms…" value="{{ request('search') }}"
-                    class="w-full" />
+                    class="w-full sm:flex-1 min-w-0 max-w-full" />
 
-                <x-button variant="secondary" type="submit" class="whitespace-nowrap">Filter</x-button>
+                <x-button variant="secondary" type="submit" class="w-full sm:w-auto whitespace-nowrap">Filter</x-button>
 
                 @if (request('search'))
-                    <a href="{{ route('rooms.index') }}" class="text-sm underline text-gray-600 dark:text-gray-300">
+                    <a href="{{ route('rooms.index') }}" class="text-xs sm:text-sm underline text-gray-600 dark:text-gray-300 text-center sm:text-left">
                         Reset
                     </a>
                 @endif
             </form>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 {{-- Global bulk assign button --}}
                 <x-button type="button"
-                    class="whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+                    class="w-full sm:w-auto whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
                     x-bind:disabled="selectedRoomIds.length === 0"
                     x-bind:class="selectedRoomIds.length === 0 ? 'opacity-60 cursor-not-allowed' : ''"
                     @click="$dispatch('open-modal', 'bulk-assign-tasks')">
@@ -36,7 +36,7 @@
                         x-show="selectedRoomIds.length > 0" x-text="selectedRoomIds.length"></span>
                 </x-button>
 
-                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room')">
+                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room')" class="w-full sm:w-auto whitespace-nowrap">
                     + Add Room
                 </x-button>
             </div>

@@ -1,32 +1,35 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight">Properties</h2>
+        <h2 class="text-lg sm:text-xl font-semibold leading-tight">Properties</h2>
     </x-slot>
 
-    <div class="space-y-4">
-        <div class="flex items-center justify-between">
-            <form method="get" class="flex gap-2">
+    <div class="space-y-4 w-full max-w-full">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 px-1 sm:px-0">
+            <form method="get" class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-2 flex-1 min-w-0 w-full">
                 <x-form.input name="q" type="text" :value="old('q', request('q'))" autofocus autocomplete="name"
-                    placeholder="Search by name" />
+                    placeholder="Search by name" class="w-full sm:flex-1 min-w-0 max-w-full" />
 
-                <x-form.select name="owner_id" :selected="request('owner_id')" class="w-40 !py-1">
+                <x-form.select name="owner_id" :selected="request('owner_id')"
+                    class="w-full sm:w-auto sm:min-w-[140px] sm:max-w-[200px] !py-1">
                     <option value="">All owners</option>
                     @foreach ($owners as $owner)
                         <option value="{{ $owner->id }}" @selected(request('owner_id') == $owner->id)>{{ $owner->name }}</option>
                     @endforeach
                 </x-form.select>
 
-                <x-button variant="secondary">Filter</x-button>
-                <x-button variant="secondary" :href="route('properties.index')">Clear</x-button>
+                <x-button variant="secondary" class="w-full sm:w-auto whitespace-nowrap">Filter</x-button>
+                <x-button variant="secondary" :href="route('properties.index')"
+                    class="w-full sm:w-auto whitespace-nowrap">Clear</x-button>
             </form>
 
             @role('admin|owner')
                 <x-button href="{{ route('properties.create') }}"
-                    class="inline-flex items-center px-3 py-2 rounded bg-indigo-600 text-white">+ New</x-button>
+                    class="inline-flex items-center justify-center px-3 py-2 rounded bg-indigo-600 text-white w-full sm:w-auto whitespace-nowrap">+
+                    New</x-button>
             @endrole
         </div>
 
-        <x-card class="!px-0 overflow-x-auto">
+        <x-card class="!px-0 overflow-x-auto w-full">
             <table class="min-w-full text-sm">
                 <thead class="dark:bg-dark-eval-1">
                     <tr class="uppercase text-left">

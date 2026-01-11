@@ -1,15 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-lg sm:text-xl font-semibold break-words">
                     Property Tasks — {{ $property->name }}
                 </h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     Manage property-level tasks that happen before, during, or after cleaning (not room-specific).
                 </p>
             </div>
-
         </div>
     </x-slot>
 

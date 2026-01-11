@@ -1,16 +1,16 @@
 {{-- resources/views/rooms/index.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="font-semibold text-xl">Rooms — {{ $property->name }}</h2>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <h2 class="text-lg sm:text-xl font-semibold break-words min-w-0 flex-1">Rooms — {{ $property->name }}</h2>
 
-            <div class="flex items-center gap-2">
-                <x-button variant="secondary" href="{{ route('properties.index') }}">← Back to Properties</x-button>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <x-button variant="secondary" href="{{ route('properties.index') }}" class="w-full sm:w-auto whitespace-nowrap">← Back to Properties</x-button>
                 @role('admin|owner')
-                    <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}">
+                    <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}" class="w-full sm:w-auto whitespace-nowrap">
                         Property Tasks
                     </x-button>
-                    <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room-{{ $property->id }}')">
+                    <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room-{{ $property->id }}')" class="w-full sm:w-auto whitespace-nowrap">
                         + Add Room
                     </x-button>
                 @endrole
@@ -23,8 +23,8 @@
     @endphp
 
     <div x-data="roomsList({ orderUrl: @js($orderUrl), csrf: @js(csrf_token()) })" class="space-y-4">
-        <div class="mb-2 flex items-center justify-between gap-3">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+        <div class="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Drag the <span
                     class="inline-flex items-center px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">⋮⋮</span> handle
                 to reorder rooms. This order is saved per property.

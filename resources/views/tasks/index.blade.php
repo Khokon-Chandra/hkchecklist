@@ -1,30 +1,30 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl flex items-center gap-2">
+        <h2 class="text-lg sm:text-xl font-semibold flex items-center gap-2">
             Tasks
         </h2>
     </x-slot>
 
     {{-- Toolbar: search + type filter + create --}}
-    <div class="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <form method="get" action="{{ route('tasks.index') }}" class="flex-1 flex items-center gap-2">
-            <x-form.input name="q" placeholder="Search tasks…" value="{{ request('q') }}" class="w-full" />
+    <div class="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-1 sm:px-0">
+        <form method="get" action="{{ route('tasks.index') }}" class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
+            <x-form.input name="q" placeholder="Search tasks…" value="{{ request('q') }}" class="w-full sm:flex-1 min-w-0 max-w-full" />
 
-            <x-form.select name="type" class="w-40 !py-1">
+            <x-form.select name="type" class="w-full sm:w-auto sm:min-w-[140px] sm:max-w-[200px] !py-1">
                 <option value="">All types</option>
                 <option value="room" @selected(request('type') === 'room')>Room</option>
                 <option value="inventory" @selected(request('type') === 'inventory')>Inventory</option>
             </x-form.select>
 
-            <x-button type="submit" class="whitespace-nowrap">Filter</x-button>
+            <x-button type="submit" class="w-full sm:w-auto whitespace-nowrap">Filter</x-button>
 
             @if (request()->hasAny(['q', 'type', 'room_id']))
                 <a href="{{ route('tasks.index') }}"
-                    class="text-sm underline text-gray-600 dark:text-gray-300">Reset</a>
+                    class="text-xs sm:text-sm underline text-gray-600 dark:text-gray-300 text-center sm:text-left">Reset</a>
             @endif
         </form>
 
-        <x-button variant="primary" href="{{ route('tasks.create') }}" class="whitespace-nowrap">
+        <x-button variant="primary" href="{{ route('tasks.create') }}" class="w-full sm:w-auto whitespace-nowrap">
             + New Task
         </x-button>
     </div>

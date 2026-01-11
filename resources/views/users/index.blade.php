@@ -1,16 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 leading-tight">
                     Users Management
                 </h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     Manage users, roles, and permissions.
                 </p>
             </div>
             @role('admin|owner')
-                <x-button href="{{ route('users.create') }}" class="bg-indigo-600 hover:bg-indigo-700">
+                <x-button href="{{ route('users.create') }}" class="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto whitespace-nowrap">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -25,24 +25,24 @@
 
     {{-- Filters --}}
     <x-card class="mb-6">
-        <form method="get" class="flex flex-wrap items-end gap-3">
-            <div class="flex-1 min-w-[200px]">
+        <form method="get" class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 px-1 sm:px-0">
+            <div class="flex-1 min-w-0 sm:min-w-[200px]">
                 <x-form.label value="Filter by Role" />
-                <x-form.select name="role" class="w-full">
+                <x-form.select name="role" class="w-full max-w-full">
                     <option value="">All Roles</option>
                     <option value="admin" @selected(request('role') === 'admin')>Administrator</option>
                     <option value="owner" @selected(request('role') === 'owner')>Owner</option>
                     <option value="housekeeper" @selected(request('role') === 'housekeeper')>Housekeeper</option>
                 </x-form.select>
             </div>
-            <div class="flex-1 min-w-[250px]">
+            <div class="flex-1 min-w-0 sm:min-w-[250px]">
                 <x-form.label value="Search" />
-                <x-form.input name="q" type="text" class="w-full" :value="old('q', request('q'))"
+                <x-form.input name="q" type="text" class="w-full max-w-full" :value="old('q', request('q'))"
                     placeholder="Search by name or email..." />
             </div>
-            <div class="flex gap-2">
-                <x-button type="submit" variant="secondary">Apply Filters</x-button>
-                <x-button :href="route('users.index')" variant="secondary">Clear</x-button>
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <x-button type="submit" variant="secondary" class="w-full sm:w-auto whitespace-nowrap">Apply Filters</x-button>
+                <x-button :href="route('users.index')" variant="secondary" class="w-full sm:w-auto whitespace-nowrap">Clear</x-button>
             </div>
         </form>
     </x-card>

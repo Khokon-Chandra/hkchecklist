@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <h2 class="text-lg sm:text-xl font-semibold break-words min-w-0 flex-1">
                 Tasks — {{ $room->name }}
             </h2>
-            <div class="flex items-center gap-2">
-                <x-button variant="secondary" href="{{ route('rooms.index') }}">← Rooms</x-button>
-                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $room->id }}')">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <x-button variant="secondary" href="{{ route('rooms.index') }}" class="w-full sm:w-auto whitespace-nowrap">← Rooms</x-button>
+                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">
                     + Add Task
                 </x-button>
             </div>
@@ -16,8 +16,8 @@
     @php $orderUrl = route('rooms.tasks.order', $room); @endphp
 
     <div x-data="taskList({ orderUrl: @js($orderUrl), csrf: @js(csrf_token()) })" class="space-y-4">
-        <div class="flex items-center justify-between">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Drag ⋮⋮ to reorder. Auto-saves.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Drag ⋮⋮ to reorder. Auto-saves.</p>
             <div class="min-h-[28px]">
                 <span x-show="status==='saving'" x-cloak class="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300">Saving…</span>
                 <span x-show="status==='saved'" x-cloak class="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-300">✓ Saved at <span x-text="savedAt"></span></span>
