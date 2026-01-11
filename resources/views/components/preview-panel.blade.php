@@ -122,7 +122,7 @@
         role="dialog" aria-modal="true" aria-labelledby="{{ $name }}-title" style="display: none;"
         @click.outside="close()">
         {{-- Header --}}
-        <div class="flex items-center justify-between gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
             <div class="min-w-0 text-left">
                 @if (isset($title))
                     <h3 id="{{ $name }}-title" class="font-semibold truncate text-gray-900 dark:text-gray-100">
@@ -155,7 +155,7 @@
 
         {{-- Body --}}
         <div class="relative flex-1 overflow-hidden">
-            <div class="h-full overflow-y-auto preview-scroll p-4">
+            <div class="h-full overflow-y-auto preview-scroll p-3 sm:p-4">
                 {{ $slot }}
             </div>
 
@@ -168,7 +168,7 @@
 
         {{-- Footer (optional) --}}
         @if (isset($footer))
-            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
                 {{ $footer }}
             </div>
         @endif

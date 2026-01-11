@@ -17,7 +17,7 @@
         : "add-property-task-{$property->id}";
 @endphp
 
-<div class="p-4 sm:p-6 space-y-4 sm:space-y-6"
+<div class="p-0 sm:p-2 md:p-4 lg:p-6 space-y-4 sm:space-y-6 max-w-full"
      x-data="propertyPropertyTaskForm({
         suggestUrl: @js($suggestUrl),
         storeUrl: @js($storeUrl),
@@ -92,9 +92,9 @@
                     required
                     autocomplete="off"
                     placeholder="e.g., Check inventory, Final inspection"
-                    class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                    class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                            focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                           transition-all duration-200 px-4 py-2.5 text-sm"
+                           transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm"
                     @input="onInput"
                     @focus="onFocus"
                     @keydown="keyDown"
@@ -109,7 +109,7 @@
                     x-show="open"
                     id="property-task-suggest"
                     role="listbox"
-                    class="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700
+                    class="absolute z-50 mt-1 w-full max-w-full rounded-lg border border-gray-200 dark:border-gray-700
                            bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
                 >
                     <div x-show="loading" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
@@ -183,9 +183,9 @@
                 id="property-task-phase"
                 x-model="formData.phase"
                 required
-                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                        focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                       transition-all duration-200 px-4 py-2.5 text-sm"
+                       transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm"
             >
                 <option value="pre_cleaning">Before Cleaning Starts</option>
                 <option value="during_cleaning">During Cleaning</option>
@@ -205,9 +205,9 @@
                 rows="4"
                 x-model="formData.instructions"
                 placeholder="Specific steps or notes for this task..."
-                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                        focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                       transition-all duration-200 px-4 py-2.5 text-sm resize-none"
+                       transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm resize-none"
             ></textarea>
             <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Visible to staff during cleaning sessions</p>
         </div>
@@ -256,7 +256,7 @@
         </div>
 
         {{-- Footer Actions --}}
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 -mx-0 sm:-mx-2 md:-mx-4 lg:-mx-6 px-0 sm:px-2 md:px-4 lg:px-6">
             <button
                 type="button"
                 @click="$dispatch('close-preview-panel', panelName)"

@@ -9,15 +9,15 @@
 
 @php
     $isEdit = $mode === 'edit' && $task;
-    $storeUrl = $isEdit 
+    $storeUrl = $isEdit
         ? route('properties.tasks.update', [$property, $room, $task])
         : route('properties.tasks.store', [$property, $room]);
-    $panelName = $isEdit 
+    $panelName = $isEdit
         ? "edit-task-{$property->id}-{$room->id}-{$task->id}"
         : "add-task-{$property->id}-{$room->id}";
 @endphp
 
-<div class="p-6 space-y-6" x-data="propertyTaskForm({
+<div class="p-0 sm:p-2 md:p-4 lg:p-6 space-y-4 sm:space-y-6 max-w-full" x-data="propertyTaskForm({
     suggestUrl: @js($suggestUrl),
     storeUrl: @js($storeUrl),
     csrf: @js(csrf_token()),
@@ -60,9 +60,9 @@
                     required
                     autocomplete="off"
                     placeholder="e.g., Wipe counters, Make bed"
-                    class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                    class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                            focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                           transition-all duration-200 px-4 py-2.5 text-sm"
+                           transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm"
                     @input="onInput"
                     @focus="onFocus"
                     @keydown="keyDown"
@@ -77,7 +77,7 @@
                     x-show="open"
                     id="task-suggest"
                     role="listbox"
-                    class="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700
+                    class="absolute z-50 mt-1 w-full max-w-full rounded-lg border border-gray-200 dark:border-gray-700
                            bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
                 >
                     <div x-show="loading" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
@@ -150,9 +150,9 @@
                 name="type"
                 id="task-type"
                 x-model="formData.type"
-                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                        focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                       transition-all duration-200 px-4 py-2.5 text-sm"
+                       transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm"
             >
                 <option value="room">Room</option>
                 <option value="inventory">Inventory</option>
@@ -170,9 +170,9 @@
                 rows="4"
                 x-model="formData.instructions"
                 placeholder="Short steps, tips, or link to SOP..."
-                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                        focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                       transition-all duration-200 px-4 py-2.5 text-sm resize-none"
+                       transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm resize-none"
             ></textarea>
             <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Visible to staff during cleaning sessions</p>
         </div>
@@ -249,7 +249,7 @@
                 </div>
 
                 {{-- Media Previews --}}
-                <div class="mt-4 grid grid-cols-2 gap-3" x-show="previews.length" x-cloak>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3" x-show="previews.length" x-cloak>
                     <template x-for="(p, i) in previews" :key="i">
                         <div class="relative group rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <template x-if="p.type==='image'">
@@ -273,7 +273,7 @@
                                 type="text"
                                 name="captions[]"
                                 placeholder="Caption (optional)"
-                                class="w-full border-t border-gray-200 dark:border-gray-700 px-3 py-2 text-xs
+                                class="w-full max-w-full border-t border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 text-xs
                                        dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
                         </div>
@@ -293,11 +293,11 @@
         </div>
 
         {{-- Footer Actions --}}
-        <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 -mx-0 sm:-mx-2 md:-mx-4 lg:-mx-6 px-0 sm:px-2 md:px-4 lg:px-6">
             <button
                 type="button"
                 @click="$dispatch('close-preview-panel', panelName)"
-                class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
+                class="w-full sm:flex-1 px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
                        bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
                        rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
@@ -307,7 +307,7 @@
                 type="submit"
                 :disabled="submitting"
                 :class="submitting ? 'opacity-60 cursor-not-allowed' : ''"
-                class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600
+                class="w-full sm:flex-1 px-4 py-3 sm:py-2.5 text-sm font-medium text-white bg-indigo-600
                        hover:bg-indigo-700 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
                 <svg x-show="submitting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

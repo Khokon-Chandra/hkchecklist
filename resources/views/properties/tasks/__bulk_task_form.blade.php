@@ -9,15 +9,15 @@
     csrf: @js(csrf_token()),
     propertyId: {{ $property->id }},
     roomId: {{ $room->id }},
-})" class="space-y-4">
+})" class="space-y-4 p-0 sm:p-2 md:p-4 max-w-full">
     <div>
         <x-form.label value="Task Names" />
         <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
             Search for existing tasks or type new task names, one per line. Press Enter after each task to add it to the list.
         </p>
-        
+
         {{-- Autocomplete Search Input --}}
-        <div class="relative mb-3" 
+        <div class="relative mb-3"
              x-data="{
                  ...taskAutocomplete({ suggestUrl: @js($suggestUrl) }),
                  handleEnter(e) {
@@ -44,7 +44,7 @@
                          }
                      }
                  }
-             }" 
+             }"
              @click.outside="open = false">
             <div class="relative">
                 <input
@@ -54,7 +54,7 @@
                     @focus="onFocus()"
                     @keydown="keyDown($event); handleEnter($event)"
                     placeholder="Search existing tasks or type new task name..."
-                    class="w-full px-4 py-2.5 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 text-sm"
+                    class="w-full max-w-full px-3 sm:px-4 py-2.5 pl-9 sm:pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 text-sm"
                 />
                 <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -66,11 +66,11 @@
                     </svg>
                 </div>
             </div>
-            
+
             {{-- Suggestions Dropdown --}}
-            <div x-show="open && (items.length > 0 || q.trim())" 
+            <div x-show="open && (items.length > 0 || q.trim())"
                  x-cloak
-                 class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                 class="absolute z-50 w-full max-w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 <template x-if="items.length > 0">
                     <div class="py-1">
                         <template x-for="(item, index) in items" :key="item.id">
@@ -93,14 +93,14 @@
                 </template>
             </div>
         </div>
-        
+
         <textarea
             x-ref="taskInput"
             @keydown.enter.prevent="addTaskFromInput()"
             @paste="handlePaste($event)"
             @add-suggested-task.window="addSuggestedTask($event.detail)"
             placeholder="Type task name and press Enter&#10;Or paste multiple tasks (one per line)&#10;&#10;Example:&#10;Vacuum carpet&#10;Clean windows&#10;Dust furniture"
-            class="w-full min-h-[200px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 font-mono text-sm"
+            class="w-full max-w-full min-h-[200px] px-3 sm:px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 font-mono text-sm"
             rows="8"></textarea>
         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Tip: Use the search above to find existing tasks, or paste a list of tasks from a document. Each line will become a separate task.
@@ -140,7 +140,7 @@
         <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
             All tasks will be created with this type. You can change individual task types later when editing.
         </p>
-        <div class="flex gap-4">
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <label class="flex items-center">
                 <input type="radio" name="default_type" value="room" x-model="defaultType" class="mr-2 text-indigo-600 focus:ring-indigo-500" />
                 <span class="text-sm text-gray-700 dark:text-gray-300">Room Task</span>
@@ -162,9 +162,9 @@
     </div>
 
     {{-- Action Buttons --}}
-    <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <x-button type="button" variant="secondary" @click="$dispatch('close-preview-panel')">Cancel</x-button>
-        <x-button type="button" variant="primary" @click="saveAll()" x-bind:disabled="tasks.length === 0 || status === 'saving'">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 -mx-0 sm:-mx-2 md:-mx-4 px-0 sm:px-2 md:px-4">
+        <x-button type="button" variant="secondary" @click="$dispatch('close-preview-panel')" class="w-full sm:w-auto">Cancel</x-button>
+        <x-button type="button" variant="primary" @click="saveAll()" x-bind:disabled="tasks.length === 0 || status === 'saving'" class="w-full sm:w-auto">
             <span x-show="status !== 'saving'">Save <span x-text="tasks.length"></span> Task<span x-show="tasks.length !== 1">s</span></span>
             <span x-show="status === 'saving'" class="flex items-center gap-2">
                 <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
