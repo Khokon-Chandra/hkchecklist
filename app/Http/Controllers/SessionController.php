@@ -35,104 +35,76 @@ class SessionController extends Controller
             ->orderBy('property_room.sort_order')
             ->get();
 
+
+        // Ensure existing checklist items (same as before, but already correct with room context)
+        foreach ($rooms as $room) {
+            foreach ($room->tasks as $task) {
+                \App\Models\ChecklistItem::firstOrCreate(
+                    [
+                        'session_id' => $session->id,
+                        'room_id'    => $room->id,
+                        'task_id'    => $task->id,
+                    ],
+                    [
+                        'user_id' => auth()->id(),
+                        'checked' => false,
+                    ]
+                );
+            }
+        }
+
+        // Eager-load checklist items to avoid N+1 when the view scans them
+        $session->load('checklistItems');
+
         // Load property-level tasks
         $property = $session->property;
         $propertyTasks = $property->propertyTasks()
             ->orderBy('property_tasks.sort_order')
             ->get();
 
-        // Load ALL checklist items for this session in one query
-        $allChecklistItems = ChecklistItem::where('session_id', $session->id)
-            ->with('task:id,type')
-            ->get();
-
-        // Build lookup maps for O(1) access: key = "room_id:task_id" or "null:task_id" for property tasks
-        $checklistItemsMap = [];
-        foreach ($allChecklistItems as $item) {
-            $key = ($item->room_id ?? 'null') . ':' . $item->task_id;
-            $checklistItemsMap[$key] = $item;
-        }
-
-        // Bulk create missing checklist items (room-level)
-        $rowsToInsert = [];
-        $now = now();
-        $uid = auth()->id();
-
-        foreach ($rooms as $room) {
-            foreach ($room->tasks as $task) {
-                $key = $room->id . ':' . $task->id;
-                if (!isset($checklistItemsMap[$key])) {
-                    $rowsToInsert[] = [
-                        'session_id' => $session->id,
-                        'room_id'    => $room->id,
-                        'task_id'    => $task->id,
-                        'user_id'    => $uid,
-                        'checked'    => false,
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ];
-                    // Will be added after bulk insert
-                }
-            }
-        }
-
-        // Bulk create missing checklist items (property-level)
+        // Ensure property-level checklist items exist
         foreach ($propertyTasks as $task) {
-            $key = 'null:' . $task->id;
-            if (!isset($checklistItemsMap[$key])) {
-                $rowsToInsert[] = [
+            \App\Models\ChecklistItem::firstOrCreate(
+                [
                     'session_id' => $session->id,
-                    'room_id'    => null,
+                    'room_id'    => null, // Property-level tasks have no room
                     'task_id'    => $task->id,
-                    'user_id'    => $uid,
-                    'checked'    => false,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-                // Will be added after bulk insert
-            }
+                ],
+                [
+                    'user_id' => auth()->id(),
+                    'checked' => false,
+                ]
+            );
         }
-
-        // Bulk insert missing items
-        if (!empty($rowsToInsert)) {
-            ChecklistItem::insertOrIgnore($rowsToInsert);
-            // Reload all checklist items to get the newly created ones
-            $allChecklistItems = ChecklistItem::where('session_id', $session->id)->get();
-            $checklistItemsMap = [];
-            foreach ($allChecklistItems as $item) {
-                $key = ($item->room_id ?? 'null') . ':' . $item->task_id;
-                $checklistItemsMap[$key] = $item;
-            }
-        }
-
-        // Attach checklist items to session for view compatibility
-        $session->setRelation('checklistItems', collect($checklistItemsMap)->values());
 
         // Separate property-level tasks by phase
         $preCleaningTasks = $propertyTasks->where('phase', 'pre_cleaning');
         $duringCleaningTasks = $propertyTasks->where('phase', 'during_cleaning');
         $postCleaningTasks = $propertyTasks->where('phase', 'post_cleaning');
 
-        // Count property-level tasks (in memory)
+        // Count property-level tasks
         $preCleaningCount = $preCleaningTasks->count();
         $duringCleaningCount = $duringCleaningTasks->count();
         $postCleaningCount = $postCleaningTasks->count();
 
-        // Count checked property-level tasks (in memory using map)
-        $checkedPreCleaningCount = $preCleaningTasks->filter(function($task) use ($checklistItemsMap) {
-            $key = 'null:' . $task->id;
-            return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-        })->count();
-        $checkedDuringCleaningCount = $duringCleaningTasks->filter(function($task) use ($checklistItemsMap) {
-            $key = 'null:' . $task->id;
-            return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-        })->count();
-        $checkedPostCleaningCount = $postCleaningTasks->filter(function($task) use ($checklistItemsMap) {
-            $key = 'null:' . $task->id;
-            return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-        })->count();
+        // Count checked property-level tasks
+        $checkedPreCleaningCount = ChecklistItem::where('session_id', $session->id)
+            ->whereNull('room_id')
+            ->whereIn('task_id', $preCleaningTasks->pluck('id'))
+            ->where('checked', true)
+            ->count();
+        $checkedDuringCleaningCount = ChecklistItem::where('session_id', $session->id)
+            ->whereNull('room_id')
+            ->whereIn('task_id', $duringCleaningTasks->pluck('id'))
+            ->where('checked', true)
+            ->count();
+        $checkedPostCleaningCount = ChecklistItem::where('session_id', $session->id)
+            ->whereNull('room_id')
+            ->whereIn('task_id', $postCleaningTasks->pluck('id'))
+            ->where('checked', true)
+            ->count();
 
-        // Separate tasks by type and find first incomplete room indices
+        // Separate tasks by type and find first incomplete room indices (unchanged)
         $roomTasksByRoom      = [];
         $inventoryTasksByRoom = [];
         $firstIncompleteRoomIndex      = null;
@@ -144,42 +116,40 @@ class SessionController extends Controller
             $roomTasksByRoom[$room->id]      = $roomTasks;
             $inventoryTasksByRoom[$room->id] = $inventoryTasks;
 
-            // Count checked room tasks (in memory)
-            $checkedCount = $roomTasks->filter(function($task) use ($checklistItemsMap, $room) {
-                $key = $room->id . ':' . $task->id;
-                return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-            })->count();
+            $checkedCount = ChecklistItem::where('session_id', $session->id)
+                ->where('room_id', $room->id)
+                ->whereIn('task_id', $roomTasks->pluck('id'))
+                ->where('checked', true)
+                ->count();
             $totalCount = $roomTasks->count();
             if ($firstIncompleteRoomIndex === null && $checkedCount < $totalCount) {
                 $firstIncompleteRoomIndex = $index;
             }
 
-            // Count checked inventory tasks (in memory)
-            $checkedInventoryCount = $inventoryTasks->filter(function($task) use ($checklistItemsMap, $room) {
-                $key = $room->id . ':' . $task->id;
-                return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-            })->count();
+            $checkedInventoryCount = ChecklistItem::where('session_id', $session->id)
+                ->where('room_id', $room->id)
+                ->whereIn('task_id', $inventoryTasks->pluck('id'))
+                ->where('checked', true)
+                ->count();
             $totalInventoryCount = $inventoryTasks->count();
             if ($firstIncompleteInventoryIndex === null && $checkedInventoryCount < $totalInventoryCount) {
                 $firstIncompleteInventoryIndex = $index;
             }
         }
 
-        // Counts & stages (all in memory)
-        $allRoomTasksCount = $rooms->flatMap->tasks->where('type', 'room')->count();
-        $checkedRoomTasksCount = $rooms->flatMap(function($room) use ($checklistItemsMap) {
-            return $room->tasks->where('type', 'room')->filter(function($task) use ($checklistItemsMap, $room) {
-                $key = $room->id . ':' . $task->id;
-                return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-            });
-        })->count();
-        $allInventoryTasksCount = $rooms->flatMap->tasks->where('type', 'inventory')->count();
-        $checkedInventoryTasksCount = $rooms->flatMap(function($room) use ($checklistItemsMap) {
-            return $room->tasks->where('type', 'inventory')->filter(function($task) use ($checklistItemsMap, $room) {
-                $key = $room->id . ':' . $task->id;
-                return isset($checklistItemsMap[$key]) && $checklistItemsMap[$key]->checked;
-            });
-        })->count();
+        // Counts & stages (updated to include property-level tasks)
+        $allRoomTasksCount          = $rooms->flatMap->tasks->where('type', 'room')->count();
+        $checkedRoomTasksCount      = ChecklistItem::where('session_id', $session->id)
+            ->whereHas('task', fn($q) => $q->where('type', 'room'))
+            ->whereNotNull('room_id')
+            ->where('checked', true)
+            ->count();
+        $allInventoryTasksCount     = $rooms->flatMap->tasks->where('type', 'inventory')->count();
+        $checkedInventoryTasksCount = ChecklistItem::where('session_id', $session->id)
+            ->whereHas('task', fn($q) => $q->where('type', 'inventory'))
+            ->whereNotNull('room_id')
+            ->where('checked', true)
+            ->count();
 
         $photoCounts = $session->photos()
             ->selectRaw('room_id, count(*) as c')
@@ -224,11 +194,11 @@ class SessionController extends Controller
         // Location check will be done via JavaScript when they try to start, but we check date here
         $canEdit = true;
         $isViewOnly = false;
-
+        
         if (auth()->user()->hasRole('housekeeper') && !auth()->user()->hasAnyRole(['admin', 'owner'])) {
             $isCurrentDate = $session->scheduled_date->isToday();
             $isInProgressOrCompleted = in_array($session->status, ['in_progress', 'completed']);
-
+            
             // Can edit if: it's the current date AND (session is pending OR already in progress/completed)
             // OR if session is already in progress/completed (they can continue working)
             if (!$isCurrentDate && $session->status === 'pending') {
@@ -258,8 +228,7 @@ class SessionController extends Controller
             'checkedDuringCleaningCount',
             'checkedPostCleaningCount',
             'canEdit',
-            'isViewOnly',
-            'checklistItemsMap'
+            'isViewOnly'
         ));
     }
 
