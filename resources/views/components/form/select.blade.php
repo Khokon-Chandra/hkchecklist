@@ -7,8 +7,6 @@
 ])
 
 @php
-    use App\Models\Setting;
-
     $isMultiple = $attributes->has('multiple');
 
     // Keep parity with your input component: pl-11 when withicon, else px-4
@@ -16,8 +14,6 @@
     // Leave room for caret on single-selects
     $rightPad = $isMultiple ? 'pr-4' : 'pr-10';
     $padding = trim($leftPad . ' ' . $rightPad);
-
-    $themeColor = Setting::get('theme_color', '#842eb8');
 
     $base =
         'py-2 border-gray-300 rounded-md focus:border-gray-400 focus:ring focus:ring-offset-2 focus:ring-offset-white dark:border-gray-700 dark:bg-dark-eval-1 dark:text-gray-300 dark:focus:ring-offset-dark-eval-1';
@@ -29,7 +25,7 @@
 
 <div class="{{ $isMultiple ? '' : 'relative' }}">
     <select {{ $disabled ? 'disabled' : '' }}
-            data-focus-ring="{{ $themeColor }}"
+            data-focus-ring="theme-primary"
             {!! $attributes->merge([
                 'class' => "appearance-none {$padding} {$base} {$state}",
             ]) !!}>
@@ -63,7 +59,7 @@
 </div>
 
 <style>
-    [data-focus-ring="{{ $themeColor }}"]:focus {
-        --tw-ring-color: {{ $themeColor }} !important;
+    [data-focus-ring="theme-primary"]:focus {
+        --tw-ring-color: var(--theme-primary) !important;
     }
 </style>

@@ -39,24 +39,14 @@
 
     switch ($variant) {
         case 'primary':
-            // Get theme color first, then button_primary_color as override
-            $themeColor = Setting::get('theme_color', '#842eb8');
-            $buttonPrimaryColor = Setting::get('button_primary_color');
-            // Use button_primary_color if it exists and is different from default, otherwise use theme_color
-            $primaryColor = $buttonPrimaryColor ?: $themeColor;
-            $hoverColor = darkenColor($primaryColor, 15);
             $variantClasses = 'text-white';
-            $inlineStyles = "background-color: {$primaryColor};";
-            $focusRingColor = $primaryColor;
+            $inlineStyles = "background-color: var(--button-primary-color);";
+            $focusRingColor = 'button-primary';
             break;
         case 'secondary':
             $variantClasses =
                 'bg-white text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:bg-dark-eval-1 dark:hover:bg-dark-eval-2 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-700';
-            // Get theme color first, then button_primary_color as override (same as primary)
-            $themeColor = Setting::get('theme_color', '#842eb8');
-            $buttonPrimaryColor = Setting::get('button_primary_color');
-            // Use button_primary_color if it exists, otherwise use theme_color
-            $focusRingColor = $buttonPrimaryColor ?: $themeColor;
+            $focusRingColor = 'button-primary';
             break;
         case 'success':
             $successColor = Setting::get('button_success_color', '#10b981');
@@ -92,20 +82,9 @@
             $focusRingColor = '#000000';
             break;
         default:
-            // Get theme color first, then button_primary_color as override
-            $themeColor = Setting::get('theme_color', '#842eb8');
-            $buttonPrimaryColor = Setting::get('button_primary_color');
-            // Use button_primary_color if it exists and is different from default, otherwise use theme_color
-            $primaryColor = $buttonPrimaryColor ?: $themeColor;
-            $hoverColor = darkenColor($primaryColor, 15);
             $variantClasses = 'text-white';
-            $inlineStyles = "background-color: {$primaryColor};";
-            $focusRingColor = $primaryColor;
-    }
-
-    // Add hover color as CSS custom property for dynamic colors
-    if ($inlineStyles && isset($hoverColor)) {
-        $inlineStyles .= " --btn-hover-color: {$hoverColor};";
+            $inlineStyles = "background-color: var(--button-primary-color);";
+            $focusRingColor = 'button-primary';
     }
 
     switch ($size) {
@@ -137,14 +116,10 @@
 @endphp
 
 @php
-    // Build style attribute with CSS custom properties for hover
+    // Build style attribute
     $styleAttr = '';
     if ($inlineStyles) {
-        if (isset($hoverColor)) {
-            $styleAttr = "style=\"{$inlineStyles} --btn-hover-color: {$hoverColor};\"";
-        } else {
-            $styleAttr = "style=\"{$inlineStyles}\"";
-        }
+        $styleAttr = "style=\"{$inlineStyles}\"";
     }
 
     // Add focus ring style
@@ -177,13 +152,22 @@
 
 @if($focusRingColor && in_array($variant, ['primary', 'secondary', 'success', 'danger', 'warning', 'info']))
     <style>
-        [data-focus-ring="{{ $focusRingColor }}"]:focus {
-            --tw-ring-color: {{ $focusRingColor }} !important;
-        }
-        @if(isset($hoverColor))
-            [style*="--btn-hover-color"]:hover {
-                background-color: var(--btn-hover-color) !important;
+        @if($focusRingColor === 'button-primary')
+            [data-focus-ring="button-primary"]:focus {
+                --tw-ring-color: var(--button-primary-color) !important;
             }
+            [style*="background-color: var(--button-primary-color)"]:hover {
+                background-color: color-mix(in srgb, var(--button-primary-color) 85%, black) !important;
+            }
+        @else
+            [data-focus-ring="{{ $focusRingColor }}"]:focus {
+                --tw-ring-color: {{ $focusRingColor }} !important;
+            }
+            @if(isset($hoverColor))
+                [style*="--btn-hover-color"]:hover {
+                    background-color: var(--btn-hover-color) !important;
+                }
+            @endif
         @endif
     </style>
 @endif

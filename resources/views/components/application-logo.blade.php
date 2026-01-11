@@ -1,6 +1,5 @@
 @php
     $logoPath = \App\Models\Setting::get('application_logo_path');
-    $themeColor = \App\Models\Setting::get('theme_color', '#842eb8');
 @endphp
 
 @if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath))
@@ -10,7 +9,7 @@
 @else
     {{-- Default SVG Logo --}}
     <svg {{ $attributes }} xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-        <g fill="none" stroke="{{ $themeColor }}" stroke-width="1.5">
+        <g fill="none" stroke="var(--theme-primary)" stroke-width="1.5">
             <path stroke-linecap="round"
                 d="M5 9.083C5 7.917 6 7.5 6.5 7.5c.994 0 1.5.754 1.5 1.583C8 11.016 6.657 12 5 12s-3-1.567-3-3.5S3.343 5 5 5h14c1.657 0 3 1.567 3 3.5S20.657 12 19 12s-3-.984-3-2.917c0-.83.506-1.583 1.5-1.583c.5 0 1.5.417 1.5 1.583" />
             <path d="M3 20a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />

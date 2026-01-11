@@ -4,14 +4,6 @@
 ])
 
 @php
-    use App\Models\Setting;
-
-    // Get theme color first, then button_primary_color as override
-    $themeColor = Setting::get('theme_color', '#842eb8');
-    $buttonPrimaryColor = Setting::get('button_primary_color');
-    // Use button_primary_color if it exists, otherwise use theme_color
-    $primaryColor = $buttonPrimaryColor ?: $themeColor;
-
     // Generate unique ID for this checkbox instance
     $checkboxId = $attributes->get('id', 'checkbox-' . uniqid());
 
@@ -21,8 +13,8 @@
 
 <input
     type="checkbox"
-    data-checkbox-theme="{{ $primaryColor }}"
-    style="accent-color: {{ $primaryColor }}; --checkbox-theme-color: {{ $primaryColor }};"
+    data-checkbox-theme="button-primary"
+    style="accent-color: var(--button-primary-color); --checkbox-theme-color: var(--button-primary-color);"
     {{ $disabled ? 'disabled' : '' }}
     {{ $isChecked ? 'checked' : '' }}
     {!! $attributes->merge([
@@ -61,8 +53,8 @@
         }
 
         input[type="checkbox"][data-checkbox-theme]:checked {
-            background-color: var(--checkbox-theme-color) !important;
-            border-color: var(--checkbox-theme-color) !important;
+            background-color: var(--button-primary-color) !important;
+            border-color: var(--button-primary-color) !important;
             background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-3-3a1 1 0 011.414-1.414L6 10.586l5.793-5.793a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
             background-size: 100% 100% !important;
             background-position: center !important;
@@ -70,8 +62,8 @@
         }
 
         input[type="checkbox"][data-checkbox-theme]:focus {
-            border-color: var(--checkbox-theme-color) !important;
-            --tw-ring-color: var(--checkbox-theme-color);
+            border-color: var(--button-primary-color) !important;
+            --tw-ring-color: var(--button-primary-color);
             outline: none !important;
         }
 
@@ -82,13 +74,13 @@
 
         /* Dark mode specific adjustments */
         .dark input[type="checkbox"][data-checkbox-theme]:checked {
-            background-color: var(--checkbox-theme-color) !important;
-            border-color: var(--checkbox-theme-color) !important;
+            background-color: var(--button-primary-color) !important;
+            border-color: var(--button-primary-color) !important;
         }
 
         .dark input[type="checkbox"][data-checkbox-theme]:focus {
-            border-color: var(--checkbox-theme-color) !important;
-            --tw-ring-color: var(--checkbox-theme-color);
+            border-color: var(--button-primary-color) !important;
+            --tw-ring-color: var(--button-primary-color);
         }
     </style>
 @endonce

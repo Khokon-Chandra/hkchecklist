@@ -39,10 +39,11 @@
         [x-cloak] {
             display: none;
         }
-        
+
         /* Dynamic Theme Color */
         :root {
             --theme-primary: {!! \App\Models\Setting::get('theme_color', '#842eb8') !!};
+            --button-primary-color: {!! \App\Models\Setting::get('button_primary_color') ?: \App\Models\Setting::get('theme_color', '#842eb8') !!};
         }
     </style>
 
