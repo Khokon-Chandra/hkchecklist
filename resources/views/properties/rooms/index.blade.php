@@ -66,7 +66,6 @@
                             <th class="px-4 py-2 text-left">Name</th>
                             <th class="px-4 py-2 text-center">Default?</th>
                             <th class="px-4 py-2 text-center">Tasks</th>
-                            <th class="px-4 py-2 text-center">Created</th>
                             <th class="px-4 py-2 w-48 text-right">Action</th>
                         </tr>
                     </thead>
@@ -102,9 +101,6 @@
                                 <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
                                     {{ $r->tasks_count }}
                                 </td>
-                                <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
-                                    {{ $r->created_at->diffForHumans() }}
-                                </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     @include('properties.rooms.__room_action', [
                                         'property' => $property,
@@ -115,7 +111,7 @@
                         @empty
                             <tr>
                                 <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400"
-                                    @if(auth()->user()->hasAnyRole(['admin', 'owner'])) colspan="6" @else colspan="5" @endif>
+                                    @if(auth()->user()->hasAnyRole(['admin', 'owner'])) colspan="5" @else colspan="4" @endif>
                                     No rooms yet — add your first one.
                                 </td>
                             </tr>
