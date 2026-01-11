@@ -4,6 +4,7 @@
     'pivot' => null, // Pivot data for edit mode
     'suggestUrl',
     'mode' => 'create', // 'create' or 'edit'
+    'defaultPhase' => 'pre_cleaning', // Default phase for create mode
 ])
 
 @php
@@ -16,28 +17,61 @@
         : "add-property-task-{$property->id}";
 @endphp
 
-<div class="p-6 space-y-6" x-data="propertyPropertyTaskForm({
-    suggestUrl: @js($suggestUrl),
-    storeUrl: @js($storeUrl),
-    csrf: @js(csrf_token()),
-    propertyId: @js($property->id),
-    taskId: @js($task?->id),
-    mode: @js($mode),
-    panelName: @js($panelName),
-    initialData: @js($isEdit ? [
-        'name' => $task->name ?? '',
-        'phase' => $task->phase ?? 'pre_cleaning',
-        'instructions' => $pivot->instructions ?? '',
-        'visible_to_owner' => (bool) ($pivot->visible_to_owner ?? true),
-        'visible_to_housekeeper' => (bool) ($pivot->visible_to_housekeeper ?? true),
-    ] : [
-        'name' => '',
-        'phase' => 'pre_cleaning',
-        'instructions' => '',
-        'visible_to_owner' => true,
-        'visible_to_housekeeper' => true,
-    ])
-})">
+<div class="p-4 sm:p-6 space-y-4 sm:space-y-6"
+     x-data="propertyPropertyTaskForm({
+        suggestUrl: @js($suggestUrl),
+        storeUrl: @js($storeUrl),
+        csrf: @js(csrf_token()),
+        propertyId: @js($property->id),
+        taskId: @js($task?->id),
+        mode: @js($mode),
+        panelName: @js($panelName),
+        initialData: @js($isEdit ? [
+            'name' => $task->name ?? '',
+            'phase' => $task->phase ?? 'pre_cleaning',
+            'instructions' => $pivot->instructions ?? '',
+            'visible_to_owner' => (bool) ($pivot->visible_to_owner ?? true),
+            'visible_to_housekeeper' => (bool) ($pivot->visible_to_housekeeper ?? true),
+        ] : [
+            'name' => '',
+            'phase' => $defaultPhase,
+            'instructions' => '',
+            'visible_to_owner' => true,
+            'visible_to_housekeeper' => true,
+        ])
+    })"
+    @if(!$isEdit)
+    x-on:set-property-task-phase.window="
+        const phaseMap = {
+            'pre': 'pre_cleaning',
+            'during': 'during_cleaning',
+            'post': 'post_cleaning'
+        };
+        if (formData && phaseMap[$event.detail]) {
+            formData.phase = phaseMap[$event.detail];
+        }
+    "
+    x-init="
+        // Try to get activeTab from parent on init
+        setTimeout(() => {
+            let el = $el;
+            while (el && el !== document.body) {
+                if (el.__x && el.__x.$data && el.__x.$data.activeTab) {
+                    const phaseMap = {
+                        'pre': 'pre_cleaning',
+                        'during': 'during_cleaning',
+                        'post': 'post_cleaning'
+                    };
+                    if (formData && phaseMap[el.__x.$data.activeTab]) {
+                        formData.phase = phaseMap[el.__x.$data.activeTab];
+                    }
+                    break;
+                }
+                el = el.parentElement;
+            }
+        }, 100);
+    "
+    @endif>
     <form @submit.prevent="submitForm" class="space-y-6">
         @if($isEdit)
             @method('PUT')
@@ -222,11 +256,11 @@
         </div>
 
         {{-- Footer Actions --}}
-        <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700">
             <button
                 type="button"
                 @click="$dispatch('close-preview-panel', panelName)"
-                class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
+                class="w-full sm:flex-1 px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
                        bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
                        rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
@@ -236,7 +270,7 @@
                 type="submit"
                 :disabled="submitting"
                 :class="submitting ? 'opacity-60 cursor-not-allowed' : ''"
-                class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600
+                class="w-full sm:flex-1 px-4 py-3 sm:py-2.5 text-sm font-medium text-white bg-indigo-600
                        hover:bg-indigo-700 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
                 <svg x-show="submitting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
