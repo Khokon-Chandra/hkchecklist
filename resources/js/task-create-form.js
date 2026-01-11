@@ -1,21 +1,25 @@
 // resources/js/task-create-form.js
 
-export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId }) {
+export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId, panelName, initialData }) {
+    const defaultFormData = {
+        name: '',
+        type: 'room',
+        instructions: '',
+        visible_to_owner: true,
+        visible_to_housekeeper: true,
+    };
+    
     return {
         suggestUrl,
         storeUrl,
         csrf,
         roomId,
+        panelName: panelName || null,
+        initialData: initialData || defaultFormData,
         submitting: false,
         error: null,
         success: null,
-        formData: {
-            name: '',
-            type: 'room',
-            instructions: '',
-            visible_to_owner: true,
-            visible_to_housekeeper: true,
-        },
+        formData: initialData ? { ...initialData } : { ...defaultFormData },
 
         // Capitalize text to title case (e.g., "Open Windows For Airing")
         capitalizeText(text) {
@@ -76,17 +80,12 @@ export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId }) {
                 
                 // Reset form
                 event.target.reset();
-                this.formData = {
-                    name: '',
-                    type: 'room',
-                    instructions: '',
-                    visible_to_owner: true,
-                    visible_to_housekeeper: true,
-                };
+                this.formData = { ...this.initialData };
 
                 // Close panel and reload after 1 second
                 setTimeout(() => {
-                    this.$dispatch('close-preview-panel', `add-task-${this.roomId}`);
+                    const panelToClose = this.panelName || `add-task-${this.roomId}`;
+                    this.$dispatch('close-preview-panel', panelToClose);
                     window.location.reload();
                 }, 1000);
 
