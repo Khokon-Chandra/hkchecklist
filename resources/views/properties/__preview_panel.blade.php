@@ -85,7 +85,7 @@
                                     Default
                                 </span>
                                 <span class="hidden sm:inline text-[11px] text-gray-400 dark:text-gray-500"
-                                    x-text="isSelected(room . id) ? 'unselect' : 'select'">
+                                    x-text="isSelected(room.id) ? 'unselect' : 'select'">
                                 </span>
                             </p>
                         </div>
@@ -104,13 +104,13 @@
     </div>
 
     <x-slot:footer>
-        <div class="flex items-center justify-between gap-2">
-            <p class="text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <p class="text-xs text-gray-500 dark:text-gray-400 text-center sm:text-left">
                 Selection here is just for preview right now (not saved yet).
             </p>
-            <div class="flex items-center gap-2">
-                <x-button variant="secondary" @click="close()">Close</x-button>
-                <x-button class="bg-indigo-600 hover:bg-indigo-700" @click="close()">Apply</x-button>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <x-button variant="secondary" @click="close()" class="w-full sm:w-auto whitespace-nowrap">Close</x-button>
+                <x-button variant="primary" @click="close()" class="w-full sm:w-auto whitespace-nowrap">Apply</x-button>
             </div>
         </div>
     </x-slot:footer>

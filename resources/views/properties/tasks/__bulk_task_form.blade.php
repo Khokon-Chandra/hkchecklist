@@ -161,8 +161,8 @@
         <p class="text-sm font-medium" x-text="message"></p>
     </div>
 
-    {{-- Action Buttons --}}
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 -mx-0 sm:-mx-2 md:-mx-4 px-0 sm:px-2 md:px-4">
+    {{-- Action Buttons - Sticky at bottom --}}
+    <div class="sticky bottom-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 -mx-0 sm:-mx-2 md:-mx-4 px-0 sm:px-2 md:px-4 mt-4 z-10">
         <x-button type="button" variant="secondary" @click="$dispatch('close-preview-panel')" class="w-full sm:w-auto">Cancel</x-button>
         <x-button type="button" variant="primary" @click="saveAll()" x-bind:disabled="tasks.length === 0 || status === 'saving'" class="w-full sm:w-auto">
             <span x-show="status !== 'saving'">Save <span x-text="tasks.length"></span> Task<span x-show="tasks.length !== 1">s</span></span>

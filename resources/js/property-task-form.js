@@ -32,6 +32,15 @@ export default function propertyTaskForm({ suggestUrl, storeUrl, csrf, propertyI
             };
         },
 
+        // Capitalize text to title case (e.g., "Open Windows For Airing")
+        capitalizeText(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        },
+
         async submitForm(event) {
             this.error = null;
             this.success = null;
@@ -40,10 +49,11 @@ export default function propertyTaskForm({ suggestUrl, storeUrl, csrf, propertyI
             try {
                 const formData = new FormData(event.target);
                 
-                // Ensure name is set from the input field
+                // Ensure name is set from the input field and capitalize it
                 const nameInput = event.target.querySelector('#task-name');
                 if (nameInput && nameInput.value) {
-                    formData.set('name', nameInput.value);
+                    const capitalizedName = this.capitalizeText(nameInput.value.trim());
+                    formData.set('name', capitalizedName);
                 }
                 
                 // Add CSRF token

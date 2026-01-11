@@ -292,8 +292,8 @@
             <p class="text-sm text-emerald-800 dark:text-emerald-200" x-text="success"></p>
         </div>
 
-        {{-- Footer Actions --}}
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 -mx-0 sm:-mx-2 md:-mx-4 lg:-mx-6 px-0 sm:px-2 md:px-4 lg:px-6">
+        {{-- Footer Actions - Sticky at bottom --}}
+        <div class="sticky bottom-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 -mx-0 sm:-mx-2 md:-mx-4 lg:-mx-6 px-0 sm:px-2 md:px-4 lg:px-6 mt-4 z-10">
             <button
                 type="button"
                 @click="$dispatch('close-preview-panel', panelName)"

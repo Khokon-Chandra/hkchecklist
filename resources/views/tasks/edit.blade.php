@@ -8,7 +8,38 @@
 
     {{-- UPDATE FORM --}}
     <x-card>
-        <form method="post" action="{{ route('tasks.update', $task) }}" class="space-y-6">
+        <form method="post" action="{{ route('tasks.update', $task) }}" class="space-y-6" x-data="{
+            taskName: @js(old('name', $task->name)),
+            _capitalizeTimer: null,
+            capitalizeText(text) {
+                if (!text) return '';
+                return text.toLowerCase()
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            },
+            debounceCapitalize() {
+                clearTimeout(this._capitalizeTimer);
+                this._capitalizeTimer = setTimeout(() => {
+                    if (this.taskName && this.taskName.trim()) {
+                        const capitalized = this.capitalizeText(this.taskName);
+                        if (capitalized !== this.taskName) {
+                            this.taskName = capitalized;
+                        }
+                    }
+                }, 500);
+            },
+            handleSubmit(event) {
+                // Ensure capitalized value is set before submission
+                if (this.taskName && this.taskName.trim()) {
+                    const capitalized = this.capitalizeText(this.taskName.trim());
+                    const nameInput = event.target.querySelector('#name');
+                    if (nameInput) {
+                        nameInput.value = capitalized;
+                    }
+                }
+            }
+        }" @submit="handleSubmit($event)">
             @csrf
             @method('PUT')
 
@@ -16,7 +47,14 @@
                 {{-- Name --}}
                 <div class="md:col-span-2">
                     <x-form.label for="name" value="Name" />
-                    <x-form.input id="name" name="name" class="w-full" required :value="old('name', $task->name)" />
+                    <input 
+                        id="name" 
+                        name="name" 
+                        type="text"
+                        x-model="taskName"
+                        @input="debounceCapitalize()"
+                        class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                        required />
                     <x-form.error :messages="$errors->get('name')" />
                 </div>
 

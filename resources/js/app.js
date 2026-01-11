@@ -149,6 +149,15 @@ document.addEventListener('alpine:init', () => {
                 this.$refs.taskInput?.focus();
             },
 
+            // Capitalize text to title case (e.g., "Open Windows For Airing")
+            capitalizeText(text) {
+                if (!text) return '';
+                return text.toLowerCase()
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            },
+
             addTaskFromInput() {
                 const input = this.$refs.taskInput;
                 if (!input) return;
@@ -156,14 +165,17 @@ document.addEventListener('alpine:init', () => {
                 const value = input.value.trim();
                 if (!value) return;
 
+                // Capitalize the task name
+                const capitalizedValue = this.capitalizeText(value);
+
                 // Check for duplicates (case-insensitive)
-                const exists = this.tasks.some(t => t.name.toLowerCase() === value.toLowerCase());
+                const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedValue.toLowerCase());
                 if (exists) {
-                    this.showMessage('error', `"${value}" is already in the list`);
+                    this.showMessage('error', `"${capitalizedValue}" is already in the list`);
                     return;
                 }
 
-                this.tasks.push({ name: value });
+                this.tasks.push({ name: capitalizedValue });
                 input.value = '';
                 this.status = null;
             },
@@ -172,15 +184,17 @@ document.addEventListener('alpine:init', () => {
                 if (!taskName || !taskName.trim()) return;
 
                 const value = taskName.trim();
+                // Capitalize the task name
+                const capitalizedValue = this.capitalizeText(value);
                 
                 // Check for duplicates (case-insensitive)
-                const exists = this.tasks.some(t => t.name.toLowerCase() === value.toLowerCase());
+                const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedValue.toLowerCase());
                 if (exists) {
-                    this.showMessage('error', `"${value}" is already in the list`);
+                    this.showMessage('error', `"${capitalizedValue}" is already in the list`);
                     return;
                 }
 
-                this.tasks.push({ name: value });
+                this.tasks.push({ name: capitalizedValue });
                 this.status = null;
             },
 
@@ -191,9 +205,11 @@ document.addEventListener('alpine:init', () => {
 
                 if (lines.length > 0) {
                     lines.forEach(line => {
-                        const exists = this.tasks.some(t => t.name.toLowerCase() === line.toLowerCase());
+                        // Capitalize each line
+                        const capitalizedLine = this.capitalizeText(line);
+                        const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedLine.toLowerCase());
                         if (!exists) {
-                            this.tasks.push({ name: line });
+                            this.tasks.push({ name: capitalizedLine });
                         }
                     });
                     this.$refs.taskInput.value = '';

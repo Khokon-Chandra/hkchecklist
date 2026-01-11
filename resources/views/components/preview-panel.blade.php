@@ -154,8 +154,8 @@
         </div>
 
         {{-- Body --}}
-        <div class="relative flex-1 overflow-hidden">
-            <div class="h-full overflow-y-auto preview-scroll p-3 sm:p-4">
+        <div class="relative flex-1 overflow-hidden flex flex-col min-h-0">
+            <div class="flex-1 overflow-y-auto preview-scroll p-3 sm:p-4 min-h-0 pb-0">
                 {{ $slot }}
             </div>
 
@@ -166,9 +166,9 @@
                 @touchstart.passive="startResize($event)" aria-hidden="true"></div>
         </div>
 
-        {{-- Footer (optional) --}}
+        {{-- Footer (optional) - Fixed at bottom --}}
         @if (isset($footer))
-            <div class="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex-shrink-0 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 {{ $footer }}
             </div>
         @endif
