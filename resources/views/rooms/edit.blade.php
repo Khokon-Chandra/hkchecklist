@@ -85,10 +85,10 @@
                             <input
                                 type="text"
                                 x-model="searchQuery"
-                                @input="searchTasks()"
+                                @input="debounceCapitalize(); debounceSearch()"
                                 @keydown="handleKeyDown($event)"
                                 @focus="searchQuery && searchTasks()"
-                                placeholder="Search tasks to add..."
+                                placeholder="Search tasks to add... (Press Enter to create if not found)"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm pl-3 pr-10 py-2"
                             />
                             <svg x-show="loading" class="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

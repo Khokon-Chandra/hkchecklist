@@ -28,6 +28,8 @@ export default function roomTasksEditor({
         _saveTimer: null,
         _hideTimer: null,
         _pending: false,
+        _searchTimer: null,
+        _capitalizeTimer: null,
 
         init() {
             // Wait for DOM to be ready
@@ -115,6 +117,34 @@ export default function roomTasksEditor({
                     this.queueSave();
                 }
             }
+        },
+
+        capitalizeText(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        },
+
+        debounceCapitalize() {
+            clearTimeout(this._capitalizeTimer);
+            this._capitalizeTimer = setTimeout(() => {
+                if (this.searchQuery && this.searchQuery.trim()) {
+                    const capitalized = this.capitalizeText(this.searchQuery);
+                    // Only update if different to avoid cursor jumping
+                    if (capitalized !== this.searchQuery) {
+                        this.searchQuery = capitalized;
+                    }
+                }
+            }, 500); // 500ms debounce for capitalization
+        },
+
+        debounceSearch() {
+            clearTimeout(this._searchTimer);
+            this._searchTimer = setTimeout(() => {
+                this.searchTasks();
+            }, 300); // 300ms debounce for search
         },
 
         async searchTasks() {
@@ -229,7 +259,96 @@ export default function roomTasksEditor({
             }
         },
 
+        async createAndAttachTask(taskName) {
+            const capitalizedName = this.capitalizeText(taskName.trim());
+            if (!capitalizedName) return;
+
+            // Check if task already exists in roomTasks (case-insensitive)
+            const exists = this.roomTasks.some(t => 
+                t.name.toLowerCase() === capitalizedName.toLowerCase()
+            );
+            if (exists) {
+                this.searchQuery = '';
+                this.openSuggestions = false;
+                return;
+            }
+
+            this.loading = true;
+            try {
+                const res = await fetch(this.attachUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this.csrf,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        task_names: [capitalizedName]
+                    }),
+                });
+
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({ message: 'Failed to create task' }));
+                    throw new Error(error.message || 'Failed to create task');
+                }
+
+                const data = await res.json();
+                
+                // Add the created task(s) to roomTasks
+                if (data.tasks && data.tasks.length > 0) {
+                    data.tasks.forEach(task => {
+                        const newTask = {
+                            id: task.id,
+                            name: task.name,
+                            type: task.type || 'room',
+                            is_default: task.is_default || false,
+                            key: `task-${task.id}`,
+                            sort_order: this.roomTasks.length + 1
+                        };
+                        this.roomTasks.push(newTask);
+                    });
+                } else {
+                    // Fallback: reload suggestions to find the created task
+                    await this.searchTasks();
+                    if (this.suggestions.length > 0) {
+                        this.addTask(this.suggestions[0]);
+                    }
+                }
+
+                // Reset search
+                this.searchQuery = '';
+                this.suggestions = [];
+                this.openSuggestions = false;
+                
+                // Update order
+                this.queueSave();
+            } catch (e) {
+                console.error('Failed to create task:', e);
+                alert(e.message || 'Failed to create task. Please try again.');
+            } finally {
+                this.loading = false;
+            }
+        },
+
         handleKeyDown(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const q = this.searchQuery.trim();
+                
+                if (this.openSuggestions && this.suggestions.length > 0) {
+                    // If suggestions are open, select highlighted one
+                    const max = this.suggestions.length;
+                    if (this.highlighted >= 0 && this.highlighted < max) {
+                        this.addTask(this.suggestions[this.highlighted]);
+                    }
+                } else if (q) {
+                    // If no suggestions but there's a query, create new task
+                    this.createAndAttachTask(q);
+                }
+                return;
+            }
+
             if (!this.openSuggestions) return;
 
             const max = this.suggestions.length;
@@ -239,11 +358,6 @@ export default function roomTasksEditor({
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 this.highlighted = (this.highlighted - 1 + max) % max;
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                if (this.highlighted >= 0 && this.highlighted < max) {
-                    this.addTask(this.suggestions[this.highlighted]);
-                }
             } else if (e.key === 'Escape') {
                 this.openSuggestions = false;
             }

@@ -328,4 +328,103 @@ class RoomController extends Controller
         return redirect()->route('rooms.tasks.index', $room)
             ->with('status', "Detached task: {$task->name}");
     }
+
+    /**
+     * POST /rooms/{room}/tasks/bulk
+     * Bulk create and attach tasks to a room
+     */
+    public function bulkStoreTask(Request $request, Room $room)
+    {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can bulk add tasks.');
+
+        $validated = $request->validate([
+            'tasks' => ['required', 'string'], // JSON string
+            'default_type' => ['required', Rule::in(['room', 'inventory'])],
+        ]);
+
+        $taskNames = json_decode($validated['tasks'], true);
+        if (!is_array($taskNames) || empty($taskNames)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['message' => 'Invalid tasks data'], 422);
+            }
+            return redirect()->back()->withErrors(['tasks' => 'Invalid tasks data']);
+        }
+
+        $created = 0;
+        $skipped = 0;
+        $defaultType = $validated['default_type'];
+        $nextOrder = (int)$room->tasks()->max('room_task.sort_order') + 1;
+
+        DB::beginTransaction();
+        try {
+            foreach ($taskNames as $taskName) {
+                $taskName = trim($taskName);
+                if (empty($taskName)) {
+                    $skipped++;
+                    continue;
+                }
+
+                // Find or create task by case-insensitive name
+                $task = Task::whereRaw('LOWER(name) = ?', [mb_strtolower($taskName)])->first();
+
+                $isNewTask = false;
+                if (!$task) {
+                    $task = Task::create([
+                        'name' => $taskName,
+                        'type' => $defaultType,
+                        'is_default' => false,
+                    ]);
+                    $isNewTask = true;
+                } else {
+                    // Update type if not set
+                    if (!$task->type) {
+                        $task->type = $defaultType;
+                        $task->save();
+                    }
+                }
+
+                // Attach to room if not already attached
+                if (!$room->tasks()->where('tasks.id', $task->id)->exists()) {
+                    $room->tasks()->attach($task->id, [
+                        'sort_order' => $nextOrder++,
+                        'instructions' => null,
+                        'visible_to_owner' => true,
+                        'visible_to_housekeeper' => true,
+                    ]);
+                    if ($isNewTask) {
+                        $created++;
+                    }
+                } else {
+                    $skipped++;
+                }
+            }
+
+            DB::commit();
+
+            $message = "Successfully created {$created} task(s)";
+            if ($skipped > 0) {
+                $message .= " ({$skipped} skipped - already exist)";
+            }
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $message,
+                    'created' => $created,
+                    'skipped' => $skipped,
+                ]);
+            }
+
+            return redirect()->route('rooms.tasks.index', $room)
+                ->with('status', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['message' => 'Failed to create tasks: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()
+                ->withErrors(['tasks' => 'Failed to create tasks. Please try again.']);
+        }
+    }
 }
