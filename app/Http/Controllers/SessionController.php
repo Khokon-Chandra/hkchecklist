@@ -8,6 +8,7 @@ use App\Models\CleaningSession;
 use App\Services\GpsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
 class SessionController extends Controller
@@ -24,7 +25,23 @@ class SessionController extends Controller
     }
 
 
-    public function show(CleaningSession $session)
+    /**
+     * Get session data as JSON for API requests
+     */
+    public function getData(CleaningSession $session)
+    {
+        $data = $this->prepareSessionData($session);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Prepare session data (shared between show and getData methods)
+     */
+    private function prepareSessionData(CleaningSession $session): array
     {
         // Order rooms & tasks by their pivot sort_order (no visual design change, just consistency)
         $rooms = $session->property->rooms()
@@ -194,11 +211,11 @@ class SessionController extends Controller
         // Location check will be done via JavaScript when they try to start, but we check date here
         $canEdit = true;
         $isViewOnly = false;
-        
+
         if (auth()->user()->hasRole('housekeeper') && !auth()->user()->hasAnyRole(['admin', 'owner'])) {
             $isCurrentDate = $session->scheduled_date->isToday();
             $isInProgressOrCompleted = in_array($session->status, ['in_progress', 'completed']);
-            
+
             // Can edit if: it's the current date AND (session is pending OR already in progress/completed)
             // OR if session is already in progress/completed (they can continue working)
             if (!$isCurrentDate && $session->status === 'pending') {
@@ -207,29 +224,232 @@ class SessionController extends Controller
             }
         }
 
-        return view('sessions.show', compact(
-            'session',
-            'rooms',
-            'stage',
-            'photoCounts',
-            'hasMinPhotos',
-            'roomTasksByRoom',
-            'inventoryTasksByRoom',
-            'firstIncompleteRoomIndex',
-            'firstIncompleteInventoryIndex',
-            'photosByRoom',
-            'preCleaningTasks',
-            'duringCleaningTasks',
-            'postCleaningTasks',
-            'preCleaningCount',
-            'duringCleaningCount',
-            'postCleaningCount',
-            'checkedPreCleaningCount',
-            'checkedDuringCleaningCount',
-            'checkedPostCleaningCount',
-            'canEdit',
-            'isViewOnly'
-        ));
+        return [
+            'session' => [
+                'id' => $session->id,
+                'status' => $session->status,
+                'scheduled_date' => $session->scheduled_date->toDateString(),
+                'started_at' => $session->started_at?->toIso8601String(),
+                'ended_at' => $session->ended_at?->toIso8601String(),
+                'gps_confirmed_at' => $session->gps_confirmed_at?->toIso8601String(),
+            ],
+            'property' => [
+                'id' => $session->property->id,
+                'name' => $session->property->name,
+            ],
+            'rooms' => $rooms->map(function ($room) use ($session, $roomTasksByRoom, $inventoryTasksByRoom) {
+                $roomTasks = $roomTasksByRoom[$room->id] ?? collect();
+                $inventoryTasks = $inventoryTasksByRoom[$room->id] ?? collect();
+
+                return [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'tasks' => $room->tasks->map(function ($task) use ($session, $room) {
+                        $item = $session->checklistItems->first(
+                            fn($ci) => (int) $ci->room_id === (int) $room->id && (int) $ci->task_id === (int) $task->id,
+                        );
+
+                        return [
+                            'id' => $task->id,
+                            'name' => $task->name,
+                            'type' => $task->type,
+                            'instructions' => $task->pivot->instructions ?? $task->instructions,
+                            'media' => $task->media->map(fn($m) => [
+                                'id' => $m->id,
+                                'type' => $m->type,
+                                'url' => $m->url,
+                                'thumbnail' => $m->thumbnail,
+                                'caption' => $m->caption,
+                            ])->values()->toArray(),
+                            'checklist_item' => $item ? [
+                                'id' => $item->id,
+                                'checked' => $item->checked,
+                                'note' => $item->note,
+                                'checked_at' => $item->checked_at?->toIso8601String(),
+                            ] : null,
+                        ];
+                    })->values()->toArray(),
+                    'room_tasks' => $roomTasks->pluck('id')->toArray(),
+                    'inventory_tasks' => $inventoryTasks->pluck('id')->toArray(),
+                ];
+            })->values()->toArray(),
+            'property_tasks' => [
+                'pre_cleaning' => $preCleaningTasks->map(function ($task) use ($session) {
+                    $item = $session->checklistItems->first(
+                        fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                    );
+
+                    return [
+                        'id' => $task->id,
+                        'name' => $task->name,
+                        'phase' => $task->phase,
+                        'instructions' => $task->pivot->instructions ?? $task->instructions,
+                        'media' => $task->media->map(fn($m) => [
+                            'id' => $m->id,
+                            'type' => $m->type,
+                            'url' => $m->url,
+                            'thumbnail' => $m->thumbnail,
+                            'caption' => $m->caption,
+                        ])->values()->toArray(),
+                        'checklist_item' => $item ? [
+                            'id' => $item->id,
+                            'checked' => $item->checked,
+                            'note' => $item->note,
+                            'checked_at' => $item->checked_at?->toIso8601String(),
+                        ] : null,
+                    ];
+                })->values()->toArray(),
+                'during_cleaning' => $duringCleaningTasks->map(function ($task) use ($session) {
+                    $item = $session->checklistItems->first(
+                        fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                    );
+
+                    return [
+                        'id' => $task->id,
+                        'name' => $task->name,
+                        'phase' => $task->phase,
+                        'instructions' => $task->pivot->instructions ?? $task->instructions,
+                        'media' => $task->media->map(fn($m) => [
+                            'id' => $m->id,
+                            'type' => $m->type,
+                            'url' => $m->url,
+                            'thumbnail' => $m->thumbnail,
+                            'caption' => $m->caption,
+                        ])->values()->toArray(),
+                        'checklist_item' => $item ? [
+                            'id' => $item->id,
+                            'checked' => $item->checked,
+                            'note' => $item->note,
+                            'checked_at' => $item->checked_at?->toIso8601String(),
+                        ] : null,
+                    ];
+                })->values()->toArray(),
+                'post_cleaning' => $postCleaningTasks->map(function ($task) use ($session) {
+                    $item = $session->checklistItems->first(
+                        fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
+                    );
+
+                    return [
+                        'id' => $task->id,
+                        'name' => $task->name,
+                        'phase' => $task->phase,
+                        'instructions' => $task->pivot->instructions ?? $task->instructions,
+                        'media' => $task->media->map(fn($m) => [
+                            'id' => $m->id,
+                            'type' => $m->type,
+                            'url' => $m->url,
+                            'thumbnail' => $m->thumbnail,
+                            'caption' => $m->caption,
+                        ])->values()->toArray(),
+                        'checklist_item' => $item ? [
+                            'id' => $item->id,
+                            'checked' => $item->checked,
+                            'note' => $item->note,
+                            'checked_at' => $item->checked_at?->toIso8601String(),
+                        ] : null,
+                    ];
+                })->values()->toArray(),
+            ],
+            'stage' => $stage,
+            'counts' => [
+                'pre_cleaning' => [
+                    'total' => $preCleaningCount,
+                    'checked' => $checkedPreCleaningCount,
+                ],
+                'during_cleaning' => [
+                    'total' => $duringCleaningCount,
+                    'checked' => $checkedDuringCleaningCount,
+                ],
+                'post_cleaning' => [
+                    'total' => $postCleaningCount,
+                    'checked' => $checkedPostCleaningCount,
+                ],
+                'room_tasks' => [
+                    'total' => $allRoomTasksCount,
+                    'checked' => $checkedRoomTasksCount,
+                ],
+                'inventory_tasks' => [
+                    'total' => $allInventoryTasksCount,
+                    'checked' => $checkedInventoryTasksCount,
+                ],
+            ],
+            'photo_counts' => $photoCounts->toArray(),
+            'photos_by_room' => $photosByRoom->map(function ($photos) {
+                return $photos->map(fn($photo) => [
+                    'id' => $photo->id,
+                    'url' => $photo->url, // Uses the accessor from RoomPhoto model
+                    'captured_at' => $photo->captured_at?->toIso8601String(),
+                ]);
+            })->toArray(),
+            'first_incomplete_room_index' => $firstIncompleteRoomIndex,
+            'first_incomplete_inventory_index' => $firstIncompleteInventoryIndex,
+            'can_edit' => $canEdit,
+            'is_view_only' => $isViewOnly,
+        ];
+    }
+
+    public function show(CleaningSession $session)
+    {
+        // Use the same data preparation logic
+        $data = $this->prepareSessionData($session);
+
+        // But convert back to Eloquent models for the view
+        // Order rooms & tasks by their pivot sort_order
+        $rooms = $session->property->rooms()
+            ->with([
+                'tasks' => fn($q) => $q->orderBy('room_task.sort_order')->orderBy('tasks.name'),
+                'tasks.media',
+            ])
+            ->orderBy('property_room.sort_order')
+            ->get();
+
+        // Eager-load checklist items
+        $session->load('checklistItems');
+
+        // Load property-level tasks
+        $property = $session->property;
+        $propertyTasks = $property->propertyTasks()
+            ->orderBy('property_tasks.sort_order')
+            ->get();
+
+        // Separate property-level tasks by phase
+        $preCleaningTasks = $propertyTasks->where('phase', 'pre_cleaning');
+        $duringCleaningTasks = $propertyTasks->where('phase', 'during_cleaning');
+        $postCleaningTasks = $propertyTasks->where('phase', 'post_cleaning');
+
+        // Separate tasks by type
+        $roomTasksByRoom = [];
+        $inventoryTasksByRoom = [];
+        foreach ($rooms as $room) {
+            $roomTasksByRoom[$room->id] = $room->tasks->where('type', 'room');
+            $inventoryTasksByRoom[$room->id] = $room->tasks->where('type', 'inventory');
+        }
+
+        $photosByRoom = $session->photos()->latest()->get()->groupBy('room_id');
+
+        return view('sessions.show', [
+            'session' => $session,
+            'rooms' => $rooms,
+            'stage' => $data['stage'],
+            'photoCounts' => $data['photo_counts'],
+            'hasMinPhotos' => $rooms->every(fn($room) => ($data['photo_counts'][$room->id] ?? 0) >= 8),
+            'roomTasksByRoom' => $roomTasksByRoom,
+            'inventoryTasksByRoom' => $inventoryTasksByRoom,
+            'firstIncompleteRoomIndex' => $data['first_incomplete_room_index'],
+            'firstIncompleteInventoryIndex' => $data['first_incomplete_inventory_index'],
+            'photosByRoom' => $photosByRoom,
+            'preCleaningTasks' => $preCleaningTasks,
+            'duringCleaningTasks' => $duringCleaningTasks,
+            'postCleaningTasks' => $postCleaningTasks,
+            'preCleaningCount' => $data['counts']['pre_cleaning']['total'],
+            'duringCleaningCount' => $data['counts']['during_cleaning']['total'],
+            'postCleaningCount' => $data['counts']['post_cleaning']['total'],
+            'checkedPreCleaningCount' => $data['counts']['pre_cleaning']['checked'],
+            'checkedDuringCleaningCount' => $data['counts']['during_cleaning']['checked'],
+            'checkedPostCleaningCount' => $data['counts']['post_cleaning']['checked'],
+            'canEdit' => $data['can_edit'],
+            'isViewOnly' => $data['is_view_only'],
+        ]);
     }
 
 

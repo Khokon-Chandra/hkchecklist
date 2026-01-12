@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
     // Sessions (housekeeper)
     Route::get('/sessions', [\App\Http\Controllers\SessionController::class, 'index'])->name('sessions.index');
     Route::get('/sessions/{session}', [\App\Http\Controllers\SessionController::class, 'show'])->name('sessions.show');
+    Route::get('/api/sessions/{session}/data', [\App\Http\Controllers\SessionController::class, 'getData'])->name('sessions.data');
     Route::post('/sessions/{session}/start', [\App\Http\Controllers\SessionController::class, 'start'])->name('sessions.start');
     Route::post('/sessions/{session}/complete', [\App\Http\Controllers\SessionController::class, 'complete'])->name('sessions.complete');
 
@@ -139,6 +140,7 @@ Route::middleware('auth')->group(function () {
         ->name('checklist.property-task.note');
 
     Route::post('/sessions/{session}/rooms/{room}/photos', [\App\Http\Controllers\PhotoController::class, 'store'])->name('photos.store');
+    Route::delete('/api/sessions/{session}/photos/{photo}', [\App\Http\Controllers\PhotoController::class, 'destroy'])->name('photos.destroy');
 
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
 });

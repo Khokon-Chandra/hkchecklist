@@ -35,6 +35,10 @@ import roomCreateForm from './room-create-form'
 import propertyTaskForm from './property-task-form'
 import propertyRoomForm from './property-room-form'
 import propertyPropertyTaskForm from './property-property-task-form'
+import checklist from './checklist'
+import checklistRenderer from './checklist-renderer'
+import photoUploader from './photo-uploader'
+import photoDeleteHandler from './photo-delete-handler'
 
 // ⛔️ DO NOT MODIFY — main app interaction (kept exactly as you sent)
 document.addEventListener('alpine:init', () => {
@@ -136,6 +140,18 @@ document.addEventListener('alpine:init', () => {
     // New: property property task form (create/edit)
     Alpine.data('propertyPropertyTaskForm', propertyPropertyTaskForm)
 
+    // Checklist AJAX handler
+    Alpine.data('checklist', checklist)
+
+    // Checklist renderer (dynamic rendering)
+    Alpine.data('checklistRenderer', checklistRenderer)
+
+    // Photo uploader component
+    Alpine.data('photoUploader', photoUploader)
+
+    // Photo delete handler component
+    Alpine.data('photoDeleteHandler', photoDeleteHandler)
+
     // Bulk task form (defined inline in blade, but register here for consistency)
     Alpine.data('bulkTaskForm', function(config) {
         return {
@@ -186,7 +202,7 @@ document.addEventListener('alpine:init', () => {
                 const value = taskName.trim();
                 // Capitalize the task name
                 const capitalizedValue = this.capitalizeText(value);
-                
+
                 // Check for duplicates (case-insensitive)
                 const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedValue.toLowerCase());
                 if (exists) {
@@ -262,7 +278,7 @@ document.addEventListener('alpine:init', () => {
                     if (response.ok) {
                         this.showMessage('saved', `Successfully created ${data.created || this.tasks.length} task(s)!`);
                         this.tasks = [];
-                        
+
                         // Reload page after a short delay
                         setTimeout(() => {
                             window.location.reload();
