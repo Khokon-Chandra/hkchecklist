@@ -19,7 +19,10 @@
         </div>
     </x-slot>
 
-    <div x-data="checklist()" x-init="init()" class="space-y-6">
+    @php
+        $dataUrl = route('sessions.data', ['session' => $session->id]);
+    @endphp
+    <div x-data="checklist({ dataUrl: @js($dataUrl) })" x-init="init()" class="space-y-6">
         {{-- Notification Toast --}}
         <div 
             x-show="success || error"

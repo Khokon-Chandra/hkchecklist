@@ -20,7 +20,12 @@
         </div>
     </x-slot>
 
-    <div x-data="checklist()" x-init="init()" data-session-id="{{ $session->id }}" class="space-y-6">
+    @php
+        $dataUrl = route('sessions.data', ['session' => $session->id]);
+        $photoDeleteUrl = route('photos.destroy', ['session' => $session->id, 'photo' => 0]);
+        $photoDeleteUrl = str_replace('/0', '/{photo}', $photoDeleteUrl);
+    @endphp
+    <div x-data="checklist({ dataUrl: @js($dataUrl) })" x-init="init()" data-session-id="{{ $session->id }}" class="space-y-6">
         {{-- Notification Toast --}}
         <div
             x-show="success || error"
@@ -158,7 +163,12 @@
             </div>
 
             {{-- Checklist Container - Rendered by JavaScript --}}
-            <div x-data="checklistRenderer()" x-init="init()" class="space-y-6">
+            @php
+                $dataUrl = route('sessions.data', ['session' => $session->id]);
+                $photoDeleteUrl = route('photos.destroy', ['session' => $session->id, 'photo' => 0]);
+                $photoDeleteUrl = str_replace('/0', '/{photo}', $photoDeleteUrl);
+            @endphp
+            <div x-data="checklistRenderer({ dataUrl: @js($dataUrl), photoDeleteUrl: @js($photoDeleteUrl) })" x-init="init()" class="space-y-6">
                 {{-- Loading State --}}
                 <div x-show="loading" class="text-center py-12">
                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

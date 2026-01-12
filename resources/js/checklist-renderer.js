@@ -3,13 +3,15 @@
  * Reduces Blade code by handling all rendering in JavaScript
  */
 
-export default function checklistRenderer() {
+export default function checklistRenderer(config = {}) {
     return {
         sessionId: null,
         sessionData: null,
         loading: false,
         error: null,
         renderedContent: '',
+        dataUrl: config.dataUrl || null,
+        photoDeleteUrl: config.photoDeleteUrl || null,
 
         init() {
             // Get session ID from data attribute or URL
@@ -25,6 +27,11 @@ export default function checklistRenderer() {
             // Get CSRF token
             this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+            // Build data URL if not provided (fallback for backward compatibility)
+            if (!this.dataUrl) {
+                this.dataUrl = `/api/sessions/${this.sessionId}/data`;
+            }
+
             // Load initial data
             this.loadSessionData();
         },
@@ -34,7 +41,7 @@ export default function checklistRenderer() {
             this.error = null;
 
             try {
-                const response = await window.api.get(`/api/sessions/${this.sessionId}/data`);
+                const response = await window.api.get(this.dataUrl);
 
                 if (response.success && response.data) {
                     this.sessionData = response.data;
@@ -318,7 +325,6 @@ export default function checklistRenderer() {
                                           data-checklist-photo-form
                                           data-room-id="${room.id}"
                                           @submit.prevent.stop="handleSubmit($event)">
-                                        <input type="hidden" name="_token" value="${this.csrfToken}" />
 
                                         <div class="relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 sm:p-6 mb-4
                                                    border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50
@@ -419,9 +425,10 @@ export default function checklistRenderer() {
                                         ${photos.map(photo => {
                                             const photoUrl = photo.url || '';
                                             const timeStr = photo.captured_at ? new Date(photo.captured_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+                                            const deleteUrlConfig = this.photoDeleteUrl ? `, { deleteUrl: '${this.photoDeleteUrl}' }` : '';
                                             return `
                                                 <div class="relative group"
-                                                     x-data="photoDeleteHandler(${photo.id}, '${this.sessionId}')"
+                                                     x-data="photoDeleteHandler(${photo.id}, '${this.sessionId}'${deleteUrlConfig})"
                                                      data-photo-id="${photo.id}">
                                                     <button type="button" @click="fullscreen = true" class="w-full">
                                                         <img src="${photoUrl}"

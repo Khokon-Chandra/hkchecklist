@@ -18,7 +18,7 @@ export default function photoUploader(roomId) {
         handleDrop(event) {
             event.preventDefault();
             this.hover = false;
-            
+
             const files = Array.from(event.dataTransfer.files);
             this.addFiles(files);
         },
@@ -79,7 +79,7 @@ export default function photoUploader(roomId) {
         async handleSubmit(event) {
             event.preventDefault();
             event.stopPropagation(); // Prevent event from bubbling to other handlers
-            
+
             if (this.previews.length === 0) {
                 return;
             }
@@ -91,13 +91,7 @@ export default function photoUploader(roomId) {
 
             const form = event.currentTarget;
             const formData = new FormData();
-            
-            // Add CSRF token
-            const csrfToken = form.querySelector('input[name="_token"]')?.value;
-            if (csrfToken) {
-                formData.append('_token', csrfToken);
-            }
-            
+
             // Only add files from previews array (not from file input to avoid duplicates)
             this.previews.forEach(preview => {
                 formData.append('photos[]', preview.file);
@@ -126,16 +120,16 @@ export default function photoUploader(roomId) {
                         }
                     });
                     this.previews = [];
-                    
+
                     // Clear file input
                     this.$refs.fileInput.value = '';
-                    
+
                     // Refresh session data to show new photos
                     const renderer = document.querySelector('[x-data*="checklistRenderer"]')?._x_dataStack?.[0];
                     if (renderer) {
                         await renderer.refresh();
                     }
-                    
+
                     // Show success message
                     const checklistHandler = window.checklistHandler;
                     if (checklistHandler) {

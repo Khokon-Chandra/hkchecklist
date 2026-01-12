@@ -3,13 +3,14 @@
  * Handles all checklist interactions without page reloads
  */
 
-export default function checklist() {
+export default function checklist(config = {}) {
     return {
         // State
         loading: false,
         error: null,
         success: null,
         renderer: null,
+        dataUrl: config.dataUrl || null,
 
         init() {
             // Store reference for external access
@@ -402,7 +403,11 @@ export default function checklist() {
          */
         async refreshAndRerender(sessionId) {
             try {
-                const response = await window.api.get(`/api/sessions/${sessionId}/data`);
+                // Use provided route URL or fallback to hardcoded path
+                const url = this.dataUrl
+                    ? this.dataUrl.replace('{session}', sessionId)
+                    : `/api/sessions/${sessionId}/data`;
+                const response = await window.api.get(url);
 
                 if (response.success && response.data) {
                     // Trigger re-render if renderer exists
