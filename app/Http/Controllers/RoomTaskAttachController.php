@@ -37,7 +37,8 @@ class RoomTaskAttachController extends Controller
             return back()->with('warn', 'No tasks selected.');
         }
 
-        DB::transaction(function () use ($room, $taskIds) {
+        $createdTasks = [];
+        DB::transaction(function () use ($room, $taskIds, &$createdTasks) {
             $already = $room->tasks()->pluck('tasks.id')->all();
             $toAttach = array_values(array_diff($taskIds, $already));
             if (empty($toAttach)) return;
@@ -53,7 +54,18 @@ class RoomTaskAttachController extends Controller
                 ];
             }
             $room->tasks()->syncWithoutDetaching($payload);
+            
+            // Load created tasks for JSON response
+            $createdTasks = Task::whereIn('id', $toAttach)->get(['id', 'name', 'type', 'is_default']);
         });
+
+        // Return JSON for AJAX requests, otherwise redirect
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => 'Tasks attached to room.',
+                'tasks' => $createdTasks,
+            ]);
+        }
 
         return back()->with('ok', 'Tasks attached to room.');
     }

@@ -6,6 +6,9 @@
             </h2>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <x-button variant="secondary" href="{{ route('rooms.index') }}" class="w-full sm:w-auto whitespace-nowrap">← Rooms</x-button>
+                <x-button variant="secondary" @click="$dispatch('open-preview-panel', 'bulk-add-tasks-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">
+                    + Bulk Add Tasks
+                </x-button>
                 <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-task-{{ $room->id }}')" class="w-full sm:w-auto whitespace-nowrap">
                     + Add Task
                 </x-button>
@@ -93,6 +96,21 @@
         @include('rooms.tasks.__task_form', [
             'room' => $room,
             'suggestUrl' => $suggestUrl,
+        ])
+    </x-preview-panel>
+
+    {{-- Bulk Add Tasks Sidebar Panel --}}
+    <x-preview-panel
+        name="bulk-add-tasks-{{ $room->id }}"
+        :overlay="true"
+        side="right"
+        initialWidth="32rem"
+        minWidth="24rem"
+        title="Bulk Add Tasks"
+        :subtitle="'Quickly add multiple tasks to ' . $room->name">
+
+        @include('rooms.tasks.__bulk_task_form', [
+            'room' => $room,
         ])
     </x-preview-panel>
 </x-app-layout>

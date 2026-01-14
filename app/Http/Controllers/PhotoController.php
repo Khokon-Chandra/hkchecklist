@@ -18,7 +18,23 @@ class PhotoController extends Controller
 
         $room   = $session->property->rooms()->findOrFail($roomId);
         $saved  = [];
-        foreach ($request->file('photos', []) as $file) {
+        
+        // Get files from request - ensure we only process unique files
+        $files = $request->file('photos', []);
+        
+        // Remove duplicates by comparing file content hash
+        $processedHashes = [];
+        foreach ($files as $file) {
+            // Create a hash of the file content to detect duplicates
+            $fileHash = md5_file($file->getRealPath());
+            
+            // Skip if we've already processed this file
+            if (in_array($fileHash, $processedHashes)) {
+                continue;
+            }
+            
+            $processedHashes[] = $fileHash;
+            
             $filename = $file->store('room_photos', 'public');
             $photo    = $session->photos()->create([
                 'room_id'     => $room->id,
@@ -34,8 +50,9 @@ class PhotoController extends Controller
         }
 
         // For AJAX calls, return JSON. The front end can add these to the gallery without reloading.
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
             return response()->json([
+                'success' => true,
                 'message' => count($saved) . ' photos uploaded.',
                 'photos'  => $saved,
             ]);
@@ -43,5 +60,26 @@ class PhotoController extends Controller
 
         // Fallback to standard redirect if not an AJAX request
         return back()->with('ok', count($saved) . ' photos uploaded.');
+    }
+
+    public function destroy(CleaningSession $session, RoomPhoto $photo)
+    {
+        // Verify the photo belongs to this session
+        if ($photo->session_id !== $session->id) {
+            return response()->json(['success' => false, 'message' => 'Photo not found'], 404);
+        }
+
+        // Delete file from storage
+        if (Storage::disk('public')->exists($photo->path)) {
+            Storage::disk('public')->delete($photo->path);
+        }
+
+        // Delete from database
+        $photo->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Photo deleted successfully',
+        ]);
     }
 }

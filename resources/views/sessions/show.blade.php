@@ -1,958 +1,190 @@
 @php
     use Illuminate\Support\Str;
+    use App\Models\ChecklistItem;
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl">
-            Checklist — {{ $session->property->name }} ({{ $session->scheduled_date->toDateString() }})
-        </h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-900 dark:text-gray-100">
+                    {{ $session->property->name }}
+                </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {{ $session->scheduled_date->format('F j, Y') }}
+                </p>
+            </div>
+            @if($session->status !== 'pending')
+                <x-status-badge :status="$session->status" />
+            @endif
+        </div>
     </x-slot>
 
-    {{-- View-only notice for housekeepers --}}
-    @if (isset($isViewOnly) && $isViewOnly)
-        <x-card class="p-4 rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 mb-4">
-            <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                </svg>
-                <div>
-                    <p class="font-medium text-amber-800 dark:text-amber-200">View Only Mode</p>
-                    <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                        This assignment is scheduled for {{ $session->scheduled_date->format('F j, Y') }}.
-                        You can view the checklist, but you can only start working on the scheduled date when you're at the property location.
-                    </p>
+    @php
+        $dataUrl = route('sessions.data', ['session' => $session->id]);
+        $photoDeleteUrl = route('photos.destroy', ['session' => $session->id, 'photo' => 0]);
+        $photoDeleteUrl = str_replace('/0', '/{photo}', $photoDeleteUrl);
+    @endphp
+    <div x-data="checklist({ dataUrl: @js($dataUrl) })" x-init="init()" data-session-id="{{ $session->id }}" class="space-y-6">
+        {{-- Notification Toast --}}
+        <div
+            x-show="success || error"
+            x-cloak
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            class="fixed top-4 right-4 z-50 max-w-sm w-full"
+        >
+            <div
+                x-show="success"
+                class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 shadow-lg"
+            >
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-sm font-medium text-green-800 dark:text-green-200" x-text="success"></p>
                 </div>
             </div>
-        </x-card>
-    @endif
-
-    {{-- PENDING: Start gate --}}
-    @if ($session->status === 'pending')
-        <x-card class="p-6 rounded border dark:border-gray-700 bg-white dark:bg-gray-800">
-            @if (isset($isViewOnly) && $isViewOnly)
-                <p class="mb-3 text-gray-700 dark:text-gray-300">
-                    This assignment is scheduled for {{ $session->scheduled_date->format('F j, Y') }}.
-                    You can start working on the scheduled date when you're at the property location.
-                </p>
-                <div class="flex items-center gap-2">
-                    <x-button disabled>Start Session</x-button>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                        Available on {{ $session->scheduled_date->format('M j, Y') }} at property location
-                    </span>
+            <div
+                x-show="error"
+                class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-lg"
+            >
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-sm font-medium text-red-800 dark:text-red-200" x-text="error"></p>
                 </div>
-            @else
-                <p class="mb-3 text-gray-700 dark:text-gray-300">
-                    You can start now. Please ensure you're at the property location. GPS will be used to verify your location.
-                </p>
+            </div>
+        </div>
 
-                <form method="post" action="{{ route('sessions.start', $session) }}" id="gps-start"
-                    class="flex flex-col sm:flex-row sm:items-center gap-2">
-                    @csrf
-                    <x-form.input type="hidden" name="latitude" id="lat" />
-                    <x-form.input type="hidden" name="longitude" id="lng" />
+        {{-- View-only notice for housekeepers --}}
+        @if (isset($isViewOnly) && $isViewOnly)
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    <div>
+                        <p class="font-medium text-amber-800 dark:text-amber-200">View Only Mode</p>
+                        <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                            This assignment is scheduled for {{ $session->scheduled_date->format('F j, Y') }}.
+                            You can view the checklist, but you can only start working on the scheduled date when you're at the property location.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- PENDING: Start gate --}}
+        @if ($session->status === 'pending')
+            <x-card class="p-8">
+                <div class="max-w-2xl mx-auto text-center">
+                    @if (isset($isViewOnly) && $isViewOnly)
+                        <div class="mb-6">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Session Not Available Yet</h3>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                This assignment is scheduled for {{ $session->scheduled_date->format('F j, Y') }}.
+                                You can start working on the scheduled date when you're at the property location.
+                            </p>
+                        </div>
+                        <x-button disabled size="lg">Start Session</x-button>
+                    @else
+                        <div class="mb-6">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Ready to Start</h3>
+                            <p class="text-gray-600 dark:text-gray-400 mb-4">
+                                Please ensure you're at the property location. GPS will be used to verify your location.
+                            </p>
+                        </div>
+
+                        <form method="post" action="{{ route('sessions.start', $session) }}" id="gps-start">
+                            @csrf
+                            <x-form.input type="hidden" name="latitude" id="lat" />
+                            <x-form.input type="hidden" name="longitude" id="lng" />
+                            <x-button id="start-btn" size="lg" class="w-full sm:w-auto">Start Session</x-button>
+                            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400" id="location-status">
+                                Checking location...
+                            </p>
+                        </form>
+
+                        @error('gps')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    @endif
+                </div>
+            </x-card>
+
+            {{-- GPS capture and location verification --}}
+            @if (!isset($isViewOnly) || !$isViewOnly)
+                @include('sessions.partials.gps-script', [
+                    'propertyLat' => $session->property->latitude,
+                    'propertyLng' => $session->property->longitude,
+                    'propertyRadius' => $session->property->geo_radius_m ?? 100
+                ])
+            @endif
+        @else
+            {{-- PROGRESS HEADER --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <x-status-badge :status="$session->status" />
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                Started: {{ optional($session->started_at)->format('M j, Y g:i A') ?? '—' }}
+                            </p>
+                            @if ($session->gps_confirmed_at)
+                                <span class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    GPS Confirmed
+                                </span>
+                            @endif
+                        </div>
+                    </div>
                     <div class="flex items-center gap-2">
-                        <x-button id="start-btn">Start Session</x-button>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">
-                            Location will be verified automatically.
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Current Stage:</span>
+                        <span class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                            {{ ucwords(str_replace('_', ' ', $stage)) }}
                         </span>
                     </div>
-                </form>
-
-                @error('gps')
-                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="location-status">
-                    Checking location...
-                </p>
-            @endif
-        </x-card>
-
-        {{-- GPS capture and location verification --}}
-        @if (!isset($isViewOnly) || !$isViewOnly)
-            <script>
-                const propertyLat = {{ $session->property->latitude ?? 'null' }};
-                const propertyLng = {{ $session->property->longitude ?? 'null' }};
-                const propertyRadius = {{ $session->property->geo_radius_m ?? 100 }};
-                const startForm = document.getElementById('gps-start');
-                const startBtn = document.getElementById('start-btn');
-                const locationStatus = document.getElementById('location-status');
-                let userLat = null;
-                let userLng = null;
-
-                function checkLocation() {
-                    if (!navigator.geolocation) {
-                        locationStatus.textContent = 'Location services not available. You can still start the session.';
-                        return;
-                    }
-
-                    navigator.geolocation.getCurrentPosition(
-                        function(position) {
-                            userLat = position.coords.latitude;
-                            userLng = position.coords.longitude;
-
-                            document.getElementById('lat').value = userLat;
-                            document.getElementById('lng').value = userLng;
-
-                            if (propertyLat !== null && propertyLng !== null) {
-                                // Calculate distance (Haversine formula)
-                                const R = 6371000; // Earth radius in meters
-                                const dLat = (userLat - propertyLat) * Math.PI / 180;
-                                const dLng = (userLng - propertyLng) * Math.PI / 180;
-                                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                                    Math.cos(propertyLat * Math.PI / 180) * Math.cos(userLat * Math.PI / 180) *
-                                    Math.sin(dLng/2) * Math.sin(dLng/2);
-                                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                                const distance = R * c;
-
-                                if (distance <= propertyRadius) {
-                                    locationStatus.innerHTML = '<span class="text-green-600 dark:text-green-400">✓ Location verified. You\'re at the property.</span>';
-                                    startBtn.disabled = false;
-                                } else {
-                                    locationStatus.innerHTML = '<span class="text-amber-600 dark:text-amber-400">⚠ You\'re ' + Math.round(distance) + 'm away from the property. Please move closer to start.</span>';
-                                    startBtn.disabled = true;
-                                }
-                            } else {
-                                locationStatus.textContent = 'Location captured. Property location not set, so verification skipped.';
-                                startBtn.disabled = false;
-                            }
-                        },
-                        function(error) {
-                            locationStatus.textContent = 'Could not get location. You can still start the session, but location won\'t be verified.';
-                            startBtn.disabled = false;
-                        },
-                        {
-                            enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 0
-                        }
-                    );
-                }
-
-                // Check location on page load
-                checkLocation();
-
-                // Re-check location when form is submitted
-                if (startForm) {
-                    startForm.addEventListener('submit', function(e) {
-                        if (propertyLat !== null && propertyLng !== null && (userLat === null || userLng === null)) {
-                            e.preventDefault();
-                            locationStatus.textContent = 'Please wait while we verify your location...';
-                            checkLocation();
-                            setTimeout(() => {
-                                if (userLat !== null && userLng !== null) {
-                                    startForm.submit();
-                                }
-                            }, 2000);
-                        }
-                    });
-                }
-            </script>
-        @endif
-    @else
-        {{-- PROGRESS HEADER --}}
-        <x-card
-            class="border dark:border-gray-700 mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-gray-800">
-            <div class="flex items-center gap-3 mb-2 sm:mb-0">
-                <x-status-badge :status="$session->status" />
-                <span class="text-sm text-gray-600 dark:text-gray-300">
-                    Started: {{ optional($session->started_at)->format('Y-m-d H:i') ?? '—' }}
-                </span>
-                @if ($session->gps_confirmed_at)
-                    <span
-                        class="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        GPS Confirmed
-                    </span>
-                @else
-                    <span
-                        class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                        GPS Not Captured
-                    </span>
-                @endif
+                </div>
             </div>
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-600 dark:text-gray-300">Stage:</span>
-                <span class="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-900">
-                    {{ strtoupper($stage) }}
-                </span>
-            </div>
-        </x-card>
 
-        {{-- PRE-CLEANING STAGE (Property-level tasks) --}}
-        @if ($stage === 'pre_cleaning')
-            <x-card>
-                <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Pre-Cleaning Tasks</h3>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ $checkedPreCleaningCount }} / {{ $preCleaningCount }} completed
-                    </span>
+            {{-- Checklist Container - Rendered by JavaScript --}}
+            @php
+                $dataUrl = route('sessions.data', ['session' => $session->id]);
+                $photoDeleteUrl = route('photos.destroy', ['session' => $session->id, 'photo' => 0]);
+                $photoDeleteUrl = str_replace('/0', '/{photo}', $photoDeleteUrl);
+            @endphp
+            <div x-data="checklistRenderer({ dataUrl: @js($dataUrl), photoDeleteUrl: @js($photoDeleteUrl) })" x-init="init()" class="space-y-6">
+                {{-- Loading State --}}
+                <div x-show="loading" class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Loading checklist...</p>
                 </div>
 
-                <ul class="divide-y dark:divide-gray-700">
-                    @forelse ($preCleaningTasks as $task)
-                        @php
-                            $item = $session->checklistItems->first(
-                                fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
-                            );
-                            $completed = (bool) ($item && $item->checked);
-                            $propDisabled = isset($isViewOnly) && $isViewOnly;
-                            $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
-                                ($propDisabled ? 'opacity-50 cursor-not-allowed ' : '') .
-                                ($completed
-                                    ? 'bg-green-600 border-green-600 text-white'
-                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
-                            $toggleHtml = sprintf(
-                                '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
-                                e(route('checklist.property-task.toggle', [$session, $task])),
-                                csrf_field(),
-                                e($btnClasses),
-                                $propDisabled ? 'disabled' : '',
-                                $completed ? '✓' : '',
-                            );
-                            $noteHtml = sprintf(
-                                '<form method="post" action="%s" class="flex items-center gap-2">%s' .
-                                    '<input name="note" value="%s" placeholder="Note" ' .
-                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
-                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s" %s>Save</button>' .
-                                    '</form>',
-                                e(route('checklist.property-task.note', [$session, $task])),
-                                csrf_field(),
-                                e($item?->note ?? ''),
-                                $propDisabled ? 'readonly' : '',
-                                $propDisabled ? 'opacity-50 cursor-not-allowed' : '',
-                                $propDisabled ? 'disabled' : '',
-                            );
-                        @endphp
-
-                        @include('sessions.partials.task-detail-panel', [
-                            'task' => $task,
-                            'completed' => $completed,
-                            'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
-                            'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
-                        ])
-                    @empty
-                        <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            No pre-cleaning tasks defined.
-                        </li>
-                    @endforelse
-                </ul>
-            </x-card>
-        @endif
-
-        {{-- ROOMS STAGE --}}
-        @if ($stage === 'rooms')
-            <div class="space-y-6">
-                @foreach ($rooms as $index => $room)
-                    @php
-                        $tasks = $roomTasksByRoom[$room->id] ?? collect();
-                        $disabled = (isset($isViewOnly) && $isViewOnly) || ($firstIncompleteRoomIndex !== null && $index > $firstIncompleteRoomIndex);
-                    @endphp
-
-                    <x-card>
-                        <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ $room->name }}</h3>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $tasks->count() }} task{{ $tasks->count() === 1 ? '' : 's' }}
-                            </span>
-                        </div>
-
-                        <ul class="divide-y dark:divide-gray-700">
-                            @forelse ($tasks as $task)
-                                @php
-                                    // Match checklist item specifically for (session, room, task)
-                                    $item = $session->checklistItems->first(
-                                        fn($ci) => (int) $ci->room_id === (int) $room->id &&
-                                            (int) $ci->task_id === (int) $task->id,
-                                    );
-                                    $completed = (bool) ($item && $item->checked);
-
-                                    // Toggle button styles
-                                    $btnClasses =
-                                        'h-5 w-5 rounded border flex items-center justify-center transition-colors';
-                                    if ($disabled) {
-                                        $btnClasses .= ' opacity-50 cursor-not-allowed';
-                                    }
-                                    $btnClasses .= $completed
-                                        ? ' bg-green-600 border-green-600 text-white'
-                                        : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
-
-                                    // Build the small toggle form HTML
-                                    $toggleHtml = sprintf(
-                                        '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
-                                        e(route('checklist.toggle', [$session, $room, $task])),
-                                        csrf_field(),
-                                        e($btnClasses),
-                                        $disabled ? 'disabled' : '',
-                                        $completed ? '✓' : '',
-                                    );
-
-                                    // Build the small note form HTML
-                                    $noteHtml = sprintf(
-                                        '<form method="post" action="%s" class="flex items-center gap-2">%s' .
-                                            '<input name="note" value="%s" placeholder="Note" ' .
-                                            'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
-                                            '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s">Save</button>' .
-                                            '</form>',
-                                        e(route('checklist.note', [$session, $room, $task])),
-                                        csrf_field(),
-                                        e($item?->note ?? ''),
-                                        $disabled ? 'readonly' : '',
-                                        $disabled ? 'opacity-50 cursor-not-allowed' : '',
-                                    );
-                                @endphp
-
-                                @include('sessions.partials.task-detail-panel', [
-                                    'task' => $task,
-                                    'completed' => $completed,
-                                    'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
-                                    'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
-                                ])
-                            @empty
-                                <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                    No tasks defined for this room.
-                                </li>
-                            @endforelse
-                        </ul>
-                    </x-card>
-                @endforeach
-            </div>
-        @endif
-
-        {{-- DURING-CLEANING STAGE (Property-level tasks) --}}
-        @if ($stage === 'during_cleaning')
-            <x-card>
-                <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">During-Cleaning Tasks</h3>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ $checkedDuringCleaningCount }} / {{ $duringCleaningCount }} completed
-                    </span>
+                {{-- Error State --}}
+                <div x-show="error" x-cloak class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <p class="text-sm font-medium text-red-800 dark:text-red-200" x-text="error"></p>
                 </div>
 
-                <ul class="divide-y dark:divide-gray-700">
-                    @forelse ($duringCleaningTasks as $task)
-                        @php
-                            $item = $session->checklistItems->first(
-                                fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
-                            );
-                            $completed = (bool) ($item && $item->checked);
-                            $propDisabled = isset($isViewOnly) && $isViewOnly;
-                            $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
-                                ($propDisabled ? 'opacity-50 cursor-not-allowed ' : '') .
-                                ($completed
-                                    ? 'bg-green-600 border-green-600 text-white'
-                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
-                            $toggleHtml = sprintf(
-                                '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
-                                e(route('checklist.property-task.toggle', [$session, $task])),
-                                csrf_field(),
-                                e($btnClasses),
-                                $propDisabled ? 'disabled' : '',
-                                $completed ? '✓' : '',
-                            );
-                            $noteHtml = sprintf(
-                                '<form method="post" action="%s" class="flex items-center gap-2">%s' .
-                                    '<input name="note" value="%s" placeholder="Note" ' .
-                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
-                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s" %s>Save</button>' .
-                                    '</form>',
-                                e(route('checklist.property-task.note', [$session, $task])),
-                                csrf_field(),
-                                e($item?->note ?? ''),
-                                $propDisabled ? 'readonly' : '',
-                                $propDisabled ? 'opacity-50 cursor-not-allowed' : '',
-                                $propDisabled ? 'disabled' : '',
-                            );
-                        @endphp
-
-                        @include('sessions.partials.task-detail-panel', [
-                            'task' => $task,
-                            'completed' => $completed,
-                            'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
-                            'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
-                        ])
-                    @empty
-                        <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            No during-cleaning tasks defined.
-                        </li>
-                    @endforelse
-                </ul>
-            </x-card>
-        @endif
-
-        {{-- POST-CLEANING STAGE (Property-level tasks) --}}
-        @if ($stage === 'post_cleaning')
-            <x-card>
-                <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Post-Cleaning Tasks</h3>
-                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ $checkedPostCleaningCount }} / {{ $postCleaningCount }} completed
-                    </span>
+                {{-- Checklist Content - Dynamically Rendered --}}
+                <div id="checklist-container" x-show="!loading && !error" x-html="renderedContent">
+                    {{-- Content will be rendered here by JavaScript --}}
                 </div>
-
-                <ul class="divide-y dark:divide-gray-700">
-                    @forelse ($postCleaningTasks as $task)
-                        @php
-                            $item = $session->checklistItems->first(
-                                fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
-                            );
-                            $completed = (bool) ($item && $item->checked);
-                            $propDisabled = isset($isViewOnly) && $isViewOnly;
-                            $btnClasses = 'h-5 w-5 rounded border flex items-center justify-center transition-colors ' .
-                                ($propDisabled ? 'opacity-50 cursor-not-allowed ' : '') .
-                                ($completed
-                                    ? 'bg-green-600 border-green-600 text-white'
-                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300');
-                            $toggleHtml = sprintf(
-                                '<form method="post" action="%s">%s<button class="%s" %s aria-label="Toggle complete">%s</button></form>',
-                                e(route('checklist.property-task.toggle', [$session, $task])),
-                                csrf_field(),
-                                e($btnClasses),
-                                $propDisabled ? 'disabled' : '',
-                                $completed ? '✓' : '',
-                            );
-                            $noteHtml = sprintf(
-                                '<form method="post" action="%s" class="flex items-center gap-2">%s' .
-                                    '<input name="note" value="%s" placeholder="Note" ' .
-                                    'class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" %s />' .
-                                    '<button class="inline-flex items-center px-3 py-2 rounded bg-gray-100 dark:bg-gray-900 text-sm %s" %s>Save</button>' .
-                                    '</form>',
-                                e(route('checklist.property-task.note', [$session, $task])),
-                                csrf_field(),
-                                e($item?->note ?? ''),
-                                $propDisabled ? 'readonly' : '',
-                                $propDisabled ? 'opacity-50 cursor-not-allowed' : '',
-                                $propDisabled ? 'disabled' : '',
-                            );
-                        @endphp
-
-                        @include('sessions.partials.task-detail-panel', [
-                            'task' => $task,
-                            'completed' => $completed,
-                            'toggleButton' => new \Illuminate\Support\HtmlString($toggleHtml),
-                            'noteForm' => new \Illuminate\Support\HtmlString($noteHtml),
-                        ])
-                    @empty
-                        <li class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            No post-cleaning tasks defined.
-                        </li>
-                    @endforelse
-                </ul>
-            </x-card>
-        @endif
-
-        {{-- INVENTORY STAGE --}}
-        @if ($stage === 'inventory')
-            <div class="space-y-6">
-                @foreach ($rooms as $index => $room)
-                    @php
-                        $tasks = $inventoryTasksByRoom[$room->id] ?? collect();
-                        $disabled = (isset($isViewOnly) && $isViewOnly) || ($firstIncompleteInventoryIndex !== null && $index > $firstIncompleteInventoryIndex);
-                    @endphp
-
-                    @if ($tasks->count())
-                        <x-card>
-                            <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-                                <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ $room->name }} —
-                                    Inventory</h3>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $tasks->count() }} item{{ $tasks->count() === 1 ? '' : 's' }}
-                                </span>
-                            </div>
-                            <ul class="divide-y dark:divide-gray-700">
-                                @foreach ($tasks as $task)
-                                    @php
-                                        $item = $session->checklistItems->first(function ($ci) use ($room, $task) {
-                                            return (int) $ci->room_id === (int) $room->id &&
-                                                (int) $ci->task_id === (int) $task->id;
-                                        });
-
-                                        $invBtnClasses = 'px-2 py-1 rounded border text-sm transition-colors';
-                                        if ($disabled) {
-                                            $invBtnClasses .= ' opacity-50 cursor-not-allowed';
-                                        }
-                                        $invBtnClasses .=
-                                            $item && $item->checked
-                                                ? ' bg-green-600 text-white border-green-600'
-                                                : ' bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600';
-                                    @endphp
-                                    {{-- INVENTORY: task row with details --}}
-                                    <li x-data="{ open: false }" class="px-4 py-3 space-y-2">
-                                        <div class="flex items-start sm:items-center justify-between gap-3">
-                                            <div class="flex items-start sm:items-center gap-3">
-                                                {{-- Mark button --}}
-                                                <form method="post"
-                                                    action="{{ route('checklist.toggle', [$session, $room, $task]) }}"
-                                                    class="flex-shrink-0">
-                                                    @csrf
-                                                    <button class="{{ $invBtnClasses }}"
-                                                        {{ $disabled ? 'disabled' : '' }}>
-                                                        {{ $item?->checked ? '✓' : 'Mark' }}
-                                                    </button>
-                                                </form>
-
-                                                {{-- Title + instruction peek --}}
-                                                <div class="min-w-0">
-                                                    <div class="flex items-center gap-2">
-                                                        <span
-                                                            class="block text-sm font-medium truncate
-                        {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
-                                                            {{ $task->name }}
-                                                        </span>
-
-                                                        <button type="button"
-                                                            class="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded border
-                               border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700
-                               text-gray-700 dark:text-gray-300"
-                                                            @click="open = !open" :aria-expanded="open.toString()"
-                                                            aria-controls="inv-{{ $task->id }}-details">
-                                                            <svg class="w-3.5 h-3.5" viewBox="0 0 20 20"
-                                                                fill="currentColor" aria-hidden="true">
-                                                                <path fill-rule="evenodd"
-                                                                    d="M10 3a1 1 0 01.894.553l6 12A1 1 0 0116 17H4a1 1 0 01-.894-1.447l6-12A1 1 0 0110 3zm0 4a1 1 0 00-1 1v2a1 1 0 002 0V8a1 1 0 00-1-1zm0 6a1 1 0 100 2 1 1 0 000-2z"
-                                                                    clip-rule="evenodd" />
-                                                            </svg>
-                                                            <span x-show="!open">Details</span>
-                                                            <span x-show="open">Hide</span>
-                                                        </button>
-                                                    </div>
-
-                                                    @php $peek = \Illuminate\Support\Str::of($task->instructions)->stripTags(); @endphp
-                                                    @if ($peek->isNotEmpty())
-                                                        <p
-                                                            class="mt-0.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                                                            {{ $peek }}
-                                                        </p>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div x-show="open" x-collapse x-cloak id="inv-{{ $task->id }}-details"
-                                            class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3">
-
-                                            @if ($task->instructions)
-                                                <div class="prose dark:prose-invert prose-sm max-w-none">
-                                                    {!! nl2br(e($task->instructions)) !!}
-                                                </div>
-                                            @else
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">No detailed
-                                                    instructions provided.</p>
-                                            @endif
-
-                                            @if (method_exists($task, 'media') && $task->media->count())
-                                                <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                                                    @foreach ($task->media as $m)
-                                                        <div
-                                                            class="relative rounded overflow-hidden border dark:border-gray-800">
-                                                            @if ($m->type === 'image')
-                                                                <img src="{{ $m->thumbnail ?? $m->url }}"
-                                                                    alt="{{ $m->caption }}"
-                                                                    class="w-full h-28 object-cover" loading="lazy">
-                                                            @else
-                                                                <video src="{{ $m->url }}"
-                                                                    class="w-full h-28 object-cover" muted
-                                                                    controls></video>
-                                                            @endif
-                                                            @if ($m->caption)
-                                                                <span
-                                                                    class="absolute bottom-1 left-1 text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-white">
-                                                                    {{ \Illuminate\Support\Str::limit($m->caption, 24) }}
-                                                                </span>
-                                                            @endif
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </x-card>
-                    @endif
-                @endforeach
             </div>
         @endif
-
-        {{-- PHOTOS STAGE --}}
-        @if ($stage === 'photos')
-            <div class="space-y-6">
-                @foreach ($rooms as $room)
-                    @php $roomPhotos = $photosByRoom[$room->id] ?? collect(); @endphp
-                    <x-card x-data="{ open: false, activeSrc: null }">
-                        <div class="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ $room->name }} — Photos
-                            </h3>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $photoCounts[$room->id] ?? 0 }}/8 photos
-                            </span>
-                        </div>
-                        <div class="p-4">
-                            <form method="post" enctype="multipart/form-data"
-                                action="{{ route('photos.store', [$session, $room->id]) }}"
-                                class="flex items-center gap-2 mb-4">
-                                @csrf
-                                <x-form.input type="file" name="photos[]" multiple accept="image/*"
-                                    class="rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
-                                <x-button>Upload</x-button>
-                            </form>
-
-                            @if ($roomPhotos->count())
-                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                    @foreach ($roomPhotos as $photo)
-                                        @php
-                                            $src = Str::startsWith($photo->path, ['http://', 'https://'])
-                                                ? $photo->path
-                                                : asset('storage/' . $photo->path);
-                                        @endphp
-                                        <button type="button" class="group relative"
-                                            @click="open = true; activeSrc='{{ $src }}'">
-                                            <img src="{{ $src }}" alt="Photo"
-                                                class="aspect-square w-full object-cover rounded-xl border" />
-                                            <span
-                                                class="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-white">
-                                                {{ optional($photo->captured_at)->format('H:i') }}
-                                            </span>
-                                        </button>
-                                    @endforeach
-                                </div>
-                            @else
-                                <p class="text-sm text-gray-500 dark:text-gray-400">No photos yet.</p>
-                            @endif
-
-                            <div x-show="open" x-cloak
-                                class="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"
-                                @keydown.escape.window="open = false" @click.self="open = false">
-                                <img :src="activeSrc" class="max-h-[85vh] rounded-xl shadow-xl" alt="Preview">
-                                <button type="button" class="absolute top-4 right-4 text-white text-2xl"
-                                    @click="open=false">×</button>
-                            </div>
-                        </div>
-                    </x-card>
-                @endforeach
-
-                <x-card>
-                    <form method="post" action="{{ route('sessions.complete', $session) }}" class="text-center">
-                        @csrf
-                        @if(isset($isViewOnly) && $isViewOnly)
-                            <x-button disabled>Submit Checklist</x-button>
-                        @else
-                            <x-button>Submit Checklist</x-button>
-                        @endif
-                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            Requires ≥8 photos per room. Timestamp overlay is automatic on upload.
-                        </p>
-                    </form>
-                </x-card>
-            </div>
-        @endif
-
-        {{-- SUMMARY STAGE --}}
-        @if ($stage === 'summary')
-            <div class="space-y-6">
-                {{-- Property-Level Tasks Summary --}}
-                @if ($preCleaningTasks->count() > 0 || $duringCleaningTasks->count() > 0 || $postCleaningTasks->count() > 0)
-                    <x-card>
-                        <div class="px-4 py-3 border-b dark:border-gray-700">
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Property-Level Tasks</h3>
-                        </div>
-                        <div class="p-4 space-y-4">
-                            {{-- Pre-Cleaning Tasks --}}
-                            @if ($preCleaningTasks->count() > 0)
-                                <div>
-                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Pre-Cleaning Tasks</h4>
-                                    <ul class="divide-y dark:divide-gray-700">
-                                        @foreach ($preCleaningTasks as $task)
-                                            @php
-                                                $item = $session->checklistItems->first(
-                                                    fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
-                                                );
-                                                $propDisabled = isset($isViewOnly) && $isViewOnly;
-                                                $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
-                                                if ($propDisabled) {
-                                                    $summaryBtn .= ' opacity-50 cursor-not-allowed';
-                                                }
-                                                $summaryBtn .= $item && $item->checked
-                                                    ? ' bg-green-600 border-green-600 text-white'
-                                                    : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
-                                            @endphp
-                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
-                                                <div class="flex items-start sm:items-center gap-3">
-                                                    <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
-                                                        @csrf
-                                                        <button class="{{ $summaryBtn }}" {{ $propDisabled ? 'disabled' : '' }}>
-                                                            @if ($item?->checked) ✓ @endif
-                                                        </button>
-                                                    </form>
-                                                    <span class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
-                                                        {{ $task->name }}
-                                                    </span>
-                                                </div>
-                                                <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
-                                                    @csrf
-                                                    <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200"
-                                                        {{ $propDisabled ? 'readonly' : '' }} />
-                                                    @if($propDisabled)
-                                                        <x-button variant="secondary" disabled>Save</x-button>
-                                                    @else
-                                                        <x-button variant="secondary">Save</x-button>
-                                                    @endif
-                                                </form>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            {{-- During-Cleaning Tasks --}}
-                            @if ($duringCleaningTasks->count() > 0)
-                                <div>
-                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">During-Cleaning Tasks</h4>
-                                    <ul class="divide-y dark:divide-gray-700">
-                                        @foreach ($duringCleaningTasks as $task)
-                                            @php
-                                                $item = $session->checklistItems->first(
-                                                    fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
-                                                );
-                                                $propDisabled = isset($isViewOnly) && $isViewOnly;
-                                                $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
-                                                if ($propDisabled) {
-                                                    $summaryBtn .= ' opacity-50 cursor-not-allowed';
-                                                }
-                                                $summaryBtn .= $item && $item->checked
-                                                    ? ' bg-green-600 border-green-600 text-white'
-                                                    : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
-                                            @endphp
-                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
-                                                <div class="flex items-start sm:items-center gap-3">
-                                                    <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
-                                                        @csrf
-                                                        <button class="{{ $summaryBtn }}" {{ $propDisabled ? 'disabled' : '' }}>
-                                                            @if ($item?->checked) ✓ @endif
-                                                        </button>
-                                                    </form>
-                                                    <span class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
-                                                        {{ $task->name }}
-                                                    </span>
-                                                </div>
-                                                <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
-                                                    @csrf
-                                                    <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200"
-                                                        {{ $propDisabled ? 'readonly' : '' }} />
-                                                    @if($propDisabled)
-                                                        <x-button variant="secondary" disabled>Save</x-button>
-                                                    @else
-                                                        <x-button variant="secondary">Save</x-button>
-                                                    @endif
-                                                </form>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            {{-- Post-Cleaning Tasks --}}
-                            @if ($postCleaningTasks->count() > 0)
-                                <div>
-                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Post-Cleaning Tasks</h4>
-                                    <ul class="divide-y dark:divide-gray-700">
-                                        @foreach ($postCleaningTasks as $task)
-                                            @php
-                                                $item = $session->checklistItems->first(
-                                                    fn($ci) => $ci->room_id === null && (int) $ci->task_id === (int) $task->id,
-                                                );
-                                                $propDisabled = isset($isViewOnly) && $isViewOnly;
-                                                $summaryBtn = 'h-5 w-5 rounded border flex items-center justify-center transition-colors';
-                                                if ($propDisabled) {
-                                                    $summaryBtn .= ' opacity-50 cursor-not-allowed';
-                                                }
-                                                $summaryBtn .= $item && $item->checked
-                                                    ? ' bg-green-600 border-green-600 text-white'
-                                                    : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
-                                            @endphp
-                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
-                                                <div class="flex items-start sm:items-center gap-3">
-                                                    <form method="post" action="{{ route('checklist.property-task.toggle', [$session, $task]) }}" class="flex-shrink-0">
-                                                        @csrf
-                                                        <button class="{{ $summaryBtn }}" {{ $propDisabled ? 'disabled' : '' }}>
-                                                            @if ($item?->checked) ✓ @endif
-                                                        </button>
-                                                    </form>
-                                                    <span class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
-                                                        {{ $task->name }}
-                                                    </span>
-                                                </div>
-                                                <form method="post" action="{{ route('checklist.property-task.note', [$session, $task]) }}" class="flex items-center gap-2">
-                                                    @csrf
-                                                    <x-form.input name="note" value="{{ $item?->note }}" placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200"
-                                                        {{ $propDisabled ? 'readonly' : '' }} />
-                                                    @if($propDisabled)
-                                                        <x-button variant="secondary" disabled>Save</x-button>
-                                                    @else
-                                                        <x-button variant="secondary">Save</x-button>
-                                                    @endif
-                                                </form>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-                        </div>
-                    </x-card>
-                @endif
-
-                {{-- Room Tasks Summary --}}
-                @foreach ($rooms as $room)
-                    @php
-                        $roomTasks = $roomTasksByRoom[$room->id] ?? collect();
-                        $inventoryTasks = $inventoryTasksByRoom[$room->id] ?? collect();
-                    @endphp
-                    <x-card>
-                        <div class="px-4 py-3 border-b dark:border-gray-700">
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ $room->name }}</h3>
-                        </div>
-
-                        <div class="p-4 space-y-4">
-                            {{-- Room tasks --}}
-                            @if ($roomTasks->count())
-                                <div>
-                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Room Tasks
-                                    </h4>
-                                    <ul class="divide-y dark:divide-gray-700">
-                                        @foreach ($roomTasks as $task)
-                                            @php
-                                                $item = $session->checklistItems->first(function ($ci) use (
-                                                    $room,
-                                                    $task,
-                                                ) {
-                                                    return (int) $ci->room_id === (int) $room->id &&
-                                                        (int) $ci->task_id === (int) $task->id;
-                                                });
-
-                                                $summaryRoomBtn =
-                                                    'h-5 w-5 rounded border flex items-center justify-center transition-colors';
-                                                $summaryRoomBtn .=
-                                                    $item && $item->checked
-                                                        ? ' bg-green-600 border-green-600 text-white'
-                                                        : ' bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-300';
-                                            @endphp
-                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
-                                                <div class="flex items-start sm:items-center gap-3">
-                                                    <form method="post"
-                                                        action="{{ route('checklist.toggle', [$session, $room, $task]) }}"
-                                                        class="flex-shrink-0">
-                                                        @csrf
-                                                        <button class="{{ $summaryRoomBtn }}">
-                                                            @if ($item?->checked)
-                                                                ✓
-                                                            @endif
-                                                        </button>
-                                                    </form>
-                                                    <span
-                                                        class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
-                                                        {{ $task->name }}
-                                                    </span>
-                                                </div>
-                                                <form method="post"
-                                                    action="{{ route('checklist.note', [$session, $room, $task]) }}"
-                                                    class="flex items-center gap-2">
-                                                    @csrf
-                                                    <x-form.input name="note" value="{{ $item?->note }}"
-                                                        placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
-                                                    <x-button variant="secondary">Save</x-button>
-                                                </form>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            {{-- Inventory tasks --}}
-                            @if ($inventoryTasks->count())
-                                <div>
-                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Inventory
-                                        Tasks</h4>
-                                    <ul class="divide-y dark:divide-gray-700">
-                                        @foreach ($inventoryTasks as $task)
-                                            @php
-                                                $item = $session->checklistItems->first(function ($ci) use (
-                                                    $room,
-                                                    $task,
-                                                ) {
-                                                    return (int) $ci->room_id === (int) $room->id &&
-                                                        (int) $ci->task_id === (int) $task->id;
-                                                });
-
-                                                $summaryInvBtn = 'px-2 py-1 rounded border text-sm transition-colors';
-                                                $summaryInvBtn .=
-                                                    $item && $item->checked
-                                                        ? ' bg-green-600 text-white border-green-600'
-                                                        : ' bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600';
-                                            @endphp
-                                            <li class="py-2 flex items-start sm:items-center justify-between gap-3">
-                                                <div class="flex items-start sm:items-center gap-3">
-                                                    <form method="post"
-                                                        action="{{ route('checklist.toggle', [$session, $room, $task]) }}"
-                                                        class="flex-shrink-0">
-                                                        @csrf
-                                                        <button class="{{ $summaryInvBtn }}">
-                                                            {{ $item?->checked ? '✓' : 'Mark' }}
-                                                        </button>
-                                                    </form>
-                                                    <span
-                                                        class="flex-1 text-sm {{ $item?->checked ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200' }}">
-                                                        {{ $task->name }}
-                                                    </span>
-                                                </div>
-                                                <form method="post"
-                                                    action="{{ route('checklist.note', [$session, $room, $task]) }}"
-                                                    class="flex items-center gap-2">
-                                                    @csrf
-                                                    <x-form.input name="note" value="{{ $item?->note }}"
-                                                        placeholder="Note"
-                                                        class="w-full md:w-auto rounded border-gray-300 dark:border-gray-600 text-sm dark:bg-gray-700 dark:text-gray-200" />
-                                                    <x-button variant="secondary">Save</x-button>
-                                                </form>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-                        </div>
-                    </x-card>
-                @endforeach
-
-                {{-- Photos summary --}}
-                <x-card>
-                    <div class="px-4 py-3 border-b dark:border-gray-700">
-                        <h3 class="font-semibold text-gray-900 dark:text-gray-100">Photos Summary</h3>
-                    </div>
-                    <div class="p-4 space-y-4">
-                        @foreach ($rooms as $room)
-                            <div>
-                                <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">
-                                    {{ $room->name }}: {{ $photoCounts[$room->id] ?? 0 }}/8 photos
-                                </h4>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                    @foreach ($photosByRoom[$room->id] ?? collect() as $photo)
-                                        @php
-                                            $src = Str::startsWith($photo->path, ['http://', 'https://'])
-                                                ? $photo->path
-                                                : asset('storage/' . $photo->path);
-                                        @endphp
-                                        <img src="{{ $src }}" alt="Photo"
-                                            class="aspect-square w-full object-cover rounded-xl border" />
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </x-card>
-            </div>
-        @endif
-    @endif
+    </div>
 </x-app-layout>

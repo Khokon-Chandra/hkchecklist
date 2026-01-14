@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChecklistNoteRequest;
+use App\Http\Requests\ChecklistToggleRequest;
 use App\Models\ChecklistItem;
 use App\Models\CleaningSession;
 use App\Models\Room;
 use App\Models\Task;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ChecklistController extends Controller
@@ -14,7 +17,7 @@ class ChecklistController extends Controller
      * Toggle the checked state of a checklist item for a specific (session, room, task).
      * Requires: the room belongs to the session's property AND the task is attached to that room.
      */
-    public function toggle(CleaningSession $session, Room $room, Task $task)
+    public function toggle(ChecklistToggleRequest $request, CleaningSession $session, Room $room, Task $task)
     {
         $this->assertRoomOnSessionProperty($room, $session);
         $this->assertTaskAttachedToRoom($task, $room);
@@ -40,13 +43,26 @@ class ChecklistController extends Controller
             'user_id'    => auth()->id(),
         ]);
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'checked' => $nowChecked,
+                'item'    => [
+                    'id'         => $item->id,
+                    'checked'    => $item->checked,
+                    'checked_at' => $item->checked_at?->toIso8601String(),
+                ],
+            ]);
+        }
+
         return back();
     }
 
     /**
      * Toggle property-level task (no room).
      */
-    public function togglePropertyTask(CleaningSession $session, Task $task)
+    public function togglePropertyTask(ChecklistToggleRequest $request, CleaningSession $session, Task $task)
     {
         // Verify task is a property-level task for this session's property
         abort_unless(
@@ -76,18 +92,27 @@ class ChecklistController extends Controller
             'user_id'    => auth()->id(),
         ]);
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'checked' => $nowChecked,
+                'item'    => [
+                    'id'         => $item->id,
+                    'checked'    => $item->checked,
+                    'checked_at' => $item->checked_at?->toIso8601String(),
+                ],
+            ]);
+        }
+
         return back();
     }
 
     /**
      * Add/update a note for a specific (session, room, task).
      */
-    public function note(Request $request, CleaningSession $session, Room $room, Task $task)
+    public function note(ChecklistNoteRequest $request, CleaningSession $session, Room $room, Task $task)
     {
-        $data = $request->validate([
-            'note' => ['nullable', 'string', 'max:2000'],
-        ]);
-
         $this->assertRoomOnSessionProperty($room, $session);
         $this->assertTaskAttachedToRoom($task, $room);
 
@@ -104,9 +129,21 @@ class ChecklistController extends Controller
         );
 
         $item->update([
-            'note'    => $data['note'] ?? null,
+            'note'    => $request->validated('note'),
             'user_id' => auth()->id(),
         ]);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Note saved successfully',
+                'item'    => [
+                    'id'   => $item->id,
+                    'note' => $item->note,
+                ],
+            ]);
+        }
 
         return back();
     }
@@ -114,12 +151,8 @@ class ChecklistController extends Controller
     /**
      * Add/update a note for property-level task (no room).
      */
-    public function notePropertyTask(Request $request, CleaningSession $session, Task $task)
+    public function notePropertyTask(ChecklistNoteRequest $request, CleaningSession $session, Task $task)
     {
-        $data = $request->validate([
-            'note' => ['nullable', 'string', 'max:2000'],
-        ]);
-
         // Verify task is a property-level task for this session's property
         abort_unless(
             $session->property->propertyTasks()->where('tasks.id', $task->id)->exists(),
@@ -140,9 +173,21 @@ class ChecklistController extends Controller
         );
 
         $item->update([
-            'note'    => $data['note'] ?? null,
+            'note'    => $request->validated('note'),
             'user_id' => auth()->id(),
         ]);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Note saved successfully',
+                'item'    => [
+                    'id'   => $item->id,
+                    'note' => $item->note,
+                ],
+            ]);
+        }
 
         return back();
     }
