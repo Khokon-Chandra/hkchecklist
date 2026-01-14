@@ -40,6 +40,8 @@ class RoomController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can create rooms.');
+        
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
@@ -62,8 +64,10 @@ class RoomController extends Controller
         return redirect()->route('rooms.index')->with('ok', 'Room added.');
     }
 
-    public function edit(Room $room)
+    public function edit(Request $request, Room $room)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can edit rooms.');
+        
         // Load current tasks for this room with their sort_order from pivot
         $room->load(['tasks' => function ($query) {
             $query->orderBy('room_task.sort_order');
@@ -88,6 +92,8 @@ class RoomController extends Controller
 
     public function update(Request $request, Room $room)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can update rooms.');
+        
         $validated = $request->validate([
             'name'       => ['required', 'string', 'max:255'],
             'is_default' => ['nullable', 'boolean'],
@@ -104,8 +110,10 @@ class RoomController extends Controller
     }
 
 
-    public function destroy(Room $room)
+    public function destroy(Request $request, Room $room)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can delete rooms.');
+        
         $room->delete();
 
         return redirect()->route('rooms.index')->with('ok', 'Room deleted.');
@@ -114,6 +122,8 @@ class RoomController extends Controller
 
     public function bulkAttachTasks(Request $request)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can bulk attach tasks.');
+        
         $validated = $request->validate([
             'room_ids'   => ['required', 'array', 'min:1'],
             'room_ids.*' => ['integer', 'exists:rooms,id'],
@@ -160,6 +170,8 @@ class RoomController extends Controller
      */
     public function storeTask(Request $request, Room $room)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can add tasks to rooms.');
+        
         $validated = $request->validate([
             'name'         => ['required', 'string', 'max:160'],
             'type'         => ['required', Rule::in(['room', 'inventory'])],
@@ -232,6 +244,7 @@ class RoomController extends Controller
      */
     public function editTask(Room $room, Task $task)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can edit tasks.');
         abort_unless($room->tasks()->where('tasks.id', $task->id)->exists(), 404, 'Task not found in the specified room.');
 
         $task->load(['media' => fn($q) => $q->orderBy('sort_order')]);
@@ -249,6 +262,7 @@ class RoomController extends Controller
      */
     public function updateTask(Request $request, Room $room, Task $task)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can update tasks.');
         abort_unless($room->tasks()->where('tasks.id', $task->id)->exists(), 404, 'Task not found in the specified room.');
 
         $data = $request->validate([
@@ -308,6 +322,8 @@ class RoomController extends Controller
      */
     public function detachTask(Room $room, Task $task)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can detach tasks.');
+        
         $room->tasks()->detach($task->id);
         return redirect()->route('rooms.tasks.index', $room)
             ->with('status', "Detached task: {$task->name}");

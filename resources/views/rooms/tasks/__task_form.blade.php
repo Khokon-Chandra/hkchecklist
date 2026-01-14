@@ -1,38 +1,20 @@
 @props([
-    'property',
     'room',
-    'task' => null, // null for create, Task model for edit
-    'pivot' => null, // Pivot data for edit mode
     'suggestUrl',
-    'mode' => 'create', // 'create' or 'edit'
 ])
 
 @php
-    $isEdit = $mode === 'edit' && $task;
-    $storeUrl = $isEdit
-        ? route('properties.tasks.update', [$property, $room, $task])
-        : route('properties.tasks.store', [$property, $room]);
-    $panelName = $isEdit
-        ? "edit-task-{$property->id}-{$room->id}-{$task->id}"
-        : "add-task-{$property->id}-{$room->id}";
+    $panelName = "add-task-{$room->id}";
+    $storeUrl = route('rooms.tasks.store', $room);
 @endphp
 
-<div class="p-0 sm:p-2 md:p-4 lg:p-6 space-y-4 sm:space-y-6 max-w-full" x-data="propertyTaskForm({
+<div class="p-0 sm:p-2 md:p-4 lg:p-6 space-y-4 sm:space-y-6 max-w-full" x-data="taskCreateForm({
     suggestUrl: @js($suggestUrl),
     storeUrl: @js($storeUrl),
     csrf: @js(csrf_token()),
-    propertyId: @js($property->id),
     roomId: @js($room->id),
-    taskId: @js($task?->id),
-    mode: @js($mode),
     panelName: @js($panelName),
-    initialData: @js($isEdit ? [
-        'name' => $task->name ?? '',
-        'type' => $task->type ?? 'room',
-        'instructions' => $pivot->instructions ?? '',
-        'visible_to_owner' => (bool) ($pivot->visible_to_owner ?? true),
-        'visible_to_housekeeper' => (bool) ($pivot->visible_to_housekeeper ?? true),
-    ] : [
+    initialData: @js([
         'name' => '',
         'type' => 'room',
         'instructions' => '',
@@ -41,12 +23,8 @@
     ])
 })">
     <form @submit.prevent="submitForm" enctype="multipart/form-data" class="space-y-6">
-        @if($isEdit)
-            @method('PUT')
-        @endif
-
         {{-- Task Name with Autocomplete --}}
-        <div x-data="taskAutocomplete({ suggestUrl: @js($suggestUrl) })" x-init="@if($isEdit) q = @js($task->name) @endif">
+        <div x-data="taskAutocomplete({ suggestUrl: @js($suggestUrl) })">
             <label for="task-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Task Name <span class="text-rose-500">*</span>
             </label>
@@ -188,6 +166,7 @@
                     <x-form.checkbox
                         name="visible_to_owner"
                         value="1"
+                        checked
                         x-model="formData.visible_to_owner"
                     />
                     <div class="flex-1">
@@ -200,6 +179,7 @@
                     <x-form.checkbox
                         name="visible_to_housekeeper"
                         value="1"
+                        checked
                         x-model="formData.visible_to_housekeeper"
                     />
                     <div class="flex-1">
@@ -210,77 +190,85 @@
             </div>
         </div>
 
-        {{-- Media Upload (only for create mode) --}}
-        @if(!$isEdit)
-            <div x-data="{ files: [], previews: [] }" x-init="
-                $watch('files', f => {
-                    previews = [...f].map(file => ({
-                        url: URL.createObjectURL(file),
-                        type: file.type.startsWith('video') ? 'video':'image',
-                        name: file.name
-                    }))
-                })
-            ">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Instructional Media <span class="text-xs text-gray-500">(optional)</span>
+        {{-- Media Upload --}}
+        <div x-data="{ files: [], previews: [] }"
+             x-init="
+            $watch('files', f => {
+                previews = [...f].map(file => ({
+                    url: URL.createObjectURL(file),
+                    type: file.type.startsWith('video') ? 'video':'image',
+                    name: file.name
+                }));
+                // Scroll to preview grid when files are added so user can see the preview
+                if (f.length > 0) {
+                    setTimeout(() => {
+                        const previewGrid = $refs.previewGrid;
+                        if (previewGrid) {
+                            previewGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 150);
+                }
+            })
+        ">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Instructional Media <span class="text-xs text-gray-500">(optional)</span>
+            </label>
+            <div class="mt-2">
+                <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed
+                              border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer
+                              hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg class="w-10 h-10 mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span class="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Images or videos up to 20MB each</p>
+                    </div>
+                    <input
+                        type="file"
+                        name="media[]"
+                        multiple
+                        accept="image/*,video/*"
+                        class="hidden"
+                        x-on:change="files = Array.from($event.target.files)"
+                    />
                 </label>
-                <div class="mt-2">
-                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed
-                                  border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer
-                                  hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg class="w-10 h-10 mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
-                            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                <span class="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Images or videos up to 20MB each</p>
+            </div>
+
+            {{-- Media Previews --}}
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3" x-show="previews.length" x-cloak x-ref="previewGrid">
+                <template x-for="(p, i) in previews" :key="i">
+                    <div class="relative group rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <template x-if="p.type==='image'">
+                            <img :src="p.url" class="w-full h-32 object-cover" />
+                        </template>
+                        <template x-if="p.type==='video'">
+                            <video :src="p.url" class="w-full h-32 object-cover" muted></video>
+                        </template>
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button
+                                type="button"
+                                @click="files = files.filter((_, idx) => idx !== i); previews = previews.filter((_, idx) => idx !== i)"
+                                class="text-white hover:text-rose-300"
+                            >
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
                         <input
-                            type="file"
-                            name="media[]"
-                            multiple
-                            accept="image/*,video/*"
-                            class="hidden"
-                            x-on:change="files = Array.from($event.target.files)"
+                            type="text"
+                            name="captions[]"
+                            placeholder="Caption (optional)"
+                            class="w-full max-w-full border-t border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 text-xs
+                                   dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
-                    </label>
-                </div>
-
-                {{-- Media Previews --}}
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3" x-show="previews.length" x-cloak>
-                    <template x-for="(p, i) in previews" :key="i">
-                        <div class="relative group rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <template x-if="p.type==='image'">
-                                <img :src="p.url" class="w-full h-32 object-cover" />
-                            </template>
-                            <template x-if="p.type==='video'">
-                                <video :src="p.url" class="w-full h-32 object-cover" muted></video>
-                            </template>
-                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <button
-                                    type="button"
-                                    @click="files = files.filter((_, idx) => idx !== i); previews = previews.filter((_, idx) => idx !== i)"
-                                    class="text-white hover:text-rose-300"
-                                >
-                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <input
-                                type="text"
-                                name="captions[]"
-                                placeholder="Caption (optional)"
-                                class="w-full max-w-full border-t border-gray-200 dark:border-gray-700 px-2 sm:px-3 py-2 text-xs
-                                       dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            />
-                        </div>
-                    </template>
-                </div>
+                    </div>
+                </template>
             </div>
-        @endif
+        </div>
 
         {{-- Error Message --}}
         <div x-show="error" x-cloak class="p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
@@ -314,9 +302,8 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span x-text="submitting ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create Task')"></span>
+                <span x-text="submitting ? 'Adding...' : 'Add Task'"></span>
             </button>
         </div>
     </form>
 </div>
-

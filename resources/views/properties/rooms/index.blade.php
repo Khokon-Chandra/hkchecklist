@@ -1,16 +1,16 @@
 {{-- resources/views/rooms/index.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-3">
-            <h2 class="font-semibold text-xl">Rooms — {{ $property->name }}</h2>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <h2 class="text-lg sm:text-xl font-semibold break-words min-w-0 flex-1">Rooms — {{ $property->name }}</h2>
 
-            <div class="flex items-center gap-2">
-                <x-button variant="secondary" href="{{ route('properties.index') }}">← Back to Properties</x-button>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <x-button variant="secondary" href="{{ route('properties.index') }}" class="w-full sm:w-auto whitespace-nowrap">← Back to Properties</x-button>
                 @role('admin|owner')
-                    <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}">
+                    <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}" class="w-full sm:w-auto whitespace-nowrap">
                         Property Tasks
                     </x-button>
-                    <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room-{{ $property->id }}')">
+                    <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-room-{{ $property->id }}')" class="w-full sm:w-auto whitespace-nowrap">
                         + Add Room
                     </x-button>
                 @endrole
@@ -23,8 +23,8 @@
     @endphp
 
     <div x-data="roomsList({ orderUrl: @js($orderUrl), csrf: @js(csrf_token()) })" class="space-y-4">
-        <div class="mb-2 flex items-center justify-between gap-3">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+        <div class="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Drag the <span
                     class="inline-flex items-center px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800">⋮⋮</span> handle
                 to reorder rooms. This order is saved per property.
@@ -66,7 +66,6 @@
                             <th class="px-4 py-2 text-left">Name</th>
                             <th class="px-4 py-2 text-center">Default?</th>
                             <th class="px-4 py-2 text-center">Tasks</th>
-                            <th class="px-4 py-2 text-center">Created</th>
                             <th class="px-4 py-2 w-48 text-right">Action</th>
                         </tr>
                     </thead>
@@ -102,26 +101,17 @@
                                 <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
                                     {{ $r->tasks_count }}
                                 </td>
-                                <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
-                                    {{ $r->created_at->diffForHumans() }}
-                                </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    @role('admin|owner')
-                                        <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                            @click="$dispatch('open-preview-panel', 'edit-room-{{ $property->id }}-{{ $r->id }}')">
-                                            Edit
-                                        </button>
-                                        <span class="mx-2 text-gray-400">·</span>
-                                    @endrole
-                                    <a class="text-blue-600 hover:underline dark:text-blue-400"
-                                        href="{{ route('properties.tasks.index', ['property' => $property->id, 'room' => $r->id]) }}">
-                                        Tasks
-                                    </a>
+                                    @include('properties.rooms.__room_action', [
+                                        'property' => $property,
+                                        'room' => $r,
+                                    ])
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400" colspan="6">
+                                <td class="px-4 py-10 text-center text-gray-500 dark:text-gray-400"
+                                    @if(auth()->user()->hasAnyRole(['admin', 'owner'])) colspan="5" @else colspan="4" @endif>
                                     No rooms yet — add your first one.
                                 </td>
                             </tr>
@@ -171,6 +161,22 @@
                     'room' => $r,
                     'suggestUrl' => $suggestUrl,
                     'mode' => 'edit',
+                ])
+            </x-preview-panel>
+
+            {{-- Bulk Add Tasks Preview Panel for each room --}}
+            <x-preview-panel
+                name="bulk-add-tasks-{{ $property->id }}-{{ $r->id }}"
+                :overlay="true"
+                side="right"
+                initialWidth="32rem"
+                minWidth="24rem"
+                title="Bulk Add Tasks"
+                :subtitle="'Quickly add multiple tasks to ' . $r->name . ' in ' . $property->name">
+
+                @include('properties.tasks.__bulk_task_form', [
+                    'property' => $property,
+                    'room' => $r,
                 ])
             </x-preview-panel>
         @endforeach

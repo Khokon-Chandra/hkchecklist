@@ -14,6 +14,8 @@ class RoomTaskOrderController extends Controller
 {
     public function update(Request $request, Property $property, Room $room)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can reorder tasks.');
+        
         $data = $request->validate([
             'order' => ['required', 'array'],
             'order.*' => ['integer', 'exists:tasks,id'],
@@ -32,6 +34,8 @@ class RoomTaskOrderController extends Controller
      */
     public function updateForRoom(Request $request, Room $room)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can reorder tasks.');
+        
         $data = $request->validate([
             'order' => ['required', 'array'],
             'order.*' => ['integer', 'exists:tasks,id'],

@@ -5,31 +5,9 @@
 ])
 
 @php
-    use App\Models\Setting;
-
-    // Get theme color
-    $themeColor = Setting::get('theme_color', '#842eb8');
-    $buttonPrimaryColor = Setting::get('button_primary_color');
-    $primaryColor = $buttonPrimaryColor ?: $themeColor;
-
-    // Helper function to convert hex to rgba with opacity
-    if (!function_exists('hexToRgba')) {
-        function hexToRgba($hex, $opacity = 1) {
-            $hex = str_replace('#', '', $hex);
-            $r = hexdec(substr($hex, 0, 2));
-            $g = hexdec(substr($hex, 2, 2));
-            $b = hexdec(substr($hex, 4, 2));
-            return "rgba({$r}, {$g}, {$b}, {$opacity})";
-        }
-    }
-
-    // Low density hover background
-    $hoverBg = hexToRgba($primaryColor, 0.1);
-    $hoverBgDark = hexToRgba($primaryColor, 0.2);
-
     $base = 'flex w-full items-center gap-2 px-3 py-2 text-sm
              rounded outline-none transition-colors';
-    $inlineStyles = "--dropdown-hover-bg: {$hoverBg}; --dropdown-hover-bg-dark: {$hoverBgDark}; --dropdown-hover-text: {$primaryColor}; --dropdown-text-light: rgb(55, 65, 81); --dropdown-text-dark: rgb(229, 231, 235);";
+    $inlineStyles = "--dropdown-hover-bg: color-mix(in srgb, var(--button-primary-color) 10%, transparent); --dropdown-hover-bg-dark: color-mix(in srgb, var(--button-primary-color) 20%, transparent); --dropdown-hover-text: var(--button-primary-color); --dropdown-text-light: rgb(55, 65, 81); --dropdown-text-dark: rgb(229, 231, 235);";
 @endphp
 
 @if($as === 'button')

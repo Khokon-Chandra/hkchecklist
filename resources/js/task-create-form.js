@@ -1,20 +1,33 @@
 // resources/js/task-create-form.js
 
-export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId }) {
+export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId, panelName, initialData }) {
+    const defaultFormData = {
+        name: '',
+        type: 'room',
+        instructions: '',
+        visible_to_owner: true,
+        visible_to_housekeeper: true,
+    };
+    
     return {
         suggestUrl,
         storeUrl,
         csrf,
         roomId,
+        panelName: panelName || null,
+        initialData: initialData || defaultFormData,
         submitting: false,
         error: null,
         success: null,
-        formData: {
-            name: '',
-            type: 'room',
-            instructions: '',
-            visible_to_owner: true,
-            visible_to_housekeeper: true,
+        formData: initialData ? { ...initialData } : { ...defaultFormData },
+
+        // Capitalize text to title case (e.g., "Open Windows For Airing")
+        capitalizeText(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
         },
 
         async submitForm(event) {
@@ -25,10 +38,11 @@ export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId }) {
             try {
                 const formData = new FormData(event.target);
                 
-                // Ensure name is set from the input field
+                // Ensure name is set from the input field and capitalize it
                 const nameInput = event.target.querySelector('#task-name');
                 if (nameInput && nameInput.value) {
-                    formData.set('name', nameInput.value);
+                    const capitalizedName = this.capitalizeText(nameInput.value.trim());
+                    formData.set('name', capitalizedName);
                 }
                 
                 // Add CSRF token
@@ -66,17 +80,12 @@ export default function taskCreateForm({ suggestUrl, storeUrl, csrf, roomId }) {
                 
                 // Reset form
                 event.target.reset();
-                this.formData = {
-                    name: '',
-                    type: 'room',
-                    instructions: '',
-                    visible_to_owner: true,
-                    visible_to_housekeeper: true,
-                };
+                this.formData = { ...this.initialData };
 
                 // Close panel and reload after 1 second
                 setTimeout(() => {
-                    this.$dispatch('close-preview-panel', `add-task-${this.roomId}`);
+                    const panelToClose = this.panelName || `add-task-${this.roomId}`;
+                    this.$dispatch('close-preview-panel', panelToClose);
                     window.location.reload();
                 }, 1000);
 

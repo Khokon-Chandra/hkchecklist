@@ -3,23 +3,23 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl">Activity Log</h2>
+        <h2 class="text-lg sm:text-xl font-semibold">Activity Log</h2>
     </x-slot>
 
     <x-card class="mb-4">
-        <form method="get" action="{{ route('activity.index') }}" class="flex flex-wrap items-end gap-3">
+        <form method="get" action="{{ route('activity.index') }}" class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 px-1 sm:px-0">
 
             {{-- Grows to fill remaining space; allows overflow text without breaking layout --}}
-            <div>
+            <div class="flex-1 min-w-0">
                 <x-form.label value="Search" />
-                <x-form.input name="q" :value="request('q')" placeholder="Text in description/properties..." />
+                <x-form.input name="q" :value="request('q')" placeholder="Text in description/properties..." class="w-full max-w-full" />
             </div>
 
-            {{-- Compact fields: keep intrinsic width, don’t shrink; wrap when not enough room --}}
-            <div class="shrink-0">
+            {{-- Compact fields: keep intrinsic width, don't shrink; wrap when not enough room --}}
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="Event" />
                 <x-form.select name="event"
-                    class="w-auto !py-1 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                    class="w-full sm:w-auto !py-1 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
                     <option value="">All</option>
                     @foreach ($distinctEvents as $ev)
                         <option value="{{ $ev }}" @selected(request('event') === $ev)>{{ $ev }}</option>
@@ -27,10 +27,10 @@
                 </x-form.select>
             </div>
 
-            <div class="shrink-0">
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="Causer" />
                 <x-form.select name="causer_id"
-                    class="w-auto !py-1 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                    class="w-full sm:w-auto !py-1 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
                     <option value="">Anyone</option>
                     @foreach ($causers as $u)
                         <option value="{{ $u->id }}" @selected((string) request('causer_id') === (string) $u->id)>{{ $u->name }}</option>
@@ -39,31 +39,31 @@
             </div>
 
             {{-- Also allowed to grow; shares leftover space with Search --}}
-            <div>
+            <div class="flex-1 min-w-0">
                 <x-form.label value="Subject Type" />
-                <x-form.input name="subject_type" :value="request('subject_type')" placeholder="e.g. Room or FQCN" />
+                <x-form.input name="subject_type" :value="request('subject_type')" placeholder="e.g. Room or FQCN" class="w-full max-w-full" />
             </div>
 
-            <div class="shrink-0">
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="Subject ID" />
-                <x-form.input name="subject_id" :value="request('subject_id')" class="w-auto" />
+                <x-form.input name="subject_id" :value="request('subject_id')" class="w-full sm:w-auto max-w-full" />
             </div>
 
-            <div class="shrink-0">
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="From" />
-                <x-form.input type="date" name="from" :value="request('from')" class="w-auto" />
+                <x-form.input type="date" name="from" :value="request('from')" class="w-full sm:w-auto max-w-full" />
             </div>
 
-            <div class="shrink-0">
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="To" />
-                <x-form.input type="date" name="to" :value="request('to')" class="w-auto" />
+                <x-form.input type="date" name="to" :value="request('to')" class="w-full sm:w-auto max-w-full" />
             </div>
 
-            {{-- Actions: compact, won’t shrink into unreadable sizes; wrap to next line if needed --}}
-            <div class="shrink-0 flex items-center gap-2">
-                <x-button type="submit">Filter</x-button>
+            {{-- Actions: compact, won't shrink into unreadable sizes; wrap to next line if needed --}}
+            <div class="w-full sm:w-auto sm:shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <x-button type="submit" class="w-full sm:w-auto whitespace-nowrap">Filter</x-button>
                 @if (request()->query())
-                    <a href="{{ route('activity.index') }}" class="text-sm underline text-gray-600 dark:text-gray-300">
+                    <a href="{{ route('activity.index') }}" class="text-xs sm:text-sm underline text-gray-600 dark:text-gray-300 text-center sm:text-left">
                         Reset
                     </a>
                 @endif

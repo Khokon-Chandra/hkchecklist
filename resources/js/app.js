@@ -135,6 +135,148 @@ document.addEventListener('alpine:init', () => {
 
     // New: property property task form (create/edit)
     Alpine.data('propertyPropertyTaskForm', propertyPropertyTaskForm)
+
+    // Bulk task form (defined inline in blade, but register here for consistency)
+    Alpine.data('bulkTaskForm', function(config) {
+        return {
+            tasks: [],
+            defaultType: 'room',
+            status: null,
+            message: '',
+            taskInput: null,
+
+            init() {
+                this.$refs.taskInput?.focus();
+            },
+
+            // Capitalize text to title case (e.g., "Open Windows For Airing")
+            capitalizeText(text) {
+                if (!text) return '';
+                return text.toLowerCase()
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            },
+
+            addTaskFromInput() {
+                const input = this.$refs.taskInput;
+                if (!input) return;
+
+                const value = input.value.trim();
+                if (!value) return;
+
+                // Capitalize the task name
+                const capitalizedValue = this.capitalizeText(value);
+
+                // Check for duplicates (case-insensitive)
+                const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedValue.toLowerCase());
+                if (exists) {
+                    this.showMessage('error', `"${capitalizedValue}" is already in the list`);
+                    return;
+                }
+
+                this.tasks.push({ name: capitalizedValue });
+                input.value = '';
+                this.status = null;
+            },
+
+            addSuggestedTask(taskName) {
+                if (!taskName || !taskName.trim()) return;
+
+                const value = taskName.trim();
+                // Capitalize the task name
+                const capitalizedValue = this.capitalizeText(value);
+                
+                // Check for duplicates (case-insensitive)
+                const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedValue.toLowerCase());
+                if (exists) {
+                    this.showMessage('error', `"${capitalizedValue}" is already in the list`);
+                    return;
+                }
+
+                this.tasks.push({ name: capitalizedValue });
+                this.status = null;
+            },
+
+            handlePaste(event) {
+                event.preventDefault();
+                const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+                const lines = pastedText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+                if (lines.length > 0) {
+                    lines.forEach(line => {
+                        // Capitalize each line
+                        const capitalizedLine = this.capitalizeText(line);
+                        const exists = this.tasks.some(t => t.name.toLowerCase() === capitalizedLine.toLowerCase());
+                        if (!exists) {
+                            this.tasks.push({ name: capitalizedLine });
+                        }
+                    });
+                    this.$refs.taskInput.value = '';
+                }
+            },
+
+            removeTask(index) {
+                this.tasks.splice(index, 1);
+            },
+
+            clearAll() {
+                if (confirm(`Remove all ${this.tasks.length} tasks from the list?`)) {
+                    this.tasks = [];
+                    this.status = null;
+                }
+            },
+
+            showMessage(status, message) {
+                this.status = status;
+                this.message = message;
+                if (status === 'saved') {
+                    setTimeout(() => {
+                        this.status = null;
+                    }, 3000);
+                }
+            },
+
+            async saveAll() {
+                if (this.tasks.length === 0) return;
+
+                this.status = 'saving';
+                this.message = `Creating ${this.tasks.length} task(s)...`;
+
+                const formData = new FormData();
+                formData.append('_token', config.csrf);
+                formData.append('tasks', JSON.stringify(this.tasks.map(t => t.name)));
+                formData.append('default_type', this.defaultType);
+
+                try {
+                    const response = await fetch(config.storeUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.showMessage('saved', `Successfully created ${data.created || this.tasks.length} task(s)!`);
+                        this.tasks = [];
+                        
+                        // Reload page after a short delay
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        this.showMessage('error', data.message || 'Failed to create tasks. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error saving bulk tasks:', error);
+                    this.showMessage('error', 'An error occurred while saving tasks. Please try again.');
+                }
+            }
+        };
+    })
 })
 
 Alpine.plugin(collapse)

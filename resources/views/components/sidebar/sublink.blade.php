@@ -4,53 +4,13 @@
 ])
 
 @php
-    use App\Models\Setting;
-
-    // Get theme color first, then button_primary_color as override
-    $themeColor = Setting::get('theme_color', '#842eb8');
-    $buttonPrimaryColor = Setting::get('button_primary_color');
-    // Use button_primary_color if it exists, otherwise use theme_color
-    $primaryColor = $buttonPrimaryColor ?: $themeColor;
-
-    // Helper function to darken a hex color
-    if (!function_exists('darkenColor')) {
-        function darkenColor($hex, $percent = 15) {
-            $hex = str_replace('#', '', $hex);
-            $r = hexdec(substr($hex, 0, 2));
-            $g = hexdec(substr($hex, 2, 2));
-            $b = hexdec(substr($hex, 4, 2));
-
-            $r = max(0, min(255, $r - ($r * $percent / 100)));
-            $g = max(0, min(255, $g - ($g * $percent / 100)));
-            $b = max(0, min(255, $b - ($b * $percent / 100)));
-
-            return '#' . str_pad(dechex($r), 2, '0', STR_PAD_LEFT) .
-                       str_pad(dechex($g), 2, '0', STR_PAD_LEFT) .
-                       str_pad(dechex($b), 2, '0', STR_PAD_LEFT);
-        }
-    }
-
-    // Helper function to convert hex to rgba with opacity
-    if (!function_exists('hexToRgba')) {
-        function hexToRgba($hex, $opacity = 1) {
-            $hex = str_replace('#', '', $hex);
-            $r = hexdec(substr($hex, 0, 2));
-            $g = hexdec(substr($hex, 2, 2));
-            $b = hexdec(substr($hex, 4, 2));
-            return "rgba({$r}, {$g}, {$b}, {$opacity})";
-        }
-    }
-
     $baseHoverClass = $active ? '' : 'hover:text-gray-900 dark:hover:text-gray-100';
     $classes = "transition-colors {$baseHoverClass} block px-2 py-1 rounded-md";
     $inlineStyles = '';
 
     if ($active) {
-        // Use low density (light/transparent) version of primary color
-        $lowDensityBg = hexToRgba($primaryColor, 0.1);
-        $hoverBg = hexToRgba($primaryColor, 0.2);
         $classes .= ' font-medium';
-        $inlineStyles = "background-color: {$lowDensityBg}; color: {$primaryColor}; --sublink-hover-bg: {$hoverBg};";
+        $inlineStyles = "background-color: color-mix(in srgb, var(--button-primary-color) 10%, transparent); color: var(--button-primary-color); --sublink-hover-bg: color-mix(in srgb, var(--button-primary-color) 20%, transparent);";
     } else {
         $classes .= ' text-gray-500 dark:text-gray-400';
     }

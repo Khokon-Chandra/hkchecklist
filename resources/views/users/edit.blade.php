@@ -63,8 +63,7 @@
 
                             @if ($user->profile_photo_path)
                                 <label class="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
-                                    <input type="checkbox" name="remove_profile_photo" value="1"
-                                        class="rounded border-gray-300 dark:border-gray-600">
+                                    <x-form.checkbox name="remove_profile_photo" value="1" />
                                     Remove photo
                                 </label>
                             @endif

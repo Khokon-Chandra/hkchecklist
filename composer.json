@@ -15,6 +15,7 @@
         "spatie/laravel-permission": "^6.21"
     },
     "require-dev": {
+        "barryvdh/laravel-debugbar": "*",
         "fakerphp/faker": "^1.24",
         "kamona/kui-laravel-breeze": "^0.5.1",
         "laravel/breeze": "^2.3",

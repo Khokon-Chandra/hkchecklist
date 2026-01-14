@@ -16,6 +16,7 @@ class CleaningSession extends Model
         'owner_id',
         'housekeeper_id',
         'scheduled_date',
+        'scheduled_time',
         'status',
         'started_at',
         'ended_at',
@@ -26,6 +27,7 @@ class CleaningSession extends Model
 
     protected $casts = [
         'scheduled_date' => 'date',
+        'scheduled_time' => 'datetime',
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
         'gps_confirmed_at' => 'datetime'

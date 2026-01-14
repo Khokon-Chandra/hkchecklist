@@ -4,14 +4,11 @@
 ])
 
 @php
-    use App\Models\Setting;
-
     $withiconClasses = $withicon ? 'pl-11 pr-4' : 'px-4';
-    $themeColor = Setting::get('theme_color', '#842eb8');
 @endphp
 
 <input {{ $disabled ? 'disabled' : '' }}
-       data-focus-ring="{{ $themeColor }}"
+       data-focus-ring="theme-primary"
        {!! $attributes->merge([
            'class' =>
                $withiconClasses .
@@ -21,7 +18,7 @@
        ]) !!}>
 
 <style>
-    [data-focus-ring="{{ $themeColor }}"]:focus {
-        --tw-ring-color: {{ $themeColor }} !important;
+    [data-focus-ring="theme-primary"]:focus {
+        --tw-ring-color: var(--theme-primary) !important;
     }
 </style>

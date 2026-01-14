@@ -78,15 +78,13 @@
 
                     <div class="mt-3 flex items-center gap-4">
                         <label class="inline-flex items-center gap-2 text-sm">
-                            <input type="checkbox" name="visible_to_owner" value="1"
-                                   class="rounded border-gray-300 dark:border-gray-700"
-                                   @checked((bool) old('visible_to_owner', $pivot->visible_to_owner))>
+                            <x-form.checkbox name="visible_to_owner" value="1"
+                                   :checked="(bool) old('visible_to_owner', $pivot->visible_to_owner)" />
                             Owner can view
                         </label>
                         <label class="inline-flex items-center gap-2 text-sm">
-                            <input type="checkbox" name="visible_to_housekeeper" value="1"
-                                   class="rounded border-gray-300 dark:border-gray-700"
-                                   @checked((bool) old('visible_to_housekeeper', $pivot->visible_to_housekeeper))>
+                            <x-form.checkbox name="visible_to_housekeeper" value="1"
+                                   :checked="(bool) old('visible_to_housekeeper', $pivot->visible_to_housekeeper)" />
                             Housekeeper can view
                         </label>
                     </div>

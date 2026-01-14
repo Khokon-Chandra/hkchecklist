@@ -5,7 +5,21 @@ export default function taskAutocomplete({ suggestUrl }) {
 
         init() { document.addEventListener('click', e => { if (!this.$root.contains(e.target)) this.open = false }) },
 
-        onInput() { this.open = true; this.debounce() },
+        // Capitalize text to title case (e.g., "Open Windows For Airing")
+        capitalizeText(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        },
+
+        onInput() { 
+            this.open = true; 
+            this.debounce();
+            // Debounce capitalization to avoid interrupting typing
+            this.debounceCapitalize();
+        },
         onFocus() { if (this.q.trim()) { this.open = true; this.debounce() } },
         choose(item) { this.q = item.name; this.open = false; this.focusedIndex = -1; },
         createLabel() { return `Create "${this.q}"` },
@@ -31,5 +45,20 @@ export default function taskAutocomplete({ suggestUrl }) {
         },
 
         _timer: null, debounce() { clearTimeout(this._timer); this._timer = setTimeout(() => this.fetch(), 160) },
+        
+        // Debounced capitalization
+        _capitalizeTimer: null,
+        debounceCapitalize() {
+            clearTimeout(this._capitalizeTimer);
+            this._capitalizeTimer = setTimeout(() => {
+                if (this.q && this.q.trim()) {
+                    const capitalized = this.capitalizeText(this.q);
+                    // Only update if different to avoid cursor jumping
+                    if (capitalized !== this.q) {
+                        this.q = capitalized;
+                    }
+                }
+            }, 500); // 500ms debounce for capitalization
+        },
     };
 }

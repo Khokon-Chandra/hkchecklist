@@ -1,31 +1,31 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl">Manage Assignment</h2>
+        <h2 class="text-lg sm:text-xl font-semibold">Manage Assignment</h2>
     </x-slot>
 
     <x-card class="mb-4">
-        <form method="get" class="flex flex-wrap items-end gap-3">
-            <div>
+        <form method="get" class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 px-1 sm:px-0">
+            <div class="flex-1 min-w-0">
                 <x-form.label value="Property" />
-                <x-form.select name="property_id" class="!py-1 w-full rounded border-gray-300">
+                <x-form.select name="property_id" class="!py-1 w-full max-w-full rounded border-gray-300">
                     <option value="">All</option>
                     @foreach ($properties as $p)
                         <option value="{{ $p->id }}" @selected($filters['property_id'] == $p->id)>{{ $p->name }}</option>
                     @endforeach
                 </x-form.select>
             </div>
-            <div>
+            <div class="flex-1 min-w-0">
                 <x-form.label value="Housekeeper" />
-                <x-form.select name="housekeeper_id" class="!py-1 w-full rounded border-gray-300">
+                <x-form.select name="housekeeper_id" class="!py-1 w-full max-w-full rounded border-gray-300">
                     <option value="">All</option>
                     @foreach ($housekeepers as $hk)
                         <option value="{{ $hk->id }}" @selected($filters['housekeeper_id'] == $hk->id)>{{ $hk->name }}</option>
                     @endforeach
                 </x-form.select>
             </div>
-            <div>
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="Status" />
-                <x-form.select name="status" class="!py-1 w-full rounded border-gray-300">
+                <x-form.select name="status" class="!py-1 w-full sm:w-auto max-w-full rounded border-gray-300">
                     <option value="">All</option>
                     @foreach (['pending', 'in_progress', 'completed'] as $st)
                         <option value="{{ $st }}" @selected($filters['status'] === $st)>
@@ -33,18 +33,17 @@
                     @endforeach
                 </x-form.select>
             </div>
-            <div>
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="From" />
-                <x-form.input type="date" name="date_from" value="{{ request('date_from') }}" />
+                <x-form.input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full sm:w-auto max-w-full" />
             </div>
-            <div>
+            <div class="w-full sm:w-auto sm:shrink-0">
                 <x-form.label value="To" />
-                <x-form.input type="date" name="date_to" value="{{ request('date_to') }}" />
+                <x-form.input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full sm:w-auto max-w-full" />
             </div>
-            <div class="flex items-center gap-2">
-                <x-button>Filter</x-button>
-                <x-button href="{{ route('manage.sessions.create') }}" class="ml-auto whitespace-nowrap">New
-                    Assignment</x-button>
+            <div class="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <x-button class="w-full sm:w-auto whitespace-nowrap">Filter</x-button>
+                <x-button href="{{ route('manage.sessions.create') }}" class="w-full sm:w-auto whitespace-nowrap">New Assignment</x-button>
             </div>
         </form>
     </x-card>

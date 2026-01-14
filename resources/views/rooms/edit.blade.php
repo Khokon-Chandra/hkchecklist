@@ -31,8 +31,8 @@
                 </div>
 
                 <div class="flex items-center gap-3 mt-6 md:mt-8">
-                    <input type="checkbox" id="is_default" name="is_default" value="1"
-                        class="rounded border-gray-300 text-indigo-600 shadow-sm" @checked(old('is_default', $room->is_default)) />
+                    <x-form.checkbox id="is_default" name="is_default" value="1"
+                        :checked="old('is_default', $room->is_default)" />
                     <label for="is_default" class="text-sm text-gray-700 dark:text-gray-300">
                         Mark as default room type
                     </label>
@@ -82,7 +82,7 @@
                             Add Task
                         </label>
                         <div class="relative">
-                            <input 
+                            <input
                                 type="text"
                                 x-model="searchQuery"
                                 @input="searchTasks()"
@@ -98,7 +98,7 @@
                         </div>
 
                         {{-- Suggestions dropdown --}}
-                        <div 
+                        <div
                             x-show="openSuggestions && suggestions.length > 0"
                             x-cloak
                             class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
@@ -129,7 +129,7 @@
 
                     {{-- Room tasks list (draggable) --}}
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        <div 
+                        <div
                             x-ref="taskList"
                             class="divide-y dark:divide-gray-700"
                         >
@@ -140,12 +140,12 @@
                             </template>
 
                             <template x-for="(task, index) in roomTasks" :key="task.key || `task-${task.id}`">
-                                <div 
+                                <div
                                     :data-task-id="task.id"
                                     class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                                 >
                                     {{-- Drag handle --}}
-                                    <button 
+                                    <button
                                         type="button"
                                         class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 flex-shrink-0"
                                         title="Drag to reorder"
@@ -173,7 +173,7 @@
                                             x-text="task.type"
                                         ></span>
 
-                                        <span 
+                                        <span
                                             class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide"
                                             :class="task.is_default ?
                                                 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :

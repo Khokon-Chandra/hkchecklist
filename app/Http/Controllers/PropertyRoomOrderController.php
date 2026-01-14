@@ -9,6 +9,8 @@ class PropertyRoomOrderController extends Controller
 {
     public function update(Request $request, Property $property)
     {
+        abort_unless($request->user() && $request->user()->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can reorder rooms.');
+        
         $data = $request->validate([
             'order' => ['required', 'array'],
             'order.*' => ['integer', 'exists:rooms,id'],

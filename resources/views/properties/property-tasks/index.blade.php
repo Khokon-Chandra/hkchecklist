@@ -1,178 +1,314 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-lg sm:text-xl font-semibold break-words">
                     Property Tasks — {{ $property->name }}
                 </h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     Manage property-level tasks that happen before, during, or after cleaning (not room-specific).
                 </p>
-            </div>
-            <div class="flex items-center gap-2">
-                <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}">← Rooms</x-button>
-                <x-button variant="primary" @click="$dispatch('open-preview-panel', 'add-property-task-{{ $property->id }}')">
-                    + Add Property Task
-                </x-button>
             </div>
         </div>
     </x-slot>
 
-    <div class="space-y-6">
-        {{-- Pre-Cleaning Tasks --}}
-        <x-card>
-            <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                    Pre-Cleaning Tasks
-                </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Tasks to complete before starting room cleaning (e.g., check inventory, verify supplies).
-                </p>
+    @php
+        $preTasks = $property
+            ->propertyTasks()
+            ->where('phase', 'pre_cleaning')
+            ->orderBy('property_tasks.sort_order')
+            ->get();
+
+        $duringTasks = $property
+            ->propertyTasks()
+            ->where('phase', 'during_cleaning')
+            ->orderBy('property_tasks.sort_order')
+            ->get();
+
+        $postTasks = $property
+            ->propertyTasks()
+            ->where('phase', 'post_cleaning')
+            ->orderBy('property_tasks.sort_order')
+            ->get();
+    @endphp
+
+    <div x-data="{
+        activeTab: 'pre',
+        init() {
+            // Get tab from URL query parameter or local storage
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabFromUrl = urlParams.get('tab');
+            const validTabs = ['pre', 'during', 'post'];
+
+            if (tabFromUrl && validTabs.includes(tabFromUrl)) {
+                this.activeTab = tabFromUrl;
+            } else {
+                // Fallback to local storage
+                const savedTab = localStorage.getItem('property-tasks-active-tab');
+                if (savedTab && validTabs.includes(savedTab)) {
+                    this.activeTab = savedTab;
+                }
+            }
+
+            // Watch for tab changes and update URL + storage
+            this.$watch('activeTab', (value) => {
+                // Update URL without page reload
+                const url = new URL(window.location);
+                url.searchParams.set('tab', value);
+                window.history.pushState({}, '', url);
+
+                // Save to local storage
+                localStorage.setItem('property-tasks-active-tab', value);
+            });
+        }
+    }">
+        {{-- Tabs and Actions --}}
+        <div class="flex items-center justify-between mb-6">
+            {{-- Tabs Navigation --}}
+            <div>
+                <nav class="flex border-b border-gray-200 dark:border-gray-700" aria-label="Tabs">
+                    {{-- Pre-Cleaning Tab --}}
+                    <div @click="activeTab = 'pre'"
+                        :class="activeTab === 'pre'
+                            ?
+                            'text-theme-primary border-b-2 border-theme-primary' :
+                            'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+                        class="whitespace-nowrap py-2.5 px-4 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent">
+                        <div class="flex items-center gap-1.5">
+                            <span>Pre-Cleaning</span>
+                            <span
+                                :class="activeTab === 'pre' ? '' :
+                                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
+                                :style="activeTab === 'pre' ?
+                                    'background-color: color-mix(in srgb, var(--theme-primary) 15%, transparent); color: var(--theme-primary);' :
+                                    ''"
+                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors duration-200">
+                                {{ $preTasks->count() }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- During-Cleaning Tab --}}
+                    <div @click="activeTab = 'during'"
+                        :class="activeTab === 'during'
+                            ?
+                            'text-theme-primary border-b-2 border-theme-primary' :
+                            'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+                        class="whitespace-nowrap py-2.5 px-4 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent">
+                        <div class="flex items-center gap-1.5">
+                            <span>During-Cleaning</span>
+                            <span
+                                :class="activeTab === 'during' ? '' :
+                                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
+                                :style="activeTab === 'during' ?
+                                    'background-color: color-mix(in srgb, var(--theme-primary) 15%, transparent); color: var(--theme-primary);' :
+                                    ''"
+                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors duration-200">
+                                {{ $duringTasks->count() }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Post-Cleaning Tab --}}
+                    <div @click="activeTab = 'post'"
+                        :class="activeTab === 'post'
+                            ?
+                            'text-theme-primary border-b-2 border-theme-primary' :
+                            'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
+                        class="whitespace-nowrap py-2.5 px-4 text-sm font-medium cursor-pointer transition-all duration-200 border-b-2 border-transparent">
+                        <div class="flex items-center gap-1.5">
+                            <span>Post-Cleaning</span>
+                            <span
+                                :class="activeTab === 'post' ? '' :
+                                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
+                                :style="activeTab === 'post' ?
+                                    'background-color: color-mix(in srgb, var(--theme-primary) 15%, transparent); color: var(--theme-primary);' :
+                                    ''"
+                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors duration-200">
+                                {{ $postTasks->count() }}
+                            </span>
+                        </div>
+                    </div>
+                </nav>
             </div>
 
-            @php
-                $preTasks = $property->propertyTasks()
-                    ->where('phase', 'pre_cleaning')
-                    ->orderBy('property_tasks.sort_order')
-                    ->get();
-            @endphp
+            {{-- Action Buttons --}}
+            <div class="flex items-center gap-2 ml-6">
+                <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}">← Rooms</x-button>
 
-            @if($preTasks->isEmpty())
-                <p class="text-sm text-gray-500 dark:text-gray-400 py-4">No pre-cleaning tasks yet.</p>
-            @else
-                <div class="space-y-2">
-                    @foreach($preTasks as $task)
-                        <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <div class="flex-1">
-                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $task->name }}</div>
-                                @if($task->pivot->instructions)
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $task->pivot->instructions }}</div>
-                                @endif
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                        @click="$dispatch('open-preview-panel', 'edit-property-task-{{ $property->id }}-{{ $task->id }}')">
-                                    Edit
-                                </button>
-                                <span class="text-gray-400">·</span>
-                                <form action="{{ route('properties.property-tasks.detach', [$property, $task]) }}" method="post" class="inline">
-                                    @csrf @method('DELETE')
-                                    <button class="text-rose-600 hover:underline dark:text-rose-400"
-                                            onclick="return confirm('Remove this task from the property?')">Remove</button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </x-card>
-
-        {{-- During-Cleaning Tasks --}}
-        <x-card>
-            <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                    During-Cleaning Tasks
-                </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Tasks to complete throughout the cleaning process (e.g., check whole place, monitor progress).
-                </p>
+                <x-button variant="primary"
+                    @click="
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const tabFromUrl = urlParams.get('tab');
+                    const savedTab = localStorage.getItem('property-tasks-active-tab');
+                    const currentTab = tabFromUrl || savedTab || 'pre';
+                    $dispatch('open-preview-panel', 'add-property-task-{{ $property->id }}');
+                    $dispatch('set-property-task-phase', currentTab);
+                ">
+                    + Add Property Task
+                </x-button>
             </div>
+        </div>
 
-            @php
-                $duringTasks = $property->propertyTasks()
-                    ->where('phase', 'during_cleaning')
-                    ->orderBy('property_tasks.sort_order')
-                    ->get();
-            @endphp
-
-            @if($duringTasks->isEmpty())
-                <p class="text-sm text-gray-500 dark:text-gray-400 py-4">No during-cleaning tasks yet.</p>
-            @else
-                <div class="space-y-2">
-                    @foreach($duringTasks as $task)
-                        <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <div class="flex-1">
-                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $task->name }}</div>
-                                @if($task->pivot->instructions)
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $task->pivot->instructions }}</div>
-                                @endif
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                        @click="$dispatch('open-preview-panel', 'edit-property-task-{{ $property->id }}-{{ $task->id }}')">
-                                    Edit
-                                </button>
-                                <span class="text-gray-400">·</span>
-                                <form action="{{ route('properties.property-tasks.detach', [$property, $task]) }}" method="post" class="inline">
-                                    @csrf @method('DELETE')
-                                    <button class="text-rose-600 hover:underline dark:text-rose-400"
-                                            onclick="return confirm('Remove this task from the property?')">Remove</button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
+        {{-- Tab Content Tables --}}
+        <x-card class="!px-0 overflow-hidden">
+            <div class="overflow-hidden">
+                {{-- Pre-Cleaning Tasks Content --}}
+                <div x-show="activeTab === 'pre'" x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="uppercase text-xs tracking-wide sticky top-0 z-10 bg-white dark:bg-gray-800">
+                                <tr
+                                    class="text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                    <th class="px-4 py-2 text-left">Task</th>
+                                    <th class="px-4 py-2">Instructions</th>
+                                    <th class="px-4 py-2 w-48 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y dark:divide-gray-700">
+                                @forelse($preTasks as $task)
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                                            {{ $task->name }}</td>
+                                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            {{ $task->pivot->instructions ? \Illuminate\Support\Str::limit($task->pivot->instructions, 120) : '—' }}
+                                        </td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                                            <button type="button"
+                                                class="text-theme-primary hover:opacity-80 hover:underline transition-colors"
+                                                @click="$dispatch('open-preview-panel', 'edit-property-task-{{ $property->id }}-{{ $task->id }}')">Edit</button>
+                                            <span class="mx-2 text-gray-400">·</span>
+                                            <form
+                                                action="{{ route('properties.property-tasks.detach', [$property, $task]) }}"
+                                                method="post" class="inline">
+                                                @csrf @method('DELETE')
+                                                <button
+                                                    class="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:underline transition-colors"
+                                                    onclick="return confirm('Remove this task from the property?')">Remove</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3"
+                                            class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">No
+                                            pre-cleaning tasks yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            @endif
-        </x-card>
 
-        {{-- Post-Cleaning Tasks --}}
-        <x-card>
-            <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                    Post-Cleaning Tasks
-                </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Tasks to complete after room cleaning is done (e.g., final inspection, whole place check).
-                </p>
+                {{-- During-Cleaning Tasks Content --}}
+                <div x-show="activeTab === 'during'" x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="uppercase text-xs tracking-wide sticky top-0 z-10 bg-white dark:bg-gray-800">
+                                <tr
+                                    class="text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                    <th class="px-4 py-2 text-left">Task</th>
+                                    <th class="px-4 py-2">Instructions</th>
+                                    <th class="px-4 py-2 w-48 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y dark:divide-gray-700">
+                                @forelse($duringTasks as $task)
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                                            {{ $task->name }}</td>
+                                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            {{ $task->pivot->instructions ? \Illuminate\Support\Str::limit($task->pivot->instructions, 120) : '—' }}
+                                        </td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                                            <button type="button"
+                                                class="text-theme-primary hover:opacity-80 hover:underline transition-colors"
+                                                @click="$dispatch('open-preview-panel', 'edit-property-task-{{ $property->id }}-{{ $task->id }}')">Edit</button>
+                                            <span class="mx-2 text-gray-400">·</span>
+                                            <form
+                                                action="{{ route('properties.property-tasks.detach', [$property, $task]) }}"
+                                                method="post" class="inline">
+                                                @csrf @method('DELETE')
+                                                <button
+                                                    class="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:underline transition-colors"
+                                                    onclick="return confirm('Remove this task from the property?')">Remove</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3"
+                                            class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">No
+                                            during-cleaning tasks yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Post-Cleaning Tasks Content --}}
+                <div x-show="activeTab === 'post'" x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="uppercase text-xs tracking-wide sticky top-0 z-10 bg-white dark:bg-gray-800">
+                                <tr
+                                    class="text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                    <th class="px-4 py-2 text-left">Task</th>
+                                    <th class="px-4 py-2">Instructions</th>
+                                    <th class="px-4 py-2 w-48 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y dark:divide-gray-700">
+                                @forelse($postTasks as $task)
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                                            {{ $task->name }}</td>
+                                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            {{ $task->pivot->instructions ? \Illuminate\Support\Str::limit($task->pivot->instructions, 120) : '—' }}
+                                        </td>
+                                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                                            <button type="button"
+                                                class="text-theme-primary hover:opacity-80 hover:underline transition-colors"
+                                                @click="$dispatch('open-preview-panel', 'edit-property-task-{{ $property->id }}-{{ $task->id }}')">Edit</button>
+                                            <span class="mx-2 text-gray-400">·</span>
+                                            <form
+                                                action="{{ route('properties.property-tasks.detach', [$property, $task]) }}"
+                                                method="post" class="inline">
+                                                @csrf @method('DELETE')
+                                                <button
+                                                    class="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:underline transition-colors"
+                                                    onclick="return confirm('Remove this task from the property?')">Remove</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3"
+                                            class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">No
+                                            post-cleaning tasks yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-
-            @php
-                $postTasks = $property->propertyTasks()
-                    ->where('phase', 'post_cleaning')
-                    ->orderBy('property_tasks.sort_order')
-                    ->get();
-            @endphp
-
-            @if($postTasks->isEmpty())
-                <p class="text-sm text-gray-500 dark:text-gray-400 py-4">No post-cleaning tasks yet.</p>
-            @else
-                <div class="space-y-2">
-                    @foreach($postTasks as $task)
-                        <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <div class="flex-1">
-                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $task->name }}</div>
-                                @if($task->pivot->instructions)
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $task->pivot->instructions }}</div>
-                                @endif
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" class="text-indigo-600 hover:underline dark:text-indigo-400"
-                                        @click="$dispatch('open-preview-panel', 'edit-property-task-{{ $property->id }}-{{ $task->id }}')">
-                                    Edit
-                                </button>
-                                <span class="text-gray-400">·</span>
-                                <form action="{{ route('properties.property-tasks.detach', [$property, $task]) }}" method="post" class="inline">
-                                    @csrf @method('DELETE')
-                                    <button class="text-rose-600 hover:underline dark:text-rose-400"
-                                            onclick="return confirm('Remove this task from the property?')">Remove</button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
         </x-card>
     </div>
 
     {{-- Add Property Task Preview Panel --}}
-    <x-preview-panel
-        name="add-property-task-{{ $property->id }}"
-        :overlay="true"
-        side="right"
-        initialWidth="32rem"
-        minWidth="24rem"
-        title="Add Property Task"
-        :subtitle="'Add a property-level task to ' . $property->name">
+    <x-preview-panel name="add-property-task-{{ $property->id }}" :overlay="true" side="right"
+        initialWidth="32rem" minWidth="24rem" title="Add Property Task" :subtitle="'Add a property-level task to ' . $property->name">
 
         @php $suggestUrl = route('tasks.suggest'); @endphp
 
@@ -182,6 +318,7 @@
             'pivot' => null,
             'suggestUrl' => $suggestUrl,
             'mode' => 'create',
+            'defaultPhase' => 'pre_cleaning',
         ])
     </x-preview-panel>
 
@@ -189,15 +326,9 @@
     @php
         $allPropertyTasks = $property->propertyTasks()->get();
     @endphp
-    @foreach($allPropertyTasks as $task)
-        <x-preview-panel
-            name="edit-property-task-{{ $property->id }}-{{ $task->id }}"
-            :overlay="true"
-            side="right"
-            initialWidth="32rem"
-            minWidth="24rem"
-            title="Edit Property Task"
-            :subtitle="$task->name">
+    @foreach ($allPropertyTasks as $task)
+        <x-preview-panel name="edit-property-task-{{ $property->id }}-{{ $task->id }}" :overlay="true"
+            side="right" initialWidth="32rem" minWidth="24rem" title="Edit Property Task" :subtitle="$task->name">
 
             @php
                 $suggestUrl = route('tasks.suggest');
@@ -214,4 +345,3 @@
         </x-preview-panel>
     @endforeach
 </x-app-layout>
-

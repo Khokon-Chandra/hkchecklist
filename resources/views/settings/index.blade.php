@@ -520,6 +520,231 @@
             </div>
         </x-card>
 
+        {{-- Preferences Section --}}
+        <x-card>
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    Preferences
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Configure application preferences and default behaviors.
+                </p>
+            </div>
+
+            <div class="space-y-6">
+                {{-- Date & Time Format --}}
+                <div>
+                    <x-form.label value="Date Format" />
+                    <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Choose how dates are displayed throughout the application.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        @php
+                            $dateFormats = [
+                                'Y-m-d' => 'YYYY-MM-DD (2026-01-11)',
+                                'm/d/Y' => 'MM/DD/YYYY (01/11/2026)',
+                                'd/m/Y' => 'DD/MM/YYYY (11/01/2026)',
+                                'M d, Y' => 'Jan 11, 2026',
+                                'F d, Y' => 'January 11, 2026',
+                                'd M Y' => '11 Jan 2026',
+                            ];
+                            $currentDateFormat = $settings['date_format'] ?? 'M d, Y';
+                        @endphp
+                        @foreach ($dateFormats as $format => $label)
+                            <label class="flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                :class="dateFormat === '{{ $format }}' || (!dateFormat && '{{ $currentDateFormat }}' === '{{ $format }}')
+                                    ? 'border-indigo-500 bg-indigo-50/40 dark:bg-indigo-900/20'
+                                    : 'border-gray-200 dark:border-gray-700'">
+                                <input type="radio" name="date_format" value="{{ $format }}" x-model="dateFormat"
+                                    class="mr-3 text-indigo-600 focus:ring-indigo-500"
+                                    @change="saveSettings()"
+                                    {{ old('date_format', $currentDateFormat) === $format ? 'checked' : '' }} />
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $label }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ date($format) }}</div>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('date_format')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Time Format --}}
+                <div>
+                    <x-form.label value="Time Format" />
+                    <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Choose how times are displayed throughout the application.
+                    </p>
+                    <div class="flex gap-4">
+                        @php
+                            $timeFormats = [
+                                '12' => '12-hour (3:45 PM)',
+                                '24' => '24-hour (15:45)',
+                            ];
+                            $currentTimeFormat = $settings['time_format'] ?? '12';
+                        @endphp
+                        @foreach ($timeFormats as $format => $label)
+                            <label class="flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800/50 flex-1"
+                                :class="timeFormat === '{{ $format }}' || (!timeFormat && '{{ $currentTimeFormat }}' === '{{ $format }}')
+                                    ? 'border-indigo-500 bg-indigo-50/40 dark:bg-indigo-900/20'
+                                    : 'border-gray-200 dark:border-gray-700'">
+                                <input type="radio" name="time_format" value="{{ $format }}" x-model="timeFormat"
+                                    class="mr-3 text-indigo-600 focus:ring-indigo-500"
+                                    @change="saveSettings()"
+                                    {{ old('time_format', $currentTimeFormat) === $format ? 'checked' : '' }} />
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $label }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $format === '12' ? date('g:i A') : date('H:i') }}
+                                    </div>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('time_format')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Items Per Page --}}
+                <div>
+                    <x-form.label value="Items Per Page" />
+                    <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Set the default number of items to display per page in lists and tables.
+                    </p>
+                    <div class="max-w-xs">
+                        <x-form.input name="items_per_page" type="number" min="5" max="100" step="5"
+                            :value="old('items_per_page', $settings['items_per_page'] ?? 15)"
+                            x-model="itemsPerPage"
+                            @input.debounce.400ms="saveSettings()"
+                            placeholder="15" />
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            Recommended: 15-25 items for optimal performance.
+                        </p>
+                    </div>
+                    @error('items_per_page')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Timezone --}}
+                <div>
+                    <x-form.label value="Timezone" />
+                    <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Set the default timezone for the application. All dates and times will be displayed in this timezone.
+                    </p>
+                    <div class="max-w-md">
+                        <x-form.select name="timezone" x-model="timezone" @change="saveSettings()">
+                            @php
+                                $timezones = [
+                                    'UTC' => 'UTC (Coordinated Universal Time)',
+                                    'America/New_York' => 'Eastern Time (US & Canada)',
+                                    'America/Chicago' => 'Central Time (US & Canada)',
+                                    'America/Denver' => 'Mountain Time (US & Canada)',
+                                    'America/Los_Angeles' => 'Pacific Time (US & Canada)',
+                                    'Europe/London' => 'London (GMT)',
+                                    'Europe/Paris' => 'Paris (CET)',
+                                    'Asia/Dhaka' => 'Dhaka (BST)',
+                                    'Asia/Kolkata' => 'Kolkata (IST)',
+                                    'Asia/Dubai' => 'Dubai (GST)',
+                                    'Asia/Singapore' => 'Singapore (SGT)',
+                                    'Asia/Tokyo' => 'Tokyo (JST)',
+                                    'Australia/Sydney' => 'Sydney (AEDT)',
+                                ];
+                                $currentTimezone = $settings['timezone'] ?? config('app.timezone', 'UTC');
+                            @endphp
+                            @foreach ($timezones as $tz => $label)
+                                <option value="{{ $tz }}" {{ old('timezone', $currentTimezone) === $tz ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </x-form.select>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            Current time: <span x-text="new Date().toLocaleString('en-US', { timeZone: timezone || '{{ $currentTimezone }}' })"></span>
+                        </p>
+                    </div>
+                    @error('timezone')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Auto-save Settings --}}
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <x-form.label value="Auto-save Settings" />
+                    <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Configure automatic saving behavior for forms and settings.
+                    </p>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <x-form.checkbox name="auto_save_enabled" value="1"
+                                :checked="old('auto_save_enabled', $settings['auto_save_enabled'] ?? true)"
+                                x-model="autoSaveEnabled"
+                                @change="saveSettings()" />
+                            <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">
+                                Enable auto-save for settings and forms
+                            </span>
+                        </label>
+                        <div x-show="autoSaveEnabled" class="ml-8">
+                            <x-form.label value="Auto-save Delay (milliseconds)" class="text-xs" />
+                            <x-form.input name="auto_save_delay" type="number" min="100" max="5000" step="100"
+                                :value="old('auto_save_delay', $settings['auto_save_delay'] ?? 400)"
+                                x-model="autoSaveDelay"
+                                @input.debounce.400ms="saveSettings()"
+                                class="max-w-xs" />
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Delay before auto-saving changes (100-5000ms). Lower values save more frequently.
+                            </p>
+                        </div>
+                    </div>
+                    @error('auto_save_enabled')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                    @error('auto_save_delay')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Notification Preferences --}}
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <x-form.label value="Notification Preferences" />
+                    <p class="mt-1 mb-3 text-sm text-gray-500 dark:text-gray-400">
+                        Configure when and how you receive notifications.
+                    </p>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <x-form.checkbox name="notify_session_started" value="1"
+                                :checked="old('notify_session_started', $settings['notify_session_started'] ?? true)"
+                                x-model="notifySessionStarted"
+                                @change="saveSettings()" />
+                            <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">
+                                Notify when a cleaning session is started
+                            </span>
+                        </label>
+                        <label class="flex items-center">
+                            <x-form.checkbox name="notify_session_completed" value="1"
+                                :checked="old('notify_session_completed', $settings['notify_session_completed'] ?? true)"
+                                x-model="notifySessionCompleted"
+                                @change="saveSettings()" />
+                            <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">
+                                Notify when a cleaning session is completed
+                            </span>
+                        </label>
+                        <label class="flex items-center">
+                            <x-form.checkbox name="notify_assignments" value="1"
+                                :checked="old('notify_assignments', $settings['notify_assignments'] ?? true)"
+                                x-model="notifyAssignments"
+                                @change="saveSettings()" />
+                            <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">
+                                Notify when new assignments are created
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </x-card>
+
     </form>
 
     {{-- Alpine.js helpers --}}
@@ -534,6 +759,15 @@
                 customColor: '{{ $settings['theme_color'] }}',
                 siteName: '{{ $settings['site_name'] }}',
                 logoAlignment: '{{ $settings['logo_alignment'] ?? 'center' }}',
+                dateFormat: '{{ $settings['date_format'] ?? 'M d, Y' }}',
+                timeFormat: '{{ $settings['time_format'] ?? '12' }}',
+                itemsPerPage: '{{ $settings['items_per_page'] ?? 15 }}',
+                timezone: '{{ $settings['timezone'] ?? config('app.timezone', 'UTC') }}',
+                autoSaveEnabled: {{ ($settings['auto_save_enabled'] ?? true) ? 'true' : 'false' }},
+                autoSaveDelay: '{{ $settings['auto_save_delay'] ?? 400 }}',
+                notifySessionStarted: {{ ($settings['notify_session_started'] ?? true) ? 'true' : 'false' }},
+                notifySessionCompleted: {{ ($settings['notify_session_completed'] ?? true) ? 'true' : 'false' }},
+                notifyAssignments: {{ ($settings['notify_assignments'] ?? true) ? 'true' : 'false' }},
                 currentLogo: @json($settings['application_logo_path'] ? asset('storage/' . $settings['application_logo_path']) : null),
                 currentFavicon: @json($settings['favicon_path'] ? asset('storage/' . $settings['favicon_path']) : null),
                 saveTimeout: null,
@@ -562,6 +796,42 @@
                         formData.append('site_name', this.siteName || document.querySelector('input[name="site_name"]')?.value || '{{ $settings['site_name'] }}');
                         formData.append('theme_color', this.selectedColor || this.customColor);
                         formData.append('logo_alignment', this.logoAlignment || document.querySelector('input[name="logo_alignment"]:checked')?.value || 'center');
+
+                        // Add preferences - only include if they have valid values
+                        const validDateFormats = ['Y-m-d', 'm/d/Y', 'd/m/Y', 'M d, Y', 'F d, Y', 'd M Y'];
+                        const dateFormatRadio = document.querySelector('input[name="date_format"]:checked');
+                        const dateFormatValue = (this.dateFormat || dateFormatRadio?.value || '{{ $settings['date_format'] ?? 'M d, Y' }}').trim();
+                        if (dateFormatValue && validDateFormats.includes(dateFormatValue)) {
+                            formData.append('date_format', dateFormatValue);
+                        }
+
+                        const validTimeFormats = ['12', '24'];
+                        const timeFormatRadio = document.querySelector('input[name="time_format"]:checked');
+                        const timeFormatValue = (this.timeFormat || timeFormatRadio?.value || '{{ $settings['time_format'] ?? '12' }}').trim();
+                        if (timeFormatValue && validTimeFormats.includes(timeFormatValue)) {
+                            formData.append('time_format', timeFormatValue);
+                        }
+
+                        const itemsPerPageValue = this.itemsPerPage || document.querySelector('input[name="items_per_page"]')?.value;
+                        if (itemsPerPageValue && itemsPerPageValue > 0) {
+                            formData.append('items_per_page', itemsPerPageValue);
+                        }
+
+                        const timezoneValue = (this.timezone || document.querySelector('select[name="timezone"]')?.value || 'UTC').trim();
+                        if (timezoneValue) {
+                            formData.append('timezone', timezoneValue);
+                        }
+
+                        formData.append('auto_save_enabled', this.autoSaveEnabled ? '1' : '0');
+
+                        const autoSaveDelayValue = this.autoSaveDelay || document.querySelector('input[name="auto_save_delay"]')?.value;
+                        if (autoSaveDelayValue && autoSaveDelayValue > 0) {
+                            formData.append('auto_save_delay', autoSaveDelayValue);
+                        }
+
+                        formData.append('notify_session_started', this.notifySessionStarted ? '1' : '0');
+                        formData.append('notify_session_completed', this.notifySessionCompleted ? '1' : '0');
+                        formData.append('notify_assignments', this.notifyAssignments ? '1' : '0');
 
                         // Add button colors
                         document.querySelectorAll('input[name^="button_"][type="text"]').forEach(input => {

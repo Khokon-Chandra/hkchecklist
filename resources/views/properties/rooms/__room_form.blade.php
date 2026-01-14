@@ -17,7 +17,7 @@
     $tasksCount = $isEdit ? ($room->tasks_count ?? $room->tasks()->count()) : 0;
 @endphp
 
-<div class="p-6 space-y-6" x-data="propertyRoomForm({
+<div class="p-0 sm:p-2 md:p-4 lg:p-6 space-y-4 sm:space-y-6 max-w-full" x-data="propertyRoomForm({
     suggestUrl: @js($suggestUrl),
     storeUrl: @js($storeUrl),
     csrf: @js(csrf_token()),
@@ -40,7 +40,7 @@
 
         <div x-data="roomAutocomplete({ suggestUrl: @js($suggestUrl), csrf: @js(csrf_token()) })"
              @if($isEdit) x-init="q = @js($room->name)" @endif
-             class="grid grid-cols-1 @if($isEdit) lg:grid-cols-3 @else md:grid-cols-2 @endif gap-6">
+             class="grid grid-cols-1 @if($isEdit) lg:grid-cols-3 @else md:grid-cols-2 @endif gap-4 sm:gap-6">
             {{-- Room Name with Autocomplete --}}
             <div class="@if($isEdit) lg:col-span-2 @endif">
                 <label for="room-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -56,9 +56,9 @@
                         required
                         autocomplete="off"
                         placeholder="e.g., Kitchen, Bedroom, Laundry"
-                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                        class="w-full max-w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
                                focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                               transition-all duration-200 px-4 py-2.5 text-sm"
+                               transition-all duration-200 px-3 sm:px-4 py-2.5 text-sm"
                         @input="onInput"
                         @focus="onFocus"
                         @keydown="keyDown"
@@ -68,14 +68,14 @@
                     />
 
                     {{-- Autocomplete Dropdown --}}
-                    <div
-                        x-cloak
-                        x-show="open"
-                        id="room-suggest"
-                        role="listbox"
-                        class="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700
-                               bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
-                    >
+                <div
+                    x-cloak
+                    x-show="open"
+                    id="room-suggest"
+                    role="listbox"
+                    class="absolute z-50 mt-1 w-full max-w-full rounded-lg border border-gray-200 dark:border-gray-700
+                           bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
+                >
                         <div x-show="loading" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
                             <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -146,13 +146,11 @@
             <div class="@if($isEdit) lg:col-span-1 @endif">
                 <label class="inline-flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700
                               hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors">
-                    <input
-                        type="checkbox"
+                    <x-form.checkbox
                         name="is_default"
                         value="1"
                         x-model="formData.is_default"
-                        class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500"
-                    >
+                    />
                     <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Mark as default template</div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">Default rooms are highlighted in suggestions</div>
@@ -179,14 +177,14 @@
                         </div>
                     </dl>
 
-                    <div class="mt-4 flex items-center justify-between gap-2">
+                    <div class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-2">
                         <a href="{{ route('properties.tasks.index', ['property' => $property->id, 'room' => $room->id]) }}"
-                           class="text-indigo-600 hover:underline dark:text-indigo-400 text-sm">
+                           class="text-indigo-600 hover:underline dark:text-indigo-400 text-sm text-center sm:text-left">
                             Manage tasks →
                         </a>
 
                         <button type="button"
-                                class="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 text-sm underline"
+                                class="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 text-sm underline text-center sm:text-right"
                                 @click="showDetachModal = true">
                             Detach from property
                         </button>
@@ -205,12 +203,12 @@
             <p class="text-sm text-emerald-800 dark:text-emerald-200" x-text="success"></p>
         </div>
 
-        {{-- Footer Actions --}}
-        <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {{-- Footer Actions - Sticky at bottom --}}
+        <div class="sticky bottom-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-4 pb-2 sm:pb-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 -mx-0 sm:-mx-2 md:-mx-4 lg:-mx-6 px-0 sm:px-2 md:px-4 lg:px-6 mt-4 z-10">
             <button
                 type="button"
                 @click="$dispatch('close-preview-panel', panelName)"
-                class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
+                class="w-full sm:flex-1 px-4 py-3 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
                        bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
                        rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
@@ -220,7 +218,7 @@
                 type="submit"
                 :disabled="submitting"
                 :class="submitting ? 'opacity-60 cursor-not-allowed' : ''"
-                class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600
+                class="w-full sm:flex-1 px-4 py-3 sm:py-2.5 text-sm font-medium text-white bg-indigo-600
                        hover:bg-indigo-700 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
                 <svg x-show="submitting" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -237,30 +235,30 @@
         <div x-show="showDetachModal" x-cloak
              class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
              @click.self="showDetachModal = false">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-                <div class="p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="p-4 sm:p-6">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Detach Room</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-300">
                         This will remove <span class="font-medium">{{ $room->name }}</span> from <span class="font-medium">{{ $property->name }}</span>.
                         The room template itself will remain available globally. Tasks attached to this room in other properties are unaffected.
                     </p>
 
-                    <div class="mt-6 flex items-center justify-end gap-2">
+                    <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                         <button
                             type="button"
                             @click="showDetachModal = false"
-                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300
+                            class="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-300
                                    bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
                                    rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
                             Cancel
                         </button>
-                        <form method="post" action="{{ route('properties.rooms.destroy', [$property, $room]) }}" class="inline">
+                        <form method="post" action="{{ route('properties.rooms.destroy', [$property, $room]) }}" class="inline w-full sm:w-auto">
                             @csrf
                             @method('DELETE')
                             <button
                                 type="submit"
-                                class="px-4 py-2 text-sm font-medium text-white bg-rose-600
+                                class="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm font-medium text-white bg-rose-600
                                        hover:bg-rose-700 rounded-lg transition-colors"
                             >
                                 Detach

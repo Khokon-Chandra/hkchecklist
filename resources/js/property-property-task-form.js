@@ -31,6 +31,15 @@ export default function propertyPropertyTaskForm({ suggestUrl, storeUrl, csrf, p
             };
         },
 
+        // Capitalize text to title case (e.g., "Open Windows For Airing")
+        capitalizeText(text) {
+            if (!text) return '';
+            return text.toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        },
+
         async submitForm(event) {
             this.error = null;
             this.success = null;
@@ -39,10 +48,11 @@ export default function propertyPropertyTaskForm({ suggestUrl, storeUrl, csrf, p
             try {
                 const formData = new FormData();
                 
-                // Get name from the autocomplete input
+                // Get name from the autocomplete input and capitalize it
                 const nameInput = event.target.querySelector('#property-task-name');
                 if (nameInput && nameInput.value) {
-                    formData.append('name', nameInput.value.trim());
+                    const capitalizedName = this.capitalizeText(nameInput.value.trim());
+                    formData.append('name', capitalizedName);
                 } else {
                     throw new Error('Task name is required');
                 }
