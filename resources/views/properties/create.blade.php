@@ -160,6 +160,13 @@
                     <div>
                         <x-form.label value="Latitude (optional)" />
                         <x-form.input name="latitude" class="w-full" x-model="latitude" :value="old('latitude')"
+                            inputmode="decimal" pattern="^[0-9]*\\.?[0-9]*$"
+                            x-on:input="
+                                $event.target.value = ($event.target.value || '')
+                                    .replace(/[^0-9.]/g, '')
+                                    .replace(/(\\..*)\\./g, '$1');
+                                latitude = $event.target.value;
+                            "
                             placeholder="Auto-filled from address" />
                         <x-form.error :messages="$errors->get('latitude')" />
                     </div>
@@ -168,6 +175,13 @@
                     <div>
                         <x-form.label value="Longitude (optional)" />
                         <x-form.input name="longitude" class="w-full" x-model="longitude" :value="old('longitude')"
+                            inputmode="decimal" pattern="^[0-9]*\\.?[0-9]*$"
+                            x-on:input="
+                                $event.target.value = ($event.target.value || '')
+                                    .replace(/[^0-9.]/g, '')
+                                    .replace(/(\\..*)\\./g, '$1');
+                                longitude = $event.target.value;
+                            "
                             placeholder="Auto-filled from address" />
                         <x-form.error :messages="$errors->get('longitude')" />
                     </div>
