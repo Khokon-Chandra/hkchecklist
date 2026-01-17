@@ -40,6 +40,10 @@ class PropertyController extends Controller
             ->when($searchTerm !== '', fn($query) => $query->where('name', 'like', "%{$searchTerm}%"))
             ->when($request->owner_id, fn($query) => $query->where('owner_id', $request->owner_id))
             ->with(['owner.roles', 'rooms'])
+            ->when(
+                $authenticatedUser?->hasAnyRole(['admin', 'owner']),
+                fn($query) => $query->with('propertyTasks')
+            )
             ->withCount('rooms')
             ->orderBy('name')
             ->orderByDesc('created_at')

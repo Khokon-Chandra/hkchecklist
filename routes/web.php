@@ -8,6 +8,7 @@ use App\Http\Controllers\ManageSessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PropertyDuplicateController;
 use App\Http\Controllers\PropertyRoomAttachController;
 use App\Http\Controllers\PropertyRoomController;
 use App\Http\Controllers\RoomTaskOrderController;
@@ -73,6 +74,8 @@ Route::middleware('auth')->group(function () {
 
     // Rooms and tasks (nested under property)
     Route::prefix('properties')->name('properties.')->group(function () {
+        Route::post('{property}/duplicate', [PropertyDuplicateController::class, 'store'])->name('duplicate');
+
         Route::get('{property}/rooms', [PropertyController::class, 'rooms'])->name('rooms.index');
         Route::put('{property}/rooms/{room}', [PropertyController::class, 'updateRoom'])->name('rooms.update');
         Route::delete('{property}/rooms/{room}', [PropertyController::class, 'destroyRoom'])->name('rooms.destroy');

@@ -5,6 +5,21 @@
     @role('admin|owner')
         <x-dropdown.item as="button"
             x-on:click="
+            $dispatch('open-preview-panel', 'duplicate-property-{{ $property->id }}');
+            $dispatch('dropdown-close');
+         ">
+            {{-- copy icon --}}
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                    d="M8 7a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3V7Zm3-1a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-7Z" />
+                <path
+                    d="M2 8a3 3 0 0 1 3-3h1a1 1 0 1 1 0 2H5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1a1 1 0 1 1 2 0v1a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8Z" />
+            </svg>
+            <span>Duplicate</span>
+        </x-dropdown.item>
+
+        <x-dropdown.item as="button"
+            x-on:click="
             $dispatch('open-preview-panel', 'assign-rooms-{{ $property->id }}');
             $dispatch('dropdown-close');
          ">
@@ -71,6 +86,12 @@
     'property' => $property,
     'attachedRoomIds' => $property->rooms->pluck('id')->toArray(),
 ])
+
+@role('admin|owner')
+    @include('properties.__duplicate_property_panel', [
+        'property' => $property,
+    ])
+@endrole
 
 <x-modal name="confirm-delete-property-{{ $property->id }}" :show="false" maxWidth="md">
     <div class="p-6 text-left">
