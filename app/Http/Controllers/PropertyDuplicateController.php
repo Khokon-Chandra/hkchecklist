@@ -13,8 +13,9 @@ class PropertyDuplicateController extends Controller
         $user = $request->user();
         abort_unless($user && $user->hasAnyRole(['admin', 'owner']), 403, 'Only administrators and owners can duplicate properties.');
 
-        // Owners can only duplicate their own properties (defense-in-depth)
-        if ($user->hasRole('owner') && $property->owner_id !== $user->id) {
+        // Owners can only duplicate their own properties (defense-in-depth).
+        // If a user has BOTH roles (admin + owner), treat them as admin here.
+        if ($user->hasRole('owner') && ! $user->hasRole('admin') && $property->owner_id !== $user->id) {
             abort(403, 'You cannot duplicate properties you do not own.');
         }
 
@@ -36,7 +37,7 @@ class PropertyDuplicateController extends Controller
             if (!empty($roomIds)) {
                 $rooms = $property->rooms
                     ->whereIn('id', $roomIds)
-                    ->sortBy(fn ($r) => (int) ($r->pivot->sort_order ?? 0))
+                    ->sortBy(fn($r) => (int) ($r->pivot->sort_order ?? 0))
                     ->values();
 
                 $payload = [];
@@ -54,7 +55,7 @@ class PropertyDuplicateController extends Controller
             if (!empty($taskIds)) {
                 $tasks = $property->propertyTasks
                     ->whereIn('id', $taskIds)
-                    ->sortBy(fn ($t) => (int) ($t->pivot->sort_order ?? 0))
+                    ->sortBy(fn($t) => (int) ($t->pivot->sort_order ?? 0))
                     ->values();
 
                 $payload = [];
@@ -80,4 +81,3 @@ class PropertyDuplicateController extends Controller
             ->with('ok', 'Property duplicated successfully.');
     }
 }
-

@@ -22,44 +22,13 @@
 <x-preview-panel name="duplicate-property-{{ $property->id }}" :overlay="true" side="right" initialWidth="34rem"
     minWidth="22rem" title="Duplicate Property" subtitle="Create a new property from this one and choose what to copy">
     <div class="p-4 h-full flex flex-col text-gray-800 dark:text-gray-100"
-        x-data='{
-            newName: @js($property->name . " (Copy)"),
-            rooms: @json($roomsForJs),
-            tasks: @json($tasksForJs),
-            roomSearch: "",
-            taskSearch: "",
-            selectedRoomIds: @json($roomsForJs->pluck("id")->all()),
-            selectedTaskIds: @json($tasksForJs->pluck("id")->all()),
-
-            get filteredRooms() {
-                if (!this.roomSearch) return this.rooms
-                const q = this.roomSearch.toLowerCase()
-                return this.rooms.filter(r => (r.name || "").toLowerCase().includes(q))
-            },
-            get filteredTasks() {
-                if (!this.taskSearch) return this.tasks
-                const q = this.taskSearch.toLowerCase()
-                return this.tasks.filter(t => (t.name || "").toLowerCase().includes(q))
-            },
-
-            isRoomSelected(id) { return this.selectedRoomIds.includes(id) },
-            isTaskSelected(id) { return this.selectedTaskIds.includes(id) },
-
-            toggleRoom(id) {
-                if (this.isRoomSelected(id)) this.selectedRoomIds = this.selectedRoomIds.filter(x => x !== id)
-                else this.selectedRoomIds.push(id)
-            },
-            toggleTask(id) {
-                if (this.isTaskSelected(id)) this.selectedTaskIds = this.selectedTaskIds.filter(x => x !== id)
-                else this.selectedTaskIds.push(id)
-            },
-
-            selectAllRooms() { this.selectedRoomIds = this.filteredRooms.map(r => r.id) },
-            clearRooms() { this.selectedRoomIds = [] },
-
-            selectAllTasks() { this.selectedTaskIds = this.filteredTasks.map(t => t.id) },
-            clearTasks() { this.selectedTaskIds = [] },
-        }'>
+        x-data="duplicatePropertyPanel({
+            initialName: @js($property->name . ' (Copy)'),
+            rooms: @js($roomsForJs),
+            tasks: @js($tasksForJs),
+            selectedRoomIds: @js($roomsForJs->pluck('id')->all()),
+            selectedTaskIds: @js($tasksForJs->pluck('id')->all()),
+        })">
 
         <form id="duplicate-property-form-{{ $property->id }}" method="POST"
             action="{{ route('properties.duplicate', $property) }}" class="flex-1 flex flex-col min-h-0">
@@ -111,7 +80,7 @@
                         </button>
                     </div>
 
-                    <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    <div class="space-y-2 max-h-56 overflow-y-auto px-1">
                         <template x-if="!filteredRooms.length">
                             <p class="text-xs text-gray-500 dark:text-gray-400">No rooms found.</p>
                         </template>
@@ -122,7 +91,7 @@
                                        flex items-center justify-between gap-3
                                        border-gray-200 bg-white hover:bg-indigo-50/70
                                        dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-                                :class="isRoomSelected(room.id) ? 'ring-2 ring-indigo-500 border-indigo-400' : ''"
+                                :class="isRoomSelected(room.id) ? 'ring-2 ring-inset ring-indigo-500 border-indigo-400' : ''"
                                 @click="toggleRoom(room.id)">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div
@@ -176,7 +145,7 @@
                         </button>
                     </div>
 
-                    <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    <div class="space-y-2 max-h-56 overflow-y-auto px-1">
                         <template x-if="!tasks.length">
                             <p class="text-xs text-gray-500 dark:text-gray-400">No property tasks on this property.</p>
                         </template>
@@ -190,7 +159,7 @@
                                        flex items-center justify-between gap-3
                                        border-gray-200 bg-white hover:bg-indigo-50/70
                                        dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-                                :class="isTaskSelected(task.id) ? 'ring-2 ring-indigo-500 border-indigo-400' : ''"
+                                :class="isTaskSelected(task.id) ? 'ring-2 ring-inset ring-indigo-500 border-indigo-400' : ''"
                                 @click="toggleTask(task.id)">
                                 <div class="min-w-0">
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"

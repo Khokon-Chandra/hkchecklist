@@ -1,13 +1,13 @@
 <x-preview-panel name="assign-rooms-{{ $property->id }}" :overlay="true" side="right" initialWidth="30rem"
     minWidth="20rem" title="Assign Rooms" subtitle="Filter, select and preview rooms for this property">
     <div class="p-4 h-full flex flex-col text-gray-800 dark:text-gray-100" x-ref="assignRoomsScope"
-        x-data='assignRoomsPanel(
-            @json($property->id),
-            @json($roomsForJs),
-            @json($attachedRoomIds),
-            @json(route('properties.rooms.store', $property->id)),
-            @json(route('properties.rooms.attach', $property->id)),
-        )'
+        x-data="assignRoomsPanel(
+            @js($property->id),
+            @js($roomsForJs),
+            @js($attachedRoomIds),
+            @js(route('properties.rooms.store', $property->id)),
+            @js(route('properties.rooms.attach', $property->id)),
+        )"
         x-on:assign-rooms-save-{{ $property->id }}.window="save()">
         <div class="flex flex-col gap-3 mb-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -78,7 +78,7 @@
         </div>
 
         {{-- Room list --}}
-        <div class="flex-1 space-y-2 pr-1">
+        <div class="flex-1 space-y-2 px-1">
             <template x-if="!filtered.length">
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                     No rooms match your search.
@@ -91,7 +91,7 @@
                            flex items-center justify-between gap-3
                            border-gray-200 bg-white hover:bg-indigo-50/70
                            dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-                    :class="isSelected(room.id) ? 'ring-2 ring-indigo-500 border-indigo-400' : ''"
+                    :class="isSelected(room.id) ? 'ring-2 ring-inset ring-indigo-500 border-indigo-400' : ''"
                     @click="toggle(room.id)">
                     <div class="flex items-center gap-3">
                         <div

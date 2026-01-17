@@ -1,7 +1,7 @@
 <x-preview-panel name="rooms-preview" :overlay="true" side="right" initialWidth="28rem" minWidth="20rem"
     title="Default Rooms" subtitle="Review & pick rooms before saving">
     <x-slot:title>Default Rooms</x-slot:title>
-    <div class="p-4 h-full flex flex-col text-gray-800 dark:text-gray-100" x-data="roomsPreview()">
+    <div class="p-4 h-full flex flex-col text-gray-800 dark:text-gray-100" x-data="roomsPreview(@js($rooms))">
         {{-- Top bar: search + counts --}}
         <div class="flex flex-col gap-3 mb-4">
             <div class="flex items-center justify-between gap-3">
@@ -66,7 +66,7 @@
                            flex items-center justify-between gap-3
                            border-gray-200 bg-white hover:bg-indigo-50/70
                            dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-                    :class="isSelected(room.id) ? 'ring-2 ring-indigo-500 border-indigo-400' : ''"
+                    :class="isSelected(room.id) ? 'ring-2 ring-inset ring-indigo-500 border-indigo-400' : ''"
                     @click="toggle(room.id)">
                     <div class="flex items-center gap-3">
                         <div
@@ -114,41 +114,5 @@
             </div>
         </div>
     </x-slot:footer>
-
-    <script>
-        function roomsPreview() {
-            return {
-                rooms: @json($rooms),
-                search: '',
-                selectedIds: [],
-
-                get filtered() {
-                    if (!this.search) return this.rooms
-                    const q = this.search.toLowerCase()
-                    return this.rooms.filter(r => r.name.toLowerCase().includes(q))
-                },
-
-                isSelected(id) {
-                    return this.selectedIds.includes(id)
-                },
-
-                toggle(id) {
-                    if (this.isSelected(id)) {
-                        this.selectedIds = this.selectedIds.filter(x => x !== id)
-                    } else {
-                        this.selectedIds.push(id)
-                    }
-                },
-
-                selectAll() {
-                    this.selectedIds = this.filtered.map(r => r.id)
-                },
-
-                clearSelection() {
-                    this.selectedIds = []
-                },
-            }
-        }
-    </script>
 
 </x-preview-panel>

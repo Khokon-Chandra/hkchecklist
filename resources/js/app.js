@@ -1,6 +1,7 @@
 // resources/js/app.js
 
 import './bootstrap'
+import './property-panels'
 
 import Alpine from 'alpinejs'
 import collapse from '@alpinejs/collapse'
