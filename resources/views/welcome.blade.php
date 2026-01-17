@@ -7,6 +7,14 @@
     <title>{{ $siteName ?? config('app.name', 'HK Checklist') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Primary theme color -->
+    <style>
+        :root {
+            --theme-primary: {!! \App\Models\Setting::get('theme_color', '#842eb8') !!};
+            --button-primary-color: {!! \App\Models\Setting::get('button_primary_color') ?: \App\Models\Setting::get('theme_color', '#842eb8') !!};
+        }
+    </style>
+
     <!-- Favicon -->
     @php
         $faviconPath = \App\Models\Setting::get('favicon_path');
@@ -62,7 +70,7 @@
 
                     @auth
                         <a href="{{ route('dashboard') }}"
-                            class="hidden sm:inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                            class="hidden sm:inline-flex items-center rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity">
                             Go to Dashboard
                         </a>
                     @endauth
@@ -76,7 +84,7 @@
                         @endif
                         @if (Route::has('register'))
                             <a href="{{ route('register') }}"
-                                class="hidden sm:inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                                class="hidden sm:inline-flex items-center rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity">
                                 Get Started
                             </a>
                         @endif
@@ -89,10 +97,11 @@
     <!-- Hero -->
     <section class="relative overflow-hidden">
         <div class="absolute inset-0 -z-10">
-            <div class="h-[18rem] bg-gradient-to-br from-indigo-600 to-indigo-500 dark:from-indigo-700 dark:to-indigo-600">
+            <div class="h-[18rem]"
+                style="background: linear-gradient(135deg, var(--theme-primary), color-mix(in srgb, var(--theme-primary) 88%, white));">
             </div>
-            <svg class="w-full h-[6rem] text-indigo-600/20 dark:text-indigo-500/10" viewBox="0 0 1440 320"
-                preserveAspectRatio="none">
+            <svg class="w-full h-[6rem]" viewBox="0 0 1440 320" preserveAspectRatio="none"
+                style="color: color-mix(in srgb, var(--theme-primary) 20%, transparent);">
                 <path fill="currentColor"
                     d="M0,64L80,58.7C160,53,320,43,480,69.3C640,96,800,160,960,181.3C1120,203,1280,181,1360,170.7L1440,160L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z">
                 </path>
@@ -103,7 +112,8 @@
             <div class="grid lg:grid-cols-2 items-center gap-8">
                 <div>
                     <span
-                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/70 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 ring-1 ring-white/60 dark:ring-indigo-800">
+                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/70 ring-1 ring-white/60"
+                        style="color: color-mix(in srgb, var(--theme-primary) 80%, black);">
                         Airbnb Housekeeping Checklist
                     </span>
                     <h1 class="mt-4 text-3xl sm:text-4xl font-semibold text-white">
@@ -116,23 +126,25 @@
                     <div class="mt-6 flex items-center gap-3">
                         @auth
                             <a href="{{ route('dashboard') }}"
-                                class="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-gray-100">
+                                class="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100"
+                                style="color: color-mix(in srgb, var(--theme-primary) 80%, black);">
                                 Open Dashboard
                             </a>
                             <a href="{{ route('calendar.index') }}"
-                                class="inline-flex items-center rounded-md bg-indigo-700 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-800">
+                                class="inline-flex items-center rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity">
                                 View Calendar
                             </a>
                         @else
                             @if (Route::has('register'))
                                 <a href="{{ route('register') }}"
-                                    class="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-gray-100">
+                                    class="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-medium hover:bg-gray-100"
+                                    style="color: color-mix(in srgb, var(--theme-primary) 80%, black);">
                                     Create an account
                                 </a>
                             @endif
                             @if (Route::has('login'))
                                 <a href="{{ route('login') }}"
-                                    class="inline-flex items-center rounded-md bg-indigo-700 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-800">
+                                    class="inline-flex items-center rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity">
                                     Log in
                                 </a>
                             @endif
@@ -178,7 +190,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="absolute -z-10 -left-10 -bottom-10 h-40 w-40 rounded-full bg-indigo-400/30 blur-3xl">
+                    <div class="absolute -z-10 -left-10 -bottom-10 h-40 w-40 rounded-full blur-3xl"
+                        style="background-color: color-mix(in srgb, var(--theme-primary) 25%, transparent);">
                     </div>
                 </div>
             </div>
@@ -219,7 +232,8 @@
                 @foreach ($features as $f)
                     <div class="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-5">
                         <div
-                            class="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600/10 text-indigo-600 dark:text-indigo-300">
+                            class="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg text-theme-primary"
+                            style="background-color: color-mix(in srgb, var(--theme-primary) 12%, transparent);">
                             ★</div>
                         <div class="font-medium">{{ $f['title'] }}</div>
                         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ $f['desc'] }}</p>
@@ -254,7 +268,7 @@
                 <div class="mt-6 flex flex-wrap items-center gap-3">
                     @auth
                         <a href="{{ route('manage.sessions.index') }}"
-                            class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                            class="inline-flex items-center rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity">
                             Manage Sessions
                         </a>
                         <a href="{{ route('calendar.index') }}"
@@ -264,7 +278,7 @@
                     @else
                         @if (Route::has('register'))
                             <a href="{{ route('register') }}"
-                                class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                                class="inline-flex items-center rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity">
                                 Get Started
                             </a>
                         @endif
