@@ -41,6 +41,8 @@ import checklistRenderer from './checklist-renderer'
 import photoUploader from './photo-uploader'
 import photoDeleteHandler from './photo-delete-handler'
 
+import propertyAssignmentsPanel from './pages/properties/property-assignments-panel'
+
 // ⛔️ DO NOT MODIFY — main app interaction (kept exactly as you sent)
 document.addEventListener('alpine:init', () => {
     Alpine.data('mainState', () => {
@@ -152,6 +154,8 @@ document.addEventListener('alpine:init', () => {
 
     // Photo delete handler component
     Alpine.data('photoDeleteHandler', photoDeleteHandler)
+
+    Alpine.data('propertyAssignmentsPanel', propertyAssignmentsPanel)
 
     // Bulk task form (defined inline in blade, but register here for consistency)
     Alpine.data('bulkTaskForm', function(config) {

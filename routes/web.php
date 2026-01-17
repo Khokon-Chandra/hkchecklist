@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyDuplicateController;
+use App\Http\Controllers\PropertyAssignmentsApiController;
 use App\Http\Controllers\PropertyRoomAttachController;
 use App\Http\Controllers\PropertyRoomController;
 use App\Http\Controllers\RoomTaskOrderController;
@@ -71,6 +72,12 @@ Route::middleware('auth')->group(function () {
 
 
     Route::resource('properties', PropertyController::class)->except('show');
+
+    // Property assigned rooms/tasks (AJAX)
+    Route::get('/api/properties/{property}/assigned-rooms', [PropertyAssignmentsApiController::class, 'rooms'])
+        ->name('api.properties.assigned-rooms');
+    Route::get('/api/properties/{property}/assigned-property-tasks', [PropertyAssignmentsApiController::class, 'propertyTasks'])
+        ->name('api.properties.assigned-property-tasks');
 
     // Rooms and tasks (nested under property)
     Route::prefix('properties')->name('properties.')->group(function () {

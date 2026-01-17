@@ -42,7 +42,7 @@
                 {{-- Left column: Image (current + replace/remove) --}}
                 <div class="lg:col-span-1 max-w-full overflow-hidden">
                     <x-form.label value="Property Photo" />
-                    <div class="mt-1 border-2 border-dashed rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center bg-gray-50/40 max-w-full overflow-hidden">
+                    <div class="mt-1 border-2 border-dashed dark:border-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center bg-gray-50/40 dark:bg-gray-800/40 max-w-full overflow-hidden">
                         @php
                             $photoUrl = method_exists($property, 'getPhotoUrlAttribute')
                                 ? $property->photo_url
@@ -206,7 +206,7 @@
         </form>
     </x-card>
 
-    {{-- Alpine helpers --}}
+    {{-- Alpine helpers (kept as before; do not modify photo uploader behavior/UI) --}}
     <script>
         function propertyEditForm() {
             return {
@@ -362,4 +362,114 @@
             }
         }
     </script>
+
+    {{-- Assigned Rooms + Property Tasks (AJAX) --}}
+    <div class="mt-6">
+        <div
+            x-data="propertyAssignmentsPanel({
+                roomsUrl: @js(route('api.properties.assigned-rooms', $property)),
+                tasksUrl: @js(route('api.properties.assigned-property-tasks', $property)),
+            })"
+            x-init="init()"
+        >
+            <x-card class="max-w-full">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200">Assigned Items</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Loaded via API/AJAX — use the buttons to manage assignments.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <x-button type="button" variant="secondary" @click="refreshAll()" class="w-full sm:w-auto whitespace-nowrap">
+                            Refresh
+                        </x-button>
+                        <x-button variant="secondary" href="{{ route('properties.rooms.index', $property) }}" class="w-full sm:w-auto whitespace-nowrap">
+                            Manage Rooms
+                        </x-button>
+                        <x-button variant="secondary" href="{{ route('properties.property-tasks.index', $property) }}" class="w-full sm:w-auto whitespace-nowrap">
+                            Manage Property Tasks
+                        </x-button>
+                    </div>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {{-- Rooms --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50/40 dark:bg-gray-800/40">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-semibold text-gray-800 dark:text-gray-200">Rooms</h4>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20"
+                                    x-text="rooms.length"></span>
+                            </div>
+                            <template x-if="loadingRooms">
+                                <span class="text-xs text-indigo-600 dark:text-indigo-300">Loading…</span>
+                            </template>
+                        </div>
+
+                        <template x-if="roomsError">
+                            <p class="mt-2 text-xs text-red-600" x-text="roomsError"></p>
+                        </template>
+
+                        <template x-if="!loadingRooms && !roomsError && rooms.length === 0">
+                            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">No rooms assigned yet.</p>
+                        </template>
+
+                        <ul class="mt-3 space-y-2" x-show="rooms.length > 0">
+                            <template x-for="room in rooms" :key="room.id">
+                                <li class="flex items-center justify-between gap-3 p-2 rounded-lg bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-700">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="room.name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                            <span x-text="'Tasks: ' + (room.tasks_count ?? 0)"></span>
+                                            <span class="mx-1">•</span>
+                                            <span x-text="'Order: ' + (room.sort_order ?? 0)"></span>
+                                        </p>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+
+                    {{-- Property Tasks --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50/40 dark:bg-gray-800/40">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-semibold text-gray-800 dark:text-gray-200">Property Tasks</h4>
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20"
+                                    x-text="tasks.length"></span>
+                            </div>
+                            <template x-if="loadingTasks">
+                                <span class="text-xs text-indigo-600 dark:text-indigo-300">Loading…</span>
+                            </template>
+                        </div>
+
+                        <template x-if="tasksError">
+                            <p class="mt-2 text-xs text-red-600" x-text="tasksError"></p>
+                        </template>
+
+                        <template x-if="!loadingTasks && !tasksError && tasks.length === 0">
+                            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">No property tasks assigned yet.</p>
+                        </template>
+
+                        <ul class="mt-3 space-y-2" x-show="tasks.length > 0">
+                            <template x-for="task in tasks" :key="task.id">
+                                <li class="flex items-center justify-between gap-3 p-2 rounded-lg bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-700">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="task.name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                            <span x-text="phaseLabel(task.phase) || '—'"></span>
+                                            <span class="mx-1">•</span>
+                                            <span x-text="'Order: ' + (task.sort_order ?? 0)"></span>
+                                        </p>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            </x-card>
+        </div>
+    </div>
 </x-app-layout>
