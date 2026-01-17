@@ -27,9 +27,9 @@
         </div>
     </x-slot>
 
-    <x-card class="max-w-full overflow-hidden">
+    <x-card class="max-w-full">
         <form x-data="propertyEditForm()" x-init="init()" method="post" action="{{ route('properties.update', $property) }}"
-            enctype="multipart/form-data" @submit.prevent="handleSubmit($event)" class="max-w-full overflow-hidden">
+            enctype="multipart/form-data" @submit.prevent="handleSubmit($event)" class="max-w-full">
             @csrf
             @method('PUT')
 
@@ -94,7 +94,7 @@
                 </div>
 
                 {{-- Right column: Fields --}}
-                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-full overflow-hidden">
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-full overflow-visible">
                     {{-- Admin-only owner select --}}
                     @role('admin')
                         <div class="md:col-span-2">

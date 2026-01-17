@@ -31,9 +31,9 @@
     {{-- Preview panel --}}
     @include('properties.__preview_panel', ['rooms' => $rooms])
 
-    <x-card class="max-w-full overflow-hidden">
+    <x-card class="max-w-full">
         <form x-data="propertyForm()" x-init="init()" method="post" action="{{ route('properties.store') }}"
-            enctype="multipart/form-data" @submit="handleSubmit($event)" class="max-w-full overflow-hidden">
+            enctype="multipart/form-data" @submit="handleSubmit($event)" class="max-w-full">
             @csrf
 
             {{-- Note: owner_id is automatically set in PropertyStoreRequest::prepareForValidation() for owners --}}
@@ -88,7 +88,7 @@
                 </div>
 
                 {{-- Right column: Form fields --}}
-                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-full overflow-hidden">
+                <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-w-full overflow-visible">
                     {{-- Admin can assign owner --}}
                     @role('admin')
                         <div class="md:col-span-2">
